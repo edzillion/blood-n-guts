@@ -3,11 +3,6 @@
   "name": "blood-n-guts",
   "version": "0.1.0",
   "description": "Spray your dungeons with blood! A module for FoundryVTT",
-  "scripts": {
-    "prepare": "npm.cmd run compile",
-    "pretest": "npm.cmd run compile",
-    "posttest": "npm.cmd run check"
-  },
   "author": "edzillion",
   "license": "",
   "devDependencies": {

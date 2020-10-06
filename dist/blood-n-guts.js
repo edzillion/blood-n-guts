@@ -16,7 +16,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 //CONFIG.debug.hooks = true
-CONFIG.logLevel = 2;
+//CONFIG.logLevel = 2;
 // Import JavaScript modules
 import { registerSettings } from "./module/settings.js";
 import { preloadTemplates } from "./module/preloadTemplates.js";
@@ -26,18 +26,18 @@ import { getPointAt } from "./module/bezier.js";
 import * as bloodColorSettings from "./data/bloodColorSettings.js";
 import * as violenceLevelSettings from "./data/violenceLevelSettings.js";
 import * as splatFonts from "./data/splatFonts.js";
-var trailSplatFont;
-var floorSplatFont;
-var tokenSplatFont;
-var violenceLevel;
-var tokenSplats = [];
-var lastTokenState = [];
+let trailSplatFont;
+let floorSplatFont;
+let tokenSplatFont;
+let violenceLevel;
+const tokenSplats = [];
+const lastTokenState = [];
 document.fonts.ready.then(() => {
     log(LogLevel.DEBUG, 'All fonts in use by visible text have loaded.');
 });
 document.fonts.onloadingdone = (fontFaceSetEvent) => {
     log(LogLevel.DEBUG, 'onloadingdone we have ' + fontFaceSetEvent.fontfaces.length + ' font faces loaded');
-    let check = document.fonts.check('1em splatter');
+    const check = document.fonts.check('1em splatter');
     log(LogLevel.DEBUG, 'splatter loaded? ' + check); // true  
 };
 /* ------------------------------------ */
@@ -60,17 +60,17 @@ Hooks.once('setup', () => {
     // ready
     initSettings();
 });
-Hooks.on('closeSettingsConfig', (settingsConfig, div) => {
+Hooks.on('closeSettingsConfig', () => {
     initSettings();
 });
 function initSettings() {
-    let level = game.settings.get('blood-n-guts', 'violenceLevel');
+    const level = game.settings.get('blood-n-guts', 'violenceLevel');
     console.log(violenceLevelSettings);
     violenceLevel = violenceLevelSettings.level[level];
     log(LogLevel.DEBUG, 'set violence level:', violenceLevel);
     floorSplatFont = splatFonts.fonts['splatter'];
     tokenSplatFont = splatFonts.fonts['splatter'];
-    trailSplatFont = splatFonts.fonts['splatter'];
+    trailSplatFont = splatFonts.fonts['WC Rhesus A Bta'];
 }
 /* ------------------------------------ */
 /* When ready							              */
@@ -78,21 +78,20 @@ function initSettings() {
 Hooks.once('ready', () => {
     log(LogLevel.DEBUG, 'ready, inserting preload stub');
     // Insert a div that uses the font so that it preloads
-    let stub = document.createElement('div');
+    const stub = document.createElement('div');
     stub.style.cssText = "visibility:hidden; font-family: 'splatter';";
     stub.innerHTML = "A";
-    let stub2 = document.createElement('div');
+    const stub2 = document.createElement('div');
     stub2.style.cssText = "visibility:hidden; font-family: 'WC Rhesus A Bta';";
     stub2.innerHTML = "A";
     document.body.appendChild(stub);
     document.body.appendChild(stub2);
-    // @ts-ignore
-    let sceneTokens = game.scenes.active.data.tokens;
-    for (let i = 0; i < sceneTokens.length; i++) {
-        saveTokenState(sceneTokens[i]);
+    const canvasTokens = canvas.tokens.placeables;
+    for (let i = 0; i < canvasTokens.length; i++) {
+        saveTokenState(canvasTokens[i].data);
     }
 });
-Hooks.on('createToken', (scene, token, options, actorId) => {
+Hooks.on('createToken', (_scene, token) => {
     saveTokenState(token);
 });
 Hooks.once('canvasReady', () => {
@@ -101,8 +100,8 @@ Hooks.once('canvasReady', () => {
         document.addEventListener("click", (event) => {
             const [x, y] = [event.clientX, event.clientY];
             const t = canvas.stage.worldTransform;
-            let xx = (x - t.tx) / canvas.stage.scale.x;
-            let yy = (y - t.ty) / canvas.stage.scale.y;
+            const xx = (x - t.tx) / canvas.stage.scale.x;
+            const yy = (y - t.ty) / canvas.stage.scale.y;
             log(LogLevel.DEBUG, xx, yy);
         }, false);
     }
@@ -115,7 +114,7 @@ Hooks.on("updateToken", (scene, token, changes, options, uid) => {
 });
 Hooks.on('updateActor', (actor, changes, diff) => {
     log(LogLevel.DEBUG, actor, changes, diff);
-    let tokens = canvas.tokens.placeables.filter(t => t.actor.id === actor.id);
+    const tokens = canvas.tokens.placeables.filter(t => t.actor.id === actor.id);
     if (tokens.length !== 1)
         log(LogLevel.ERROR, 'updateActor token not found, or too many (?)');
     checkForMovement(tokens[0], changes);
@@ -129,9 +128,9 @@ function checkForMovement(token, changes) {
             // is this token bleeding?
             if (yield canvas.tokens.placeables.find(t => t.id === token._id).getFlag('blood-n-guts', 'bleeding')) {
                 log(LogLevel.DEBUG, 'checkForMovement id:' + token._id + ' - bleeding');
-                let splats = generateSplats(token, trailSplatFont, violenceLevel.trailSplatSize, violenceLevel.trailDensity);
-                let startPtCentered = centerOnGrid(lastTokenState[token._id].x, lastTokenState[token._id].y);
-                let endPtCentered = centerOnGrid(token.x, token.y);
+                const splats = generateSplats(token, trailSplatFont, violenceLevel.trailSplatSize, violenceLevel.trailDensity);
+                const startPtCentered = centerOnGrid(lastTokenState[token._id].x, lastTokenState[token._id].y);
+                const endPtCentered = centerOnGrid(token.x, token.y);
                 splatTrail(splats, startPtCentered, endPtCentered);
             }
         }
@@ -177,8 +176,8 @@ function generateSplats(token, font, size, density) {
         align: 'center'
     });
     const origin = { x: token.x + canvas.grid.size / 2, y: token.y + canvas.grid.size / 2 };
-    let splats = glyphArray.map(glyph => {
-        let tm = PIXI.TextMetrics.measureText(glyph, style);
+    const splats = glyphArray.map(glyph => {
+        const tm = PIXI.TextMetrics.measureText(glyph, style);
         return {
             text: new PIXI.Text(glyph, style),
             token: token,
@@ -192,10 +191,10 @@ function generateSplats(token, font, size, density) {
         };
     });
     for (let i = 0; i < splats.length; i++) {
-        let splat = splats[i];
+        const splat = splats[i];
         log(LogLevel.DEBUG, 'generateSplats splat.tileData: ', splat.tileData);
-        let sight = computeSightFromPoint(origin, Math.max(splat.tileData.width, splat.tileData.height));
-        let sightMask = new PIXI.Graphics();
+        const sight = computeSightFromPoint(origin, Math.max(splat.tileData.width, splat.tileData.height));
+        const sightMask = new PIXI.Graphics();
         sightMask.moveTo(origin.x, origin.y);
         sightMask.beginFill(1, 1);
         sightMask.drawPolygon(sight);
@@ -248,13 +247,13 @@ function splatFloor(splats) {
 function splatTrail(splats, startPtCentered, endPtCentered, spread) {
     return __awaiter(this, void 0, void 0, function* () {
         log(LogLevel.INFO, 'splatTrail: (start), (end) ', startPtCentered, endPtCentered);
-        let direction = getDirectionNrml(startPtCentered, endPtCentered);
+        const direction = getDirectionNrml(startPtCentered, endPtCentered);
         const pixelSpread = (spread) ? canvas.grid.size * spread : canvas.grid.size * violenceLevel.spread;
         const rand = (randomBoxMuller() * pixelSpread) - pixelSpread / 2;
         log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpread, rand);
         log(LogLevel.DEBUG, 'splatTrail: direction ', direction);
         // first go half the distance in the direction we are going  
-        let controlPt = new PIXI.Point(startPtCentered.x + direction.x * (canvas.grid.size / 2), startPtCentered.y + direction.y * (canvas.grid.size / 2));
+        const controlPt = new PIXI.Point(startPtCentered.x + direction.x * (canvas.grid.size / 2), startPtCentered.y + direction.y * (canvas.grid.size / 2));
         // then swap direction y,x to give us an position to the side
         controlPt.set(controlPt.x + direction.y * (rand), controlPt.y + direction.x * (rand));
         for (let i = 0, j = 0; i < splats.length; i++, j += 1 / violenceLevel.trailDensity) {
@@ -271,17 +270,17 @@ function splatToken(splats) {
             return;
         log(LogLevel.INFO, 'splatToken');
         // @ts-ignore
-        let imgPath = splats[0].token.img;
-        let tokenSprite = PIXI.Sprite.from(imgPath);
-        let maskSprite = PIXI.Sprite.from(imgPath);
+        const imgPath = splats[0].token.img;
+        const tokenSprite = PIXI.Sprite.from(imgPath);
+        const maskSprite = PIXI.Sprite.from(imgPath);
         // scale sprite down to grid bounds
         if (tokenSprite.width > tokenSprite.height) {
-            let w = canvas.grid.size / tokenSprite.width;
+            const w = canvas.grid.size / tokenSprite.width;
             tokenSprite.height *= w;
             tokenSprite.width = canvas.grid.size;
         }
         else {
-            let h = canvas.grid.size / tokenSprite.height;
+            const h = canvas.grid.size / tokenSprite.height;
             tokenSprite.width *= h;
             tokenSprite.height = canvas.grid.size;
         }
@@ -290,16 +289,16 @@ function splatToken(splats) {
         const textureContainer = new PIXI.Container();
         const maskContainer = new PIXI.Container();
         textureContainer.addChild(maskSprite);
-        let bwMatrix = new PIXI.filters.ColorMatrixFilter();
-        let negativeMatrix = new PIXI.filters.ColorMatrixFilter();
+        const bwMatrix = new PIXI.filters.ColorMatrixFilter();
+        const negativeMatrix = new PIXI.filters.ColorMatrixFilter();
         maskSprite.filters = [bwMatrix, negativeMatrix];
         bwMatrix.brightness(0, false);
         negativeMatrix.negative(false);
-        var renderTexture = new PIXI.RenderTexture(new PIXI.BaseRenderTexture({
+        const renderTexture = new PIXI.RenderTexture(new PIXI.BaseRenderTexture({
             width: tokenSprite.width,
             height: tokenSprite.height,
         }));
-        let renderSprite = new PIXI.Sprite(renderTexture);
+        const renderSprite = new PIXI.Sprite(renderTexture);
         renderSprite.x -= canvas.grid.size / 2;
         renderSprite.y -= canvas.grid.size / 2;
         maskContainer.mask = renderSprite;
@@ -308,13 +307,13 @@ function splatToken(splats) {
         canvas.app.renderer.render(textureContainer, renderTexture);
         splats.map((splat) => {
             //add some randomness
-            let randX = (Math.random() * 60) - 30;
-            let randY = (Math.random() * 60) - 30;
+            const randX = (Math.random() * 60) - 30;
+            const randY = (Math.random() * 60) - 30;
             log(LogLevel.DEBUG, 'rand', randX, randY);
             splat.text.x -= randX;
             splat.text.y -= randY;
             maskContainer.addChild(splat.text);
-            let tokenCenterPt = centerOnGrid(new PIXI.Point(splat.token.x, splat.token.y));
+            const tokenCenterPt = centerOnGrid(new PIXI.Point(splat.token.x, splat.token.y));
             maskContainer.x = tokenCenterPt.x;
             maskContainer.y = tokenCenterPt.y;
             canvas.effects.addChild(maskContainer);
@@ -329,7 +328,7 @@ function centerOnGrid(pointOrX, y) {
     if (y && typeof pointOrX == 'number') {
         return new PIXI.Point(pointOrX + canvas.grid.size / 2, y + canvas.grid.size / 2);
     }
-    let p = pointOrX;
+    const p = pointOrX;
     p.set(p.x += canvas.grid.size / 2, p.y += canvas.grid.size / 2);
     return p;
 }
@@ -337,10 +336,10 @@ function generateTiles(splats) {
     return __awaiter(this, void 0, void 0, function* () {
         log(LogLevel.INFO, 'generateTiles');
         const promises = splats.map((splat) => __awaiter(this, void 0, void 0, function* () {
-            let tile = yield Tile.create(splat.tileData);
+            const tile = yield Tile.create(splat.tileData);
             log(LogLevel.DEBUG, 'generateTiles splat.tileData: ', splat.tileData);
             if (CONFIG.logLevel > LogLevel.DEBUG) {
-                let myRect = new PIXI.Graphics();
+                const myRect = new PIXI.Graphics();
                 myRect.lineStyle(2, 0xff00ff).drawRect(tile.x, tile.y, tile.width, tile.height);
                 canvas.drawings.addChild(myRect);
                 log(LogLevel.DEBUG, 'generateTiles: added Rect');
@@ -352,12 +351,12 @@ function generateTiles(splats) {
     });
 }
 function computeSightFromPoint(origin, range) {
-    let walls = canvas.walls.blockMovement;
-    let minAngle, maxAngle = 360;
-    let cullDistance = 5; //tiles?
-    let cullMult = 2; //default
-    let density = 6; //default
-    let sight = canvas.sight.constructor.computeSight(origin, range, minAngle, maxAngle, cullDistance, cullMult, density, walls);
+    const walls = canvas.walls.blockMovement;
+    const minAngle = 360, maxAngle = 360;
+    const cullDistance = 5; //tiles?
+    const cullMult = 2; //default
+    const density = 6; //default
+    const sight = canvas.sight.constructor.computeSight(origin, range, minAngle, maxAngle, cullDistance, cullMult, density, walls);
     return sight.fov.points;
 }
 function randomBoxMuller() {
@@ -374,12 +373,11 @@ function randomBoxMuller() {
 }
 function lookupTokenBloodColor(token) {
     log(LogLevel.INFO, 'lookupTokenBloodColor: ' + token.name);
-    let actor = (token.actor) ? token.actor : game.actors.get(token.actorId);
+    const actor = (token.actor) ? token.actor : game.actors.get(token.actorId);
     const actorType = actor.data.type;
     const type = (actorType === 'npc') ? actor.data.data.details.type : actor.data.data.details.race;
     log(LogLevel.DEBUG, 'lookupTokenBloodColor: ', actorType, type);
     let bloodColor;
-    const regex = /(#([\da-f]{3}){1,2}|(rgb|hsl)a\((\d{1,3}%?,\s?){3}(1|0?\.\d+)\)|(rgb|hsl)\(\d{1,3}%?(,\s?\d{1,3}%?){2}\))/i;
     const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/ig;
     bloodColor = bloodColorSettings.color[type];
     let rgba;
@@ -406,9 +404,9 @@ function getActorColorByName(actor) {
     log(LogLevel.DEBUG, 'getActorColorByName:' + actor.data.name);
     let color;
     let colorString;
-    let wordsInName = actor.data.name.toLowerCase().split(' ');
+    const wordsInName = actor.data.name.toLowerCase().split(' ');
     for (let i = 0; i < wordsInName.length; i++) {
-        let word = wordsInName[i];
+        const word = wordsInName[i];
         if (colors[word]) {
             color = colors[word];
             log(LogLevel.DEBUG, 'color found!: ' + color);

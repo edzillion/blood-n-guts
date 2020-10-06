@@ -8,6 +8,7 @@
 8. use preloadTemplates to trigger DOM font loading
 9. wire up advanced config form
 10. order of settings in config window
+11. clearly separate token from tokenData objects
 
 
 

@@ -78,7 +78,7 @@ function initSettings() {
   log(LogLevel.DEBUG, 'set violence level:', violenceLevel)
   floorSplatFont = splatFonts.fonts['splatter'];
   tokenSplatFont = splatFonts.fonts['splatter'];
-  trailSplatFont = splatFonts.fonts['splatter'];
+  trailSplatFont = splatFonts.fonts['WC Rhesus A Bta'];
 }
 
 /* ------------------------------------ */
@@ -99,7 +99,7 @@ Hooks.once('ready', () => {
 
   const canvasTokens = canvas.tokens.placeables;
   for (let i=0; i<canvasTokens.length; i++) {
-    saveTokenState(canvasTokens[i]);    
+    saveTokenState(canvasTokens[i].data);    
   }
 });
 
@@ -242,7 +242,7 @@ function generateSplats(token:Token, font:SplatFont, size:number, density:number
 }
 
 
-function saveTokenState(token) {
+function  saveTokenState(token) {
   log(LogLevel.DEBUG, 'saveTokenState:', token);
   log(LogLevel.DEBUG, 'saveTokenState id:' + token.name);
 
