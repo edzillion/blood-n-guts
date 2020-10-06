@@ -278,9 +278,6 @@ function getRandomGlyph(font:SplatFont): string {
 }
 
 
-
-
-
 async function splatFloor(splats:Array<Splat>) {
   
   log(LogLevel.INFO, 'splatFloor');
@@ -409,7 +406,7 @@ function centerOnGrid(pointOrX:PIXI.Point | number, y?:number): PIXI.Point {
 async function generateTiles(splats: any[]) {
   log(LogLevel.INFO, 'generateTiles')
 
-  const promises = splats.map(async (splat) => {
+  splats.map(async (splat) => {
     const tile:Tile = await Tile.create(splat.tileData);    
       
     log(LogLevel.DEBUG, 'generateTiles splat.tileData: ', splat.tileData)
@@ -422,9 +419,9 @@ async function generateTiles(splats: any[]) {
     }
 
     tile.mask = splat.sightMask;
-    return tile.addChild(splat.text);  
-  });
-  await Promise.all(promises);      
+    tile.addChild(splat.text);  
+    canvas.tiles.addChild(tile);    
+  });     
 }
 
 function computeSightFromPoint(origin:Point, range:number): [number]  {
