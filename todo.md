@@ -9,6 +9,7 @@
 9. wire up advanced config form
 10. order of settings in config window
 11. clearly separate token from tokenData objects
+12. implement Tile pool to reuse tiles instead of creating new.
 
 
 
