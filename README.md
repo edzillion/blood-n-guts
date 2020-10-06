@@ -10,6 +10,9 @@
 This is a work in progress.
 
 ## To Do
+1. splatTokens moving after the token moves
+1. big obvious sighmask polygon showing momentarily
+1. smaller sight polygon left for floor splats only?
 1. Use token.center(?) to align tokens
 1. ~~update container positioning to make more sense~~
 1. ~~base blood colour on race etc~~
