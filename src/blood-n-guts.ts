@@ -8,7 +8,7 @@
  */
 
 //CONFIG.debug.hooks = true
-//CONFIG.logLevel = 2;
+CONFIG.logLevel = 2;
 
 // Import JavaScript modules
 import { registerSettings } from './module/settings';
@@ -120,21 +120,21 @@ Hooks.once('canvasReady', () => {
   }
 });
 
-Hooks.on("updateToken", (scene, token, changes, options, uid) => {
+Hooks.on("updateToken", async (scene, token, changes, options, uid) => {
   log(LogLevel.DEBUG, token, changes, uid, );
-  checkForMovement(token, changes);
+  await checkForMovement(token, changes);
   checkForDamage(token, changes.actorData);
   saveTokenState(token);
 });
 
-Hooks.on('updateActor', (actor, changes, diff ) => {
+Hooks.on('updateActor', async (actor, changes, diff ) => {
   log(LogLevel.DEBUG, actor, changes, diff);
   
   const tokens = canvas.tokens.placeables.filter(t => t.actor.id === actor.id);
   if (tokens.length !== 1)
     log(LogLevel.ERROR, 'updateActor token not found, or too many (?)')
 
-  checkForMovement(tokens[0], changes);
+  await checkForMovement(tokens[0], changes);
   checkForDamage(tokens[0], changes);
   saveTokenState(actor.data.token);
 });
@@ -143,13 +143,17 @@ Hooks.on('updateActor', (actor, changes, diff ) => {
 async function checkForMovement(token, changes) {
   if (changes.x || changes.y) {    
     log(LogLevel.DEBUG, 'checkForMovement id:' + token._id);    
-      
+      console.log(token.x)
+      console.log(changes.x)
+      console.log(lastTokenState[token._id].x)
+
     // is this token bleeding?
     if (await canvas.tokens.placeables.find(t => t.id === token._id).getFlag('blood-n-guts', 'bleeding')) {
+      log(LogLevel.DEBUG, 'checkForMovement lastTokenState', lastTokenState, changes);
       log(LogLevel.DEBUG, 'checkForMovement id:' + token._id + ' - bleeding');
-      const splats = generateSplats(token, trailSplatFont, violenceLevel.trailSplatSize, violenceLevel.trailDensity);
       const startPtCentered = centerOnGrid(lastTokenState[token._id].x, lastTokenState[token._id].y);
       const endPtCentered = centerOnGrid(token.x, token.y);
+      const splats = generateSplats(token, trailSplatFont, violenceLevel.trailSplatSize, violenceLevel.trailDensity);
       splatTrail(splats, startPtCentered, endPtCentered);
     }
   }
@@ -178,8 +182,8 @@ async function checkForDamage(token, actorDataChanges) {
     
     if (actorDataChanges.data.attributes.hp.value == 0)  {
       log(LogLevel.DEBUG, 'checkForDamage id:' + tokenId + ' - death');    
-      splats = generateSplats(token, floorSplatFont, violenceLevel.floorSplatSize, violenceLevel.floorDensity, game.settings.get('blood-n-guts', 'spread'));
-    }    
+      splats = generateSplats(token, floorSplatFont, violenceLevel.floorSplatSize, violenceLevel.floorDensity*2, violenceLevel.spread);
+    }     
   }
   else if (currentHP > lastHP) {
     await canvas.tokens.placeables.find(t => t.id === tokenId).unsetFlag('blood-n-guts', 'bleeding');
@@ -239,7 +243,7 @@ function generateSplats(token:Token, font:SplatFont, size:number, density:number
     sightMask.beginFill(1,1);
     sightMask.drawPolygon(sight);
     sightMask.endFill();
-    canvas.tiles.addChild(sightMask); //? Why do I have to add this?  
+    //canvas.tiles.addChild(sightMask); //? Why do I have to add this?  
     splat.sightMask = sightMask;
   }
 
@@ -315,6 +319,7 @@ async function splatTrail(splats:Array<Splat>, startPtCentered:PIXI.Point, endPt
     splats[i].tileData.x -= splats[i].tileData.width/2;
     splats[i].tileData.y -= splats[i].tileData.height/2;
   }
+  console.log(splats);
 
  generateTiles(splats);
 
@@ -416,14 +421,14 @@ async function generateTiles(splats: any[]) {
       
     log(LogLevel.DEBUG, 'generateTiles splat.tileData: ', splat.tileData)
 
-    if (CONFIG.logLevel > LogLevel.DEBUG) {
+    if (CONFIG.logLevel >= LogLevel.DEBUG) {
       const myRect = new PIXI.Graphics();
       myRect.lineStyle(2, 0xff00ff).drawRect(tile.x, tile.y, tile.width, tile.height);
       canvas.drawings.addChild(myRect);
       log(LogLevel.DEBUG, 'generateTiles: added Rect');
     }
 
-    tile.mask = splat.sightMask;
+    //tile.mask = splat.sightMask;
     tile.addChild(splat.text);  
     canvas.tiles.addChild(tile);    
   });     
