@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "lib": ["es6", "dom"],
+    "types": ["foundry-pc-types", "node"],
+    "moduleResolution": "node",
+    "resolveJsonModule" : true,
+    "baseUrl": "./",
+    "paths" : {
+      "src/*": ["./src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}
