@@ -178,7 +178,7 @@ async function checkForDamage(token, actorDataChanges) {
     
     if (actorDataChanges.data.attributes.hp.value == 0)  {
       log(LogLevel.DEBUG, 'checkForDamage id:' + tokenId + ' - death');    
-      splats = generateSplats(token, floorSplatFont, violenceLevel.floorSplatSize, violenceLevel.floorDensity);
+      splats = generateSplats(token, floorSplatFont, violenceLevel.floorSplatSize, violenceLevel.floorDensity, game.settings.get('blood-n-guts', 'spread'));
     }    
   }
   else if (currentHP > lastHP) {
@@ -189,7 +189,7 @@ async function checkForDamage(token, actorDataChanges) {
 
 
 
-function generateSplats(token:Token, font:SplatFont, size:number, density:number): Array<Splat>{
+function generateSplats(token:Token, font:SplatFont, size:number, density:number, spread?:number): Array<Splat>{
   if (density === 0) return;
 
   log(LogLevel.INFO, 'generateSplats')
@@ -206,6 +206,11 @@ function generateSplats(token:Token, font:SplatFont, size:number, density:number
   });
 
   const origin:Point = {x: token.x + canvas.grid.size/2, y: token.y + canvas.grid.size/2};
+  const pixelSpread = (spread) ? canvas.grid.size * spread : 0;
+  const randX = (randomBoxMuller() * pixelSpread) - pixelSpread/2;
+  const randY = (randomBoxMuller() * pixelSpread) - pixelSpread/2;
+
+  log(LogLevel.DEBUG, 'randX,Y', randX, randY );
 
   const splats:Array<Splat> = glyphArray.map( glyph => {
     const tm = PIXI.TextMetrics.measureText(glyph, style);
@@ -217,8 +222,8 @@ function generateSplats(token:Token, font:SplatFont, size:number, density:number
         img: "data:image/png;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=",
         width: tm.width,
         height: tm.height,
-        x: origin.x - tm.width/2,
-        y: origin.y - tm.height/2,        
+        x: origin.x - tm.width/2 + randX,
+        y: origin.y - tm.height/2 + randY        
       }
     }
   });
