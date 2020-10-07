@@ -15,5 +15,5 @@ export const color = {
   'Half-Elf': `rgba(223, 96, 96, 0.7)`,
   Monstrosity: `rgba(78, 0, 154, 0.7)`,
   Ooze: 'name',
-  Undead: `rgba(236, 230, 255, 0.7)`
-}
+  Undead: `rgba(236, 230, 255, 0.7)`,
+};

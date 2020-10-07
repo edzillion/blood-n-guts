@@ -32,12 +32,7 @@
   },
   "dependencies": {},
   "scripts": {
-    "lint": "eslint 'src/**/*.{js,ts,tsx}' --quiet --fix"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
+    "lint": "eslint \"src/**/*.{js,ts,tsx}\" --quiet --fix"
   },
   "lint-staged": {
     "*.{js,ts,tsx}": [

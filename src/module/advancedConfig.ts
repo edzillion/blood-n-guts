@@ -1,39 +1,38 @@
+import { MODULE_ID } from '../blood-n-guts';
+
 interface Font {
   name: string;
   size: number;
-  availableGlyphs: Array<string>;  
+  availableGlyphs: Array<string>;
 }
 
 export class AdvancedConfig extends FormApplication {
+  font: Font;
+  allAsciiCharacters: string;
 
-  font:Font;
-  allAsciiCharacters:String;
-
-  constructor(...args) {
-    // @ts-ignore
-    super(...args);
+  constructor(object: any, options?: FormApplicationOptions) {
+    super(object, options);
     game.users.apps.push(this);
-    // @ts-ignore
     //this.activities = game.settings.get("blood-n-guts", "activities");
-    let allAsciiCharacters = Array.from(Array(127).keys()).slice(32).map(a => String.fromCharCode(a));
+    const allAsciiCharacters = Array.from(Array(127).keys())
+      .slice(32)
+      .map((a) => String.fromCharCode(a));
     console.log(allAsciiCharacters);
   }
 
-  
-  static get defaultOptions() {
+  static get defaultOptions(): FormApplicationOptions {
     const options = super.defaultOptions;
-    options.title = "Configure Blood n Guts Advanced Settings";
-    options.id = "blood-n-guts";
-    options.template = "modules/blood-n-guts/templates/advanced-config.html";
+    options.title = 'Configure Blood n Guts Advanced Settings';
+    options.id = MODULE_ID;
+    options.template = 'modules/blood-n-guts/templates/advanced-config.html';
     options.closeOnSubmit = true;
     options.popOut = true;
     options.width = 600;
-    options.height = "auto";
+    options.height = 'auto';
     return options;
   }
 
   async getData() {
-    // @ts-ignore
     // const activities = this.activities;
     // return {
     //   activities,
@@ -46,15 +45,16 @@ export class AdvancedConfig extends FormApplication {
 
   activateListeners(html) {
     super.activateListeners(html);
-    
-    let selector = html.find(".select-blood-n-guts-font");
+
+    const selector = html.find('.form-group');
+    console.log(selector);
     selector.change((event) => this.changeFontDisplayed(event));
   }
 
   changeFontDisplayed(event) {
-        // Set up some variables
-    console.log(event)
-    this.font.name = event.target.value;    
+    // Set up some variables
+    console.log(event);
+    this.font.name = event.target.value;
   }
 
   async _updateObject(event, formData) {
