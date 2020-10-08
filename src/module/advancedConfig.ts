@@ -8,6 +8,7 @@ export class AdvancedConfig extends FormApplication {
   constructor(object: any, options?: FormApplicationOptions) {
     super(object, options);
     console.log(object, options);
+    game.settings.sheet.close();
     game.users.apps.push(this);
   }
 
