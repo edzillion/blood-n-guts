@@ -3,7 +3,6 @@
 export function getRGBA(colorName: string, alpha?: number): string {
   const rgbArray: Array<number> = colors[colorName];
   if (!rgbArray) return;
-  console.log(colorName, rgbArray);
   const opacity = alpha ? alpha : 0.7;
   return `rgba(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]}, ${opacity})`;
 }

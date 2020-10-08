@@ -1,4 +1,4 @@
-//eslint-disable-next-line no-var
+// eslint-disable-next-line no-var
 declare var bngConfig: BloodNGutsConfig;
 
 interface Window {

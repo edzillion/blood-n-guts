@@ -27,12 +27,8 @@ export class AdvancedConfig extends FormApplication {
     return options;
   }
 
-  async getData() {
-    // const activities = this.activities;
-    // return {
-    //   activities,
-    // };
-  }
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  async getData() {}
 
   render(force, context = {}) {
     return super.render(force, context);

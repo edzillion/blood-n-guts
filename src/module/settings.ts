@@ -1,6 +1,7 @@
 import { AdvancedConfig } from './advancedConfig.js';
 import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
+import { log, LogLevel } from './logging';
 
 export const registerSettings = (): void => {
   game.settings.register(MODULE_ID, 'violenceLevel', {
@@ -18,11 +19,9 @@ export const registerSettings = (): void => {
     },
     default: 0, // The default value for the setting
     onChange: (value) => {
-      console.log('on change');
       // A callback function which triggers when the setting is changed
       const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.level[value]));
       for (const key in violenceLevel) {
-        console.log(key, violenceLevel[key]);
         game.settings.set(MODULE_ID, key, violenceLevel[key]);
       }
     },
@@ -45,7 +44,7 @@ export const registerSettings = (): void => {
     default: 'splatter', // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      console.log('Settings: floorSplatFont set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: floorSplatFont set to ' + value);
     },
   });
 
@@ -56,7 +55,7 @@ export const registerSettings = (): void => {
     default: 'splatter', // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      console.log('Settings: tokenSplatFont set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: tokenSplatFont set to ' + value);
     },
   });
 
@@ -67,7 +66,7 @@ export const registerSettings = (): void => {
     default: 'WC Rhesus A Bta', // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      console.log('Settings: trailSplatFont set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: trailSplatFont set to ' + value);
     },
   });
 
@@ -78,7 +77,7 @@ export const registerSettings = (): void => {
     default: '150', // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      console.log('Settings: floorSplatSize set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: floorSplatSize set to ' + value);
     },
   });
 
@@ -89,7 +88,7 @@ export const registerSettings = (): void => {
     default: '1', // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      console.log('Settings: floorSplatDensity set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: floorSplatDensity set to ' + value);
     },
   });
 
@@ -100,7 +99,7 @@ export const registerSettings = (): void => {
     default: '40', // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      console.log('Settings: tokenSplatSize set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: tokenSplatSize set to ' + value);
     },
   });
 
@@ -111,7 +110,7 @@ export const registerSettings = (): void => {
     default: '1', // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      console.log('Settings: tokenSplatDensity set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: tokenSplatDensity set to ' + value);
     },
   });
 
@@ -122,7 +121,7 @@ export const registerSettings = (): void => {
     default: '30', // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      console.log('Settings: trailSplatSize set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: trailSplatSize set to ' + value);
     },
   });
 
@@ -133,7 +132,7 @@ export const registerSettings = (): void => {
     default: '3', // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      console.log('Settings: trailSplatDensity set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: trailSplatDensity set to ' + value);
     },
   });
 
@@ -144,7 +143,7 @@ export const registerSettings = (): void => {
     default: 0.8, // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      console.log('Settings: splatSpread set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: splatSpread set to ' + value);
     },
   });
 };

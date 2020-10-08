@@ -18,7 +18,6 @@ import { colors, getRGBA } from './module/colors';
 import { getPointAt } from './module/bezier';
 
 import * as bloodColorSettings from './data/bloodColorSettings';
-import * as violenceLevelSettings from './data/violenceLevelSettings';
 import * as splatFonts from './data/splatFonts';
 
 import { MODULE_ID } from './constants';
@@ -45,7 +44,6 @@ Hooks.once('init', async () => {
 
   // Register custom module settings
   registerSettings();
-  window.testypoo = 'hello';
 
   // Preload Handlebars templates
   await preloadTemplates();
@@ -125,9 +123,6 @@ Hooks.on('updateActor', async (actor, changes, diff) => {
 async function checkForMovement(token, changes) {
   if (changes.x || changes.y) {
     log(LogLevel.DEBUG, 'checkForMovement id:' + token._id);
-    console.log(token.x);
-    console.log(changes.x);
-    console.log(lastTokenState[token._id].x);
 
     // is this token bleeding?
     if (await canvas.tokens.placeables.find((t) => t.id === token._id).getFlag(MODULE_ID, 'bleeding')) {
@@ -322,7 +317,6 @@ async function splatTrail(
     splats[i].tileData.x -= splats[i].tileData.width / 2;
     splats[i].tileData.y -= splats[i].tileData.height / 2;
   }
-  console.log(splats);
 
   generateTiles(splats);
 }
