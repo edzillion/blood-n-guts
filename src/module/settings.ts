@@ -1,6 +1,6 @@
 import { AdvancedConfig } from './advancedConfig.js';
 
-export const registerSettings = function () {
+export const registerSettings = (): void => {
   game.settings.register('blood-n-guts', 'violenceLevel', {
     name: game.i18n.localize('Violence Level'),
     hint: game.i18n.localize('Blood and gore level'),

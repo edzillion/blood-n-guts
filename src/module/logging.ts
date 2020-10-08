@@ -1,4 +1,4 @@
-import { MODULE_ID } from '../blood-n-guts';
+import { MODULE_ID } from '../constants';
 
 export enum LogLevel {
   ERROR,

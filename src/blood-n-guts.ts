@@ -7,7 +7,7 @@
  * 					 determines how others may use and modify your module
  */
 
-//CONFIG.debug.hooks = true
+//CONFIG.debug.hooks = true;
 CONFIG.logLevel = 2;
 
 // Import JavaScript modules
@@ -16,19 +16,13 @@ import { preloadTemplates } from './module/preloadTemplates';
 import { log, LogLevel } from './module/logging';
 import { colors, getRGBA } from './module/colors';
 import { getPointAt } from './module/bezier';
-import { SplatFont, Splat, ViolenceLevel, SaveObject } from './module/interfaces';
 
 import * as bloodColorSettings from './data/bloodColorSettings';
 import * as violenceLevelSettings from './data/violenceLevelSettings';
 import * as splatFonts from './data/splatFonts';
 
-export const MODULE_ID = 'blood-n-guts';
+import { MODULE_ID } from './constants';
 
-let trailSplatFont: SplatFont;
-let floorSplatFont: SplatFont;
-let tokenSplatFont: SplatFont;
-
-let violenceLevel: ViolenceLevel;
 const tokenSplats: Array<Splat> = [];
 const lastTokenState: Array<Partial<SaveObject>> = [];
 
@@ -51,6 +45,7 @@ Hooks.once('init', async () => {
 
   // Register custom module settings
   registerSettings();
+  window.testypoo = 'hello';
 
   // Preload Handlebars templates
   await preloadTemplates();
@@ -64,6 +59,8 @@ Hooks.once('init', async () => {
 Hooks.once('setup', () => {
   // Do anything after initialization but before
   // ready
+  log(LogLevel.INFO, 'setup Hook:');
+
   initSettings();
 });
 
@@ -72,14 +69,18 @@ Hooks.on('closeSettingsConfig', () => {
 });
 
 function initSettings() {
-  const level: number = game.settings.get(MODULE_ID, 'violenceLevel');
-  console.log(violenceLevelSettings);
-  violenceLevel = violenceLevelSettings.level[level];
+  log(LogLevel.DEBUG, 'initSettings:', game.settings);
+  //const level: number = game.settings.get(MODULE_ID, 'violenceLevel');
 
-  log(LogLevel.DEBUG, 'set violence level:', violenceLevel);
-  floorSplatFont = splatFonts.fonts['splatter'];
-  tokenSplatFont = splatFonts.fonts['splatter'];
-  trailSplatFont = splatFonts.fonts['WC Rhesus A Bta'];
+  const config: BloodNGutsConfig = {
+    violenceLevel: violenceLevelSettings.level[0],
+    floorSplatFont: splatFonts.fonts['splatter'],
+    tokenSplatFont: splatFonts.fonts['splatter'],
+    trailSplatFont: splatFonts.fonts['WC Rhesus A Bta'],
+  };
+
+  globalThis.bngConfig = config;
+  log(LogLevel.INFO, 'initSettings: bngConfig ', globalThis.bngConfig);
 }
 
 /* ------------------------------------ */
@@ -155,7 +156,12 @@ async function checkForMovement(token, changes) {
       log(LogLevel.DEBUG, 'checkForMovement id:' + token._id + ' - bleeding');
       const startPtCentered = centerOnGrid(lastTokenState[token._id].x, lastTokenState[token._id].y);
       const endPtCentered = centerOnGrid(token.x, token.y);
-      const splats = generateSplats(token, trailSplatFont, violenceLevel.trailSplatSize, violenceLevel.trailDensity);
+      const splats = generateSplats(
+        token,
+        globalThis.bngConfig.trailSplatFont,
+        globalThis.bngConfig.violenceLevel.trailSplatSize,
+        globalThis.bngConfig.violenceLevel.trailDensity,
+      );
       splatTrail(splats, startPtCentered, endPtCentered);
     }
   }
@@ -173,9 +179,19 @@ async function checkForDamage(token, actorDataChanges) {
   if (currentHP < lastHP) {
     log(LogLevel.DEBUG, 'checkForDamage id:' + tokenId + ' - hp down');
 
-    let splats = generateSplats(token, floorSplatFont, violenceLevel.floorSplatSize, violenceLevel.floorDensity);
+    let splats = generateSplats(
+      token,
+      globalThis.bngConfig.floorSplatFont,
+      globalThis.bngConfig.violenceLevel.floorSplatSize,
+      globalThis.bngConfig.violenceLevel.floorDensity,
+    );
     splatFloor(splats);
-    splats = generateSplats(token, tokenSplatFont, violenceLevel.tokenSplatSize, violenceLevel.tokenDensity);
+    splats = generateSplats(
+      token,
+      globalThis.bngConfig.tokenSplatFont,
+      globalThis.bngConfig.violenceLevel.tokenSplatSize,
+      globalThis.bngConfig.violenceLevel.tokenDensity,
+    );
     splatToken(splats);
 
     await canvas.tokens.placeables.find((t) => t.id === tokenId).setFlag(MODULE_ID, 'bleeding', true);
@@ -185,10 +201,10 @@ async function checkForDamage(token, actorDataChanges) {
       log(LogLevel.DEBUG, 'checkForDamage id:' + tokenId + ' - death');
       splats = generateSplats(
         token,
-        floorSplatFont,
-        violenceLevel.floorSplatSize,
-        violenceLevel.floorDensity * 2,
-        violenceLevel.spread,
+        globalThis.bngConfig.floorSplatFont,
+        globalThis.bngConfig.violenceLevel.floorSplatSize,
+        globalThis.bngConfig.violenceLevel.floorDensity * 2,
+        globalThis.bngConfig.violenceLevel.spread,
       );
     }
   } else if (currentHP > lastHP) {
@@ -300,7 +316,7 @@ async function splatTrail(
   log(LogLevel.INFO, 'splatTrail: (start), (end) ', startPtCentered, endPtCentered);
   const direction = getDirectionNrml(startPtCentered, endPtCentered);
 
-  const pixelSpread = spread ? canvas.grid.size * spread : canvas.grid.size * violenceLevel.spread;
+  const pixelSpread = spread ? canvas.grid.size * spread : canvas.grid.size * globalThis.bngConfig.violenceLevel.spread;
   const rand = randomBoxMuller() * pixelSpread - pixelSpread / 2;
 
   log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpread, rand);
@@ -314,7 +330,7 @@ async function splatTrail(
   // then swap direction y,x to give us an position to the side
   controlPt.set(controlPt.x + direction.y * rand, controlPt.y + direction.x * rand);
 
-  for (let i = 0, j = 0; i < splats.length; i++, j += 1 / violenceLevel.trailDensity) {
+  for (let i = 0, j = 0; i < splats.length; i++, j += 1 / globalThis.bngConfig.violenceLevel.trailDensity) {
     [{ x: splats[i].tileData.x, y: splats[i].tileData.y }] = [getPointAt(startPtCentered, controlPt, endPtCentered, j)];
     splats[i].tileData.x -= splats[i].tileData.width / 2;
     splats[i].tileData.y -= splats[i].tileData.height / 2;

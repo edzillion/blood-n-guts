@@ -1,3 +1,12 @@
+//eslint-disable-next-line no-var
+declare var bngConfig: BloodNGutsConfig;
+
+interface Window {
+  bloodNGutsConfig: BloodNGutsConfig;
+  testypoo: string;
+  violenceLevel: ViolenceLevel;
+}
+
 interface SplatFont {
   name: string;
   availableGlyphs: Array<string>;
@@ -28,7 +37,7 @@ interface SaveObject {
   hp: number;
 }
 
-interface Config {
+interface BloodNGutsConfig {
   trailSplatFont: SplatFont;
   floorSplatFont: SplatFont;
   tokenSplatFont: SplatFont;
