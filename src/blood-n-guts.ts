@@ -60,28 +60,7 @@ Hooks.once('setup', () => {
   // Do anything after initialization but before
   // ready
   log(LogLevel.INFO, 'setup Hook:');
-
-  initSettings();
 });
-
-Hooks.on('closeSettingsConfig', () => {
-  initSettings();
-});
-
-function initSettings() {
-  log(LogLevel.DEBUG, 'initSettings:', game.settings);
-  //const level: number = game.settings.get(MODULE_ID, 'violenceLevel');
-
-  const config: BloodNGutsConfig = {
-    violenceLevel: violenceLevelSettings.level[0],
-    floorSplatFont: splatFonts.fonts['splatter'],
-    tokenSplatFont: splatFonts.fonts['splatter'],
-    trailSplatFont: splatFonts.fonts['WC Rhesus A Bta'],
-  };
-
-  globalThis.bngConfig = config;
-  log(LogLevel.INFO, 'initSettings: bngConfig ', globalThis.bngConfig);
-}
 
 /* ------------------------------------ */
 /* When ready							              */
@@ -158,9 +137,9 @@ async function checkForMovement(token, changes) {
       const endPtCentered = centerOnGrid(token.x, token.y);
       const splats = generateSplats(
         token,
-        globalThis.bngConfig.trailSplatFont,
-        globalThis.bngConfig.violenceLevel.trailSplatSize,
-        globalThis.bngConfig.violenceLevel.trailDensity,
+        splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
+        game.settings.get(MODULE_ID, 'trailSplatSize'),
+        game.settings.get(MODULE_ID, 'trailSplatDensity'),
       );
       splatTrail(splats, startPtCentered, endPtCentered);
     }
@@ -181,16 +160,16 @@ async function checkForDamage(token, actorDataChanges) {
 
     let splats = generateSplats(
       token,
-      globalThis.bngConfig.floorSplatFont,
-      globalThis.bngConfig.violenceLevel.floorSplatSize,
-      globalThis.bngConfig.violenceLevel.floorDensity,
+      splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
+      game.settings.get(MODULE_ID, 'floorSplatSize'),
+      game.settings.get(MODULE_ID, 'floorSplatDensity'),
     );
     splatFloor(splats);
     splats = generateSplats(
       token,
-      globalThis.bngConfig.tokenSplatFont,
-      globalThis.bngConfig.violenceLevel.tokenSplatSize,
-      globalThis.bngConfig.violenceLevel.tokenDensity,
+      splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
+      game.settings.get(MODULE_ID, 'tokenSplatSize'),
+      game.settings.get(MODULE_ID, 'tokenSplatDensity'),
     );
     splatToken(splats);
 
@@ -201,10 +180,10 @@ async function checkForDamage(token, actorDataChanges) {
       log(LogLevel.DEBUG, 'checkForDamage id:' + tokenId + ' - death');
       splats = generateSplats(
         token,
-        globalThis.bngConfig.floorSplatFont,
-        globalThis.bngConfig.violenceLevel.floorSplatSize,
-        globalThis.bngConfig.violenceLevel.floorDensity * 2,
-        globalThis.bngConfig.violenceLevel.spread,
+        splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
+        game.settings.get(MODULE_ID, 'floorSplatSize'),
+        game.settings.get(MODULE_ID, 'floorSplatDensity') * 2,
+        game.settings.get(MODULE_ID, 'splatSpread'),
       );
     }
   } else if (currentHP > lastHP) {
@@ -213,10 +192,16 @@ async function checkForDamage(token, actorDataChanges) {
   }
 }
 
-function generateSplats(token: Token, font: SplatFont, size: number, density: number, spread?: number): Array<Splat> {
+function generateSplats(
+  token: Token,
+  font: SplatFont,
+  size: number,
+  density: number,
+  splatSpread?: number,
+): Array<Splat> {
   if (density === 0) return;
 
-  log(LogLevel.INFO, 'generateSplats');
+  log(LogLevel.INFO, 'generateSplats', font);
 
   const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
 
@@ -228,7 +213,7 @@ function generateSplats(token: Token, font: SplatFont, size: number, density: nu
   });
 
   const origin: Point = { x: token.x + canvas.grid.size / 2, y: token.y + canvas.grid.size / 2 };
-  const pixelSpread = spread ? canvas.grid.size * spread : 0;
+  const pixelSpread = splatSpread ? canvas.grid.size * splatSpread : 0;
   const randX = randomBoxMuller() * pixelSpread - pixelSpread / 2;
   const randY = randomBoxMuller() * pixelSpread - pixelSpread / 2;
 
@@ -311,12 +296,14 @@ async function splatTrail(
   splats: Array<Splat>,
   startPtCentered: PIXI.Point,
   endPtCentered: PIXI.Point,
-  spread?: number,
+  splatSpread?: number,
 ) {
   log(LogLevel.INFO, 'splatTrail: (start), (end) ', startPtCentered, endPtCentered);
   const direction = getDirectionNrml(startPtCentered, endPtCentered);
 
-  const pixelSpread = spread ? canvas.grid.size * spread : canvas.grid.size * globalThis.bngConfig.violenceLevel.spread;
+  const pixelSpread = splatSpread
+    ? canvas.grid.size * splatSpread
+    : canvas.grid.size * game.settings.get(MODULE_ID, 'splatSpread');
   const rand = randomBoxMuller() * pixelSpread - pixelSpread / 2;
 
   log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpread, rand);
@@ -330,7 +317,7 @@ async function splatTrail(
   // then swap direction y,x to give us an position to the side
   controlPt.set(controlPt.x + direction.y * rand, controlPt.y + direction.x * rand);
 
-  for (let i = 0, j = 0; i < splats.length; i++, j += 1 / globalThis.bngConfig.violenceLevel.trailDensity) {
+  for (let i = 0, j = 0; i < splats.length; i++, j += 1 / game.settings.get(MODULE_ID, 'trailSplatDensity')) {
     [{ x: splats[i].tileData.x, y: splats[i].tileData.y }] = [getPointAt(startPtCentered, controlPt, endPtCentered, j)];
     splats[i].tileData.x -= splats[i].tileData.width / 2;
     splats[i].tileData.y -= splats[i].tileData.height / 2;

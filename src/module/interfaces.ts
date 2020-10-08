@@ -13,9 +13,9 @@ interface Splat {
 }
 
 interface ViolenceLevel {
-  trailDensity: number;
-  floorDensity: number;
-  tokenDensity: number;
+  trailSplatDensity: number;
+  floorSplatDensity: number;
+  tokenSplatDensity: number;
   trailSplatSize: number;
   floorSplatSize: number;
   tokenSplatSize: number;

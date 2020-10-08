@@ -13,7 +13,6 @@ export class AdvancedConfig extends FormApplication {
       .slice(32)
       .map((a) => String.fromCharCode(a));
     console.log(allAsciiCharacters);
-    console.log(globalThis.bngConfig);
   }
 
   static get defaultOptions(): FormApplicationOptions {
@@ -41,36 +40,35 @@ export class AdvancedConfig extends FormApplication {
 
   activateListeners(html) {
     super.activateListeners(html);
-    console.log('activateListeners', globalThis.bngConfig);
+
+    html.find('.advanced-config-submit').click((event) => {
+      return this.updateAdvancedSettings(html, event);
+    });
+
     // pre-select font dropdowns & add change listener
-    const selects = html.find('.select-blood-n-guts-font');
-    console.log('selects', selects);
+    const selects = html.find('.advanced-config-select-font');
     for (let i = 0; i < selects.length; i++) {
-      selects[i].addEventListener('change', (event) => {
-        return this.updateSetting(selects[i].name, event);
-      });
       for (let j = 0; j < selects[i].options.length; j++) {
-        console.log(j, selects[i].options[j].value, globalThis.bngConfig[selects[i].name].name);
-        if (selects[i].options[j].value === globalThis.bngConfig[selects[i].name].name) {
-          console.log(selects[i], 'selectedIndex' + j);
+        if (selects[i].options[j].value === game.settings.get(MODULE_ID, selects[i].name)) {
           selects[i].selectedIndex = j;
           break;
         }
       }
     }
     // pre-fill font size, density inputs
-    const inputs = html.find('input-blood-n-guts-font-details');
-    console.log('inputs', inputs);
+    const inputs = html.find('.advanced-config-font-details');
     for (let i = 0; i < inputs.length; i++) {
-      inputs[i].change((event) => this.updateSetting(inputs[i].name, event));
-      inputs[i].value === globalThis.bngConfig[inputs[i].name];
+      inputs[i].value = game.settings.get(MODULE_ID, inputs[i].name);
     }
   }
 
-  updateSetting(name: string, event): void {
-    log(LogLevel.DEBUG, 'updateSetting saving: ', name, event);
-    globalThis.bngConfig[name] = event.target.value;
-    game.settings.set(MODULE_ID, name, event.target.value);
+  updateAdvancedSettings(html, event): void {
+    const tags = html.find('.advanced-config-select-font, .advanced-config-font-details');
+    log(LogLevel.DEBUG, 'updateSetting saving: ', event);
+    for (let i = 0; i < tags.length; i++) {
+      console.log(tags[i].name, tags[i].value);
+      game.settings.set(MODULE_ID, tags[i].name, tags[i].value);
+    }
   }
 
   async _updateObject(event, formData) {
