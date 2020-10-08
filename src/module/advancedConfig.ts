@@ -7,12 +7,8 @@ export class AdvancedConfig extends FormApplication {
 
   constructor(object: any, options?: FormApplicationOptions) {
     super(object, options);
+    console.log(object, options);
     game.users.apps.push(this);
-    //this.activities = game.settings.get("blood-n-guts", "activities");
-    const allAsciiCharacters = Array.from(Array(127).keys())
-      .slice(32)
-      .map((a) => String.fromCharCode(a));
-    console.log(allAsciiCharacters);
   }
 
   static get defaultOptions(): FormApplicationOptions {
@@ -37,10 +33,6 @@ export class AdvancedConfig extends FormApplication {
   activateListeners(html) {
     super.activateListeners(html);
 
-    html.find('.advanced-config-submit').click((event) => {
-      return this.updateAdvancedSettings(html, event);
-    });
-
     // pre-select font dropdowns & add change listener
     const selects = html.find('.advanced-config-select-font');
     for (let i = 0; i < selects.length; i++) {
@@ -58,16 +50,11 @@ export class AdvancedConfig extends FormApplication {
     }
   }
 
-  updateAdvancedSettings(html, event): void {
-    const tags = html.find('.advanced-config-select-font, .advanced-config-font-details');
-    log(LogLevel.DEBUG, 'updateSetting saving: ', event);
-    for (let i = 0; i < tags.length; i++) {
-      console.log(tags[i].name, tags[i].value);
-      game.settings.set(MODULE_ID, tags[i].name, tags[i].value);
-    }
-  }
-
   async _updateObject(event, formData) {
+    console.log(event, formData);
+    for (const setting in formData) {
+      game.settings.set(MODULE_ID, setting, formData[setting]);
+    }
     return;
   }
 }
