@@ -22,8 +22,7 @@ import * as splatFonts from './data/splatFonts';
 
 import { MODULE_ID } from './constants';
 
-const tokenSplats: Array<Splat> = [];
-const lastTokenState: Array<Partial<SaveObject>> = [];
+const lastTokenState: Array<SaveObject> = [];
 
 (document as any).fonts.ready.then(() => {
   log(LogLevel.DEBUG, 'All fonts in use by visible text have loaded.');
@@ -76,9 +75,7 @@ Hooks.once('ready', () => {
   document.body.appendChild(stub2);
 
   const canvasTokens = canvas.tokens.placeables;
-  for (let i = 0; i < canvasTokens.length; i++) {
-    saveTokenState(canvasTokens[i].data);
-  }
+  for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
 });
 
 Hooks.on('createToken', (_scene, token) => {
@@ -87,7 +84,7 @@ Hooks.on('createToken', (_scene, token) => {
 
 Hooks.once('canvasReady', () => {
   log(LogLevel.INFO, 'canvasReady');
-  if (CONFIG.logLevel > LogLevel.DEBUG) {
+  if (CONFIG.logLevel >= LogLevel.DEBUG) {
     document.addEventListener(
       'click',
       (event) => {
@@ -102,8 +99,12 @@ Hooks.once('canvasReady', () => {
   }
 });
 
-Hooks.on('updateToken', async (scene, token, changes, options, uid) => {
-  log(LogLevel.DEBUG, token, changes, uid);
+Hooks.on('updateToken', async (scene, tokenData, changes, options, uid) => {
+  log(LogLevel.DEBUG, tokenData, changes, uid);
+
+  const token = canvas.tokens.placeables.find((t) => t.data._id === tokenData._id);
+  if (!token) log(LogLevel.ERROR, 'updateToken token not found!');
+
   await checkForMovement(token, changes);
   checkForDamage(token, changes.actorData);
   saveTokenState(token);
@@ -112,24 +113,25 @@ Hooks.on('updateToken', async (scene, token, changes, options, uid) => {
 Hooks.on('updateActor', async (actor, changes, diff) => {
   log(LogLevel.DEBUG, actor, changes, diff);
 
-  const tokens = canvas.tokens.placeables.filter((t) => t.actor.id === actor.id);
-  if (tokens.length !== 1) log(LogLevel.ERROR, 'updateActor token not found, or too many (?)');
+  const token = canvas.tokens.placeables.find((t) => t.actor.id === actor.id);
+  if (!token) log(LogLevel.ERROR, 'updateActor token not found!');
 
-  await checkForMovement(tokens[0], changes);
-  checkForDamage(tokens[0], changes);
-  saveTokenState(actor.data.token);
+  await checkForMovement(token, changes);
+  checkForDamage(token, changes);
+  saveTokenState(token);
 });
 
-async function checkForMovement(token, changes) {
+async function checkForMovement(token: Token, changes) {
   if (changes.x || changes.y) {
-    log(LogLevel.DEBUG, 'checkForMovement id:' + token._id);
+    log(LogLevel.DEBUG, 'checkForMovement id:' + token.id);
 
     // is this token bleeding?
-    if (await canvas.tokens.placeables.find((t) => t.id === token._id).getFlag(MODULE_ID, 'bleeding')) {
+    if (await token.getFlag(MODULE_ID, 'bleeding')) {
       log(LogLevel.DEBUG, 'checkForMovement lastTokenState', lastTokenState, changes);
-      log(LogLevel.DEBUG, 'checkForMovement id:' + token._id + ' - bleeding');
-      const startPtCentered = centerOnGrid(lastTokenState[token._id].x, lastTokenState[token._id].y);
-      const endPtCentered = centerOnGrid(token.x, token.y);
+      log(LogLevel.DEBUG, 'checkForMovement id:' + token.id + ' - bleeding');
+
+      const startPtCentered = new PIXI.Point(lastTokenState[token.id].centerX, lastTokenState[token.id].centerY);
+      const endPtCentered = new PIXI.Point(token.center.x, token.center.y);
       const splats = generateSplats(
         token,
         splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
@@ -141,17 +143,17 @@ async function checkForMovement(token, changes) {
   }
 }
 
-async function checkForDamage(token, actorDataChanges) {
+async function checkForDamage(token: Token, actorDataChanges) {
   log(LogLevel.DEBUG, 'last saves:', lastTokenState);
 
   if (!actorDataChanges?.data?.attributes?.hp) return;
 
-  const tokenId = token.data?._id ? token.data._id : token._id;
+  //const tokenId = token.data?._id ? token.data._id : token.id;
   const currentHP = actorDataChanges.data.attributes.hp.value;
-  const lastHP = lastTokenState[tokenId].hp;
+  const lastHP = lastTokenState[token.id].hp;
 
   if (currentHP < lastHP) {
-    log(LogLevel.DEBUG, 'checkForDamage id:' + tokenId + ' - hp down');
+    log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - hp down');
 
     let splats = generateSplats(
       token,
@@ -168,11 +170,11 @@ async function checkForDamage(token, actorDataChanges) {
     );
     splatToken(splats);
 
-    await canvas.tokens.placeables.find((t) => t.id === tokenId).setFlag(MODULE_ID, 'bleeding', true);
-    log(LogLevel.DEBUG, 'checkForDamage id:' + tokenId + ' - bleeding:true');
+    await token.setFlag(MODULE_ID, 'bleeding', true);
+    log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:true');
 
     if (actorDataChanges.data.attributes.hp.value == 0) {
-      log(LogLevel.DEBUG, 'checkForDamage id:' + tokenId + ' - death');
+      log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
       splats = generateSplats(
         token,
         splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
@@ -182,8 +184,8 @@ async function checkForDamage(token, actorDataChanges) {
       );
     }
   } else if (currentHP > lastHP) {
-    await canvas.tokens.placeables.find((t) => t.id === tokenId).unsetFlag(MODULE_ID, 'bleeding');
-    log(LogLevel.DEBUG, 'checkForDamage id:' + tokenId + ' - bleeding:unset');
+    await token.unsetFlag(MODULE_ID, 'bleeding');
+    log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:unset');
   }
 }
 
@@ -207,7 +209,6 @@ function generateSplats(
     align: 'center',
   });
 
-  const origin: Point = { x: token.x + canvas.grid.size / 2, y: token.y + canvas.grid.size / 2 };
   const pixelSpread = splatSpread ? canvas.grid.size * splatSpread : 0;
   const randX = randomBoxMuller() * pixelSpread - pixelSpread / 2;
   const randY = randomBoxMuller() * pixelSpread - pixelSpread / 2;
@@ -216,16 +217,18 @@ function generateSplats(
 
   const splats: Array<Splat> = glyphArray.map((glyph) => {
     const tm = PIXI.TextMetrics.measureText(glyph, style);
-
+    const text = new PIXI.Text(glyph, style);
+    // text.x = token.center.x - tm.width / 2 + randX;
+    // text.y = token.center.y - tm.height / 2 + randY;
     return {
-      text: new PIXI.Text(glyph, style),
+      text: text,
       token: token,
       tileData: {
         img: 'data:image/png;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
         width: tm.width,
         height: tm.height,
-        x: origin.x - tm.width / 2 + randX,
-        y: origin.y - tm.height / 2 + randY,
+        x: token.center.x - tm.width / 2 + randX,
+        y: token.center.y - tm.height / 2 + randY,
       },
     };
   });
@@ -234,38 +237,34 @@ function generateSplats(
     const splat = splats[i];
 
     log(LogLevel.DEBUG, 'generateSplats splat.tileData: ', splat.tileData);
-
-    const sight = computeSightFromPoint(origin, Math.max(splat.tileData.width, splat.tileData.height));
+    const distance = Math.max(splat.tileData.width, splat.tileData.height);
+    const sight = computeSightFromPoint(token.center, distance);
     const sightMask = new PIXI.Graphics();
-    sightMask.moveTo(origin.x, origin.y);
+    sightMask.moveTo(0, 0);
     sightMask.beginFill(1, 1);
     sightMask.drawPolygon(sight);
     sightMask.endFill();
-    //canvas.tiles.addChild(sightMask); //? Why do I have to add this?
-    splat.sightMask = sightMask;
+    const sightContainer = new PIXI.Container();
+    sightContainer.addChild(sightMask);
+    splat.sightMask = sightContainer;
   }
-
+  console.log('splats', splats);
   return splats;
 }
 
 function saveTokenState(token) {
   log(LogLevel.DEBUG, 'saveTokenState:', token);
-  log(LogLevel.DEBUG, 'saveTokenState id:' + token.name);
+  log(LogLevel.DEBUG, 'saveTokenState name:' + token.data.name);
 
-  //check if linked token and then
-  let saveObj: Partial<SaveObject> = {};
-  if (token.x) saveObj.x = token.x;
-  if (token.y) saveObj.y = token.y;
-  if (token.actorData.data?.attributes?.hp?.value) {
-    saveObj.hp = token.actorData.data.attributes.hp.value;
-  } else {
-    saveObj.hp = game.actors.get(token.actorId).data.data.attributes.hp.value;
-  }
+  let saveObj: SaveObject = {
+    centerX: token.center.x,
+    centerY: token.center.y,
+    hp: token.actor.data.data.attributes.hp.value,
+  };
 
   saveObj = JSON.parse(JSON.stringify(saveObj));
   log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
-
-  lastTokenState[token._id] = Object.assign(saveObj);
+  lastTokenState[token.id] = Object.assign(saveObj);
 }
 
 function getDirectionNrml(lastPosition: Point, changes: any): PIXI.Point {
@@ -383,24 +382,13 @@ async function splatToken(splats: Array<Splat>) {
     splat.text.y -= randY;
 
     maskContainer.addChild(splat.text);
-    const tokenCenterPt = centerOnGrid(new PIXI.Point(splat.token.x, splat.token.y));
+    const tokenCenterPt = new PIXI.Point(splat.token.center.x, splat.token.center.y);
     maskContainer.x = tokenCenterPt.x;
     maskContainer.y = tokenCenterPt.y;
     canvas.effects.addChild(maskContainer);
     splat.container = maskContainer;
-    tokenSplats.push(splat);
     log(LogLevel.DEBUG, 'splatToken: maskContainer (x,y): ', maskContainer.x, maskContainer.y);
   });
-}
-
-// this could be in functional style
-function centerOnGrid(pointOrX: PIXI.Point | number, y?: number): PIXI.Point {
-  if (y && typeof pointOrX == 'number') {
-    return new PIXI.Point(pointOrX + canvas.grid.size / 2, y + canvas.grid.size / 2);
-  }
-  const p = <PIXI.Point>pointOrX;
-  p.set((p.x += canvas.grid.size / 2), (p.y += canvas.grid.size / 2));
-  return p;
 }
 
 async function generateTiles(splats: any[]) {
@@ -411,15 +399,24 @@ async function generateTiles(splats: any[]) {
 
     log(LogLevel.DEBUG, 'generateTiles splat.tileData: ', splat.tileData);
 
+    // tile.x = currToken.x;
+    // tile.y = currToken.y;
+    console.log('splat.text.xy', splat.text.x, splat.text.y, splat.tileData.token);
     if (CONFIG.logLevel >= LogLevel.DEBUG) {
       const myRect = new PIXI.Graphics();
       myRect.lineStyle(2, 0xff00ff).drawRect(tile.x, tile.y, tile.width, tile.height);
       canvas.drawings.addChild(myRect);
       log(LogLevel.DEBUG, 'generateTiles: added Rect');
     }
+    const container = new PIXI.Container();
 
-    //tile.mask = splat.sightMask;
     tile.addChild(splat.text);
+    //container.addChild(splat.text);
+    //container.addChild(splat.sightMask);
+    //container.mask = splat.sightMask;
+    //tile.addChild(splat.text);
+    //const ourToken = canvas.tokens.placeables.filter((t) => t._id === splat.tileData.token.actorId)[0];
+    //splat.token.addChild(splat.text);
     canvas.tiles.addChild(tile);
   });
 }

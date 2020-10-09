@@ -26,3 +26,4 @@ This is a work in progress.
 1. clearly separate token from tokenData objects
 1. implement Tile pool to reuse tiles instead of creating new.
 1. thank vance and skimble on release
+1. use token velocity for direction?

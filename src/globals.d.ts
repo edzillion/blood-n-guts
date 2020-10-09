@@ -32,8 +32,8 @@ interface ViolenceLevel {
 }
 
 interface SaveObject {
-  x: number;
-  y: number;
+  centerX: number;
+  centerY: number;
   hp: number;
 }
 
