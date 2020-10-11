@@ -132,13 +132,13 @@ async function checkForMovement(token: Token, changes) {
 
       const startPtCentered = new PIXI.Point(lastTokenState[token.id].centerX, lastTokenState[token.id].centerY);
       const endPtCentered = new PIXI.Point(token.center.x, token.center.y);
-      const spl = generateSplatTrail(token);
-      // const splats = generateSplats(
-      //   token,
-      //   splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
-      //   game.settings.get(MODULE_ID, 'trailSplatSize'),
-      //   game.settings.get(MODULE_ID, 'trailSplatDensity'),
-      // );
+      const splats = generateSplatTrail(
+        token,
+        splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
+        game.settings.get(MODULE_ID, 'trailSplatSize'),
+        game.settings.get(MODULE_ID, 'trailSplatDensity'),
+        'trail',
+      );
       //splats.x = token.center.x;
       //splats.y = token.center.y;
 
@@ -149,48 +149,47 @@ async function checkForMovement(token: Token, changes) {
 
 async function checkForDamage(token: Token, actorDataChanges) {
   log(LogLevel.DEBUG, 'last saves:', lastTokenState);
+  if (!actorDataChanges?.data?.attributes?.hp) return;
 
-  //if (!actorDataChanges?.data?.attributes?.hp) return;
-  return;
+  //const tokenId = token.data?._id ? token.data._id : token.id;
+  const currentHP = actorDataChanges.data.attributes.hp.value;
+  const lastHP = lastTokenState[token.id].hp;
 
-  // //const tokenId = token.data?._id ? token.data._id : token.id;
-  // const currentHP = actorDataChanges.data.attributes.hp.value;
-  // const lastHP = lastTokenState[token.id].hp;
+  if (currentHP < lastHP) {
+    log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - hp down');
 
-  // if (currentHP < lastHP) {
-  //   log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - hp down');
+    const splats = generateSplatTrail(
+      token,
+      splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
+      game.settings.get(MODULE_ID, 'floorSplatSize'),
+      game.settings.get(MODULE_ID, 'floorSplatDensity'),
+      'floor',
+    );
+    // splatFloor(splats);
+    // splats = generateSplats(
+    //   token,
+    //   splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
+    //   game.settings.get(MODULE_ID, 'tokenSplatSize'),
+    //   game.settings.get(MODULE_ID, 'tokenSplatDensity'),
+    // );
+    // splatToken(splats);
 
-  //   let splats = generateSplats(
-  //     token,
-  //     splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
-  //     game.settings.get(MODULE_ID, 'floorSplatSize'),
-  //     game.settings.get(MODULE_ID, 'floorSplatDensity'),
-  //   );
-  //   splatFloor(splats);
-  //   splats = generateSplats(
-  //     token,
-  //     splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
-  //     game.settings.get(MODULE_ID, 'tokenSplatSize'),
-  //     game.settings.get(MODULE_ID, 'tokenSplatDensity'),
-  //   );
-  //   splatToken(splats);
+    await token.setFlag(MODULE_ID, 'bleeding', true);
+    log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:true');
 
-  //   await token.setFlag(MODULE_ID, 'bleeding', true);
-  //   log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:true');
-
-  //   if (actorDataChanges.data.attributes.hp.value == 0) {
-  //     log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
-  //     splats = generateSplats(
-  //       token,
-  //       splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
-  //       game.settings.get(MODULE_ID, 'floorSplatSize'),
-  //       game.settings.get(MODULE_ID, 'floorSplatDensity') * 2,
-  //     );
-  //   }
-  // } else if (currentHP > lastHP) {
-  //   await token.unsetFlag(MODULE_ID, 'bleeding');
-  //   log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:unset');
-  // }
+    if (actorDataChanges.data.attributes.hp.value == 0) {
+      log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
+      // generateSplats(
+      //   token,
+      //   splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
+      //   game.settings.get(MODULE_ID, 'floorSplatSize'),
+      //   game.settings.get(MODULE_ID, 'floorSplatDensity') * 2,
+      // );
+    }
+  } else if (currentHP > lastHP) {
+    await token.unsetFlag(MODULE_ID, 'bleeding');
+    log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:unset');
+  }
 }
 
 function generateSplats(token: Token, font: SplatFont, size: number, density: number): PIXI.Container {
@@ -595,80 +594,54 @@ function getSplatsBounds(splats) {
   return [lowestX, lowestY, highestX, highestY];
 }
 
-const generateSplatTrail = (token) => {
-  const glyphArray: Array<string> = Array.from({ length: game.settings.get(MODULE_ID, 'trailSplatDensity') }, () =>
-    getRandomGlyph(splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')]),
-  );
+function alignSplatContainer(splatContainer) {
+  let lowestX = canvas.dimensions.sceneWidth;
+  let lowestY = canvas.dimensions.sceneHeight;
+  let highestX = 0;
+  let highestY = 0;
+  for (let i = 0; i < splatContainer.children.length; i++) {
+    const txt = splatContainer.children[i];
+    if (txt.x < lowestX) {
+      console.log('lowestX', txt.x);
+      lowestX = txt.x;
+    }
+    if (txt.y < lowestY) {
+      console.log('lowestY', txt.y);
+      lowestY = txt.y;
+    }
+    if (txt.x + txt.width > highestX) {
+      console.log('highestX', txt.x);
+      highestX = txt.x + txt.width;
+    }
+    if (txt.y + txt.height > highestY) {
+      console.log('highestY', txt.y);
+      highestY = txt.y + txt.height;
+    }
+  }
+  // for (let j = 0; j < splatContainer.children.length; j++) {
+  //   const s = splatContainer.children[j];
+  //   s.text.x -= lowestX;
+  //   s.text.y -= lowestY;
+  // }
+
+  return [lowestX, lowestY, highestX, highestY];
+}
+
+const generateSplatTrail = (token, font, size, density, type) => {
+  const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
 
   const style: PIXI.TextStyle = new PIXI.TextStyle({
-    fontFamily: splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')].name,
-    fontSize: game.settings.get(MODULE_ID, 'trailSplatSize'),
+    fontFamily: font.name,
+    fontSize: size,
     fill: lookupTokenBloodColor(token),
     align: 'center',
   });
 
-  const splatsContainer = new PIXI.Container();
-
-  const lastPosOrigin = new PIXI.Point(
-    lastTokenState[token.id].centerX - token.center.x,
-    lastTokenState[token.id].centerY - token.center.y,
-  );
-  const currPosOrigin = new PIXI.Point(0, 0);
-
-  const direction = getDirectionNrml(lastPosOrigin, currPosOrigin);
-  console.log('poss: ', lastPosOrigin, currPosOrigin);
-
-  const pixelSpread = canvas.grid.size * game.settings.get(MODULE_ID, 'splatSpread');
-  const rand = randomBoxMuller() * pixelSpread - pixelSpread / 2;
-
-  log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpread, rand);
-  log(LogLevel.DEBUG, 'splatTrail: direction ', direction);
-
-  // first go half the distance in the direction we are going
-  const controlPt: PIXI.Point = new PIXI.Point(
-    lastPosOrigin.x + direction.x * (canvas.grid.size / 2),
-    lastPosOrigin.y + direction.y * (canvas.grid.size / 2),
-  );
-  // then swap direction y,x to give us an position to the side
-  controlPt.set(controlPt.x + direction.y * rand, controlPt.y + direction.x * rand);
-  console.log('ctrl', controlPt);
-  // the distance between each point in the trail
-  const increment = 1 / (game.settings.get(MODULE_ID, 'trailSplatDensity') - 1);
-  let dist = 0;
-  const splats: Array<Splat> = glyphArray.map((glyph) => {
-    const tm = PIXI.TextMetrics.measureText(glyph, style);
-    const text = new PIXI.Text(glyph, style);
-    const pt = getPointAt(lastPosOrigin, controlPt, currPosOrigin, dist);
-    text.x = pt.x - tm.width / 2;
-    text.y = pt.y - tm.height / 2;
-    console.log(increment);
-    dist += increment;
-    return {
-      text: text,
-      token: token,
-      tileData: {
-        img: 'data:image/png;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
-        width: tm.width,
-        height: tm.height,
-        x: pt.x - tm.width / 2,
-        y: pt.y - tm.height / 2,
-      },
-    };
-  });
-
-  const blah = getSplatsBounds(splats);
-  console.log('(' + blah[0] + ',' + blah[1] + ')');
-  console.log('(' + blah[2] + ',' + blah[3] + ')');
-
-  splatsContainer.x = blah[0];
-  splatsContainer.y = blah[1];
-  for (let j = 0; j < splats.length; j++) {
-    splatsContainer.addChild(splats[j].text);
-    // drawDebugRect(splats[j].text, 1, 0xffffff);
-  }
+  const splatsContainer = generateSplatPositions(type, token, glyphArray, style);
+  console.log(splatsContainer);
 
   const maxDistance = Math.max(splatsContainer.width, splatsContainer.height);
-  const sight = computeSightFromPoint(token.center, 200);
+  const sight = computeSightFromPoint(token.center, maxDistance);
 
   // log(LogLevel.DEBUG, 'generateSplats sightMask');
   const sightMask = new PIXI.Graphics();
@@ -676,8 +649,8 @@ const generateSplatTrail = (token) => {
   sightMask.drawPolygon(sight);
   sightMask.endFill();
 
-  sightMask.x -= blah[0];
-  sightMask.y -= blah[1];
+  sightMask.x -= splatsContainer.x;
+  sightMask.y -= splatsContainer.y;
   splatsContainer.addChild(sightMask);
   splatsContainer.mask = sightMask;
 
@@ -686,9 +659,108 @@ const generateSplatTrail = (token) => {
 
   canvas.tiles.addChild(splatsContainer);
   drawDebugRect(splatsContainer);
-
-  // as a font the glyphs are always taller than they are wide
-  // const textHeight = PIXI.TextMetrics.measureText(glyphArray[0], style).height;
-  // const maxDistance = 200;
-  // const sight = computeSightFromPoint(token.center, maxDistance);
 };
+
+const generateSplatPositions = (type, token, glyphArray, style) => {
+  const pixelSpread = canvas.grid.size * game.settings.get(MODULE_ID, 'splatSpread');
+
+  log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpread);
+
+  let splats: Array<PIXI.Text>;
+  const splatsContainer = new PIXI.Container();
+
+  switch (type) {
+    case 'floor': {
+      log(LogLevel.DEBUG, 'generateSplatPositions: floor ');
+      splats = glyphArray.map((glyph) => {
+        const tm = PIXI.TextMetrics.measureText(glyph, style);
+        const randX = randomBoxMuller() * pixelSpread - pixelSpread / 2;
+        const randY = randomBoxMuller() * pixelSpread - pixelSpread / 2;
+        const text = new PIXI.Text(glyph, style);
+        text.x = randX - tm.width / 2;
+        text.y = randY - tm.height / 2;
+        return text;
+      });
+      break;
+    }
+    case 'trail': {
+      log(LogLevel.DEBUG, 'generateSplatPositions: trail ');
+
+      const lastPosOrigin = new PIXI.Point(
+        lastTokenState[token.id].centerX - token.center.x,
+        lastTokenState[token.id].centerY - token.center.y,
+      );
+      const currPosOrigin = new PIXI.Point(0, 0);
+      const direction = getDirectionNrml(lastPosOrigin, currPosOrigin);
+
+      // first go half the distance in the direction we are going
+      const controlPt: PIXI.Point = new PIXI.Point(
+        lastPosOrigin.x + direction.x * (canvas.grid.size / 2),
+        lastPosOrigin.y + direction.y * (canvas.grid.size / 2),
+      );
+      const rand = randomBoxMuller() * pixelSpread - pixelSpread / 2;
+      // then swap direction y,x to give us an position to the side
+      controlPt.set(controlPt.x + direction.y * rand, controlPt.y + direction.x * rand);
+      console.log('ctrl', controlPt);
+
+      const increment = 1 / (game.settings.get(MODULE_ID, 'trailSplatDensity') - 1);
+      let dist = 0;
+      splats = glyphArray.map((glyph) => {
+        const tm = PIXI.TextMetrics.measureText(glyph, style);
+        const text = new PIXI.Text(glyph, style);
+        const pt = getPointAt(lastPosOrigin, controlPt, currPosOrigin, dist);
+        text.x = pt.x - tm.width / 2;
+        text.y = pt.y - tm.height / 2;
+        dist += increment;
+        return text;
+      });
+      break;
+    }
+  }
+
+  const blah = getSplatsBounds2(splats);
+  console.log('(' + blah[0] + ',' + blah[1] + ')');
+  console.log('(' + blah[2] + ',' + blah[3] + ')');
+
+  splatsContainer.x = blah[0];
+  splatsContainer.y = blah[1];
+  for (let j = 0; j < splats.length; j++) {
+    splatsContainer.addChild(splats[j]);
+    drawDebugRect(splats[j], 1, 0xffffff);
+  }
+
+  return splatsContainer;
+};
+
+function getSplatsBounds2(splats) {
+  let lowestX = canvas.dimensions.sceneWidth;
+  let lowestY = canvas.dimensions.sceneHeight;
+  let highestX = 0;
+  let highestY = 0;
+  for (let i = 0; i < splats.length; i++) {
+    const txt = splats[i];
+    if (txt.x < lowestX) {
+      console.log('lowestX', txt.x);
+      lowestX = txt.x;
+    }
+    if (txt.y < lowestY) {
+      console.log('lowestY', txt.y);
+      lowestY = txt.y;
+    }
+    if (txt.x + txt.width > highestX) {
+      console.log('highestX', txt.x);
+      highestX = txt.x + txt.width;
+    }
+    if (txt.y + txt.height > highestY) {
+      console.log('highestY', txt.y);
+      highestY = txt.y + txt.height;
+    }
+  }
+  for (let j = 0; j < splats.length; j++) {
+    const t = splats[j];
+    t.x -= lowestX;
+    t.y -= lowestY;
+  }
+
+  return [lowestX, lowestY, highestX, highestY];
+}
