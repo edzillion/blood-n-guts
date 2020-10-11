@@ -182,23 +182,6 @@ async function checkForDamage(token: Token, actorDataChanges) {
   }
 }
 
-function saveTokenState(token) {
-  log(LogLevel.DEBUG, 'saveTokenState:', token);
-  log(LogLevel.DEBUG, 'saveTokenState name:' + token.data.name);
-
-  let saveObj: SaveObject = {
-    x: token.x,
-    y: token.y,
-    centerX: token.center.x,
-    centerY: token.center.y,
-    hp: token.actor.data.data.attributes.hp.value,
-  };
-
-  saveObj = JSON.parse(JSON.stringify(saveObj));
-  log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
-  lastTokenState[token.id] = Object.assign(saveObj);
-}
-
 const drawFloorSplats = (token: Token, font: SplatFont, size: number, density: number) => {
   if (!density) return;
 
@@ -460,4 +443,21 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
   splatsContainer.y += canvas.grid.size / 2;
   //canvas.effects.addChild(splatsContainer);
   token.addChildAt(splatsContainer, 7);
+};
+
+const saveTokenState = (token: Token): void => {
+  log(LogLevel.DEBUG, 'saveTokenState:', token);
+  log(LogLevel.DEBUG, 'saveTokenState name:' + token.data.name);
+
+  let saveObj: SaveObject = {
+    x: token.x,
+    y: token.y,
+    centerX: token.center.x,
+    centerY: token.center.y,
+    hp: token.actor.data.data.attributes.hp.value,
+  };
+
+  saveObj = JSON.parse(JSON.stringify(saveObj));
+  log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
+  lastTokenState[token.id] = Object.assign(saveObj);
 };
