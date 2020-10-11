@@ -3,23 +3,23 @@
     <h2 class="module-header">Blood n Guts - Advanced Configuration</h2>
     <div class="form-group submenu">
       <label>Floor Splat Font:</label>
-      <select type="select" class="select-blood-n-guts-font" name="select-blood-n-guts-font">    
-        <option> splatter </option>
-        <option> WC Rhesus A Bta </option>                       
+      <select type="select" class="advanced-config-select-font" name="floorSplatFont">    
+        <option value="splatter"> splatter </option>
+        <option value="WC Rhesus A Bta"> WC Rhesus A Bta </option>                       
       </select>      
       <p class="notes">Select the font to use for blood splatter on the floor</p>
     </div>
     <div class="form-group">
       <label>Token Splat Font:</label>
-      <select type="select" class="select-blood-n-guts-font" name="select-blood-n-guts-font">    
+      <select type="select" class="advanced-config-select-font" name="tokenSplatFont">    
         <option> splatter </option>
         <option> WC Rhesus A Bta </option>                       
       </select>
       <p class="notes">Select the font to use for token blood splatter</p>
     </div>
     <div class="form-group">
-      <label>Floor Splat Font:</label>
-      <select type="select" class="select-blood-n-guts-font" name="select-blood-n-guts-font">    
+      <label>Trail Splat Font:</label>
+      <select type="select" class="advanced-config-select-font" name="trailSplatFont">    
         <option> splatter </option>
         <option> WC Rhesus A Bta </option>                       
       </select>
@@ -28,46 +28,53 @@
     <div class="form-group">
       <label>Floor Splat Size</label>
       <div class="form-fields">
-        <input type="text" name="blood-n-guts.floorSplatSize" value="200" data-dtype="Number">
+        <input type="text" class="advanced-config-font-details" name="floorSplatSize" data-dtype="Number">
       </div>
       <p class="notes">This will increase the size of floor splats</p>
     </div>
     <div class="form-group">
       <label>Floor Splat Density</label>
       <div class="form-fields">
-        <input type="text" name="blood-n-guts.floorSplatDensity" value="100" data-dtype="Number">
+        <input type="text" class="advanced-config-font-details" name="floorSplatDensity" data-dtype="Number">
       </div>
       <p class="notes">This will increase the amount of floor spats per hit</p>
     </div>
     <div class="form-group">
       <label>Token Splat Size</label>
       <div class="form-fields">
-        <input type="text" name="blood-n-guts.tokenSplatSize" value="200" data-dtype="Number">
+        <input type="text" class="advanced-config-font-details" name="tokenSplatSize" data-dtype="Number">
       </div>
       <p class="notes">This will increase the size of token splats</p>
     </div>
     <div class="form-group">
       <label>Token Splat Density</label>
       <div class="form-fields">
-        <input type="text" name="blood-n-guts.tokenSplatDensity" value="100" data-dtype="Number">
+        <input type="text" class="advanced-config-font-details" name="tokenSplatDensity" data-dtype="Number">
       </div>
       <p class="notes">This will increase the amount of token splats per hit</p>
     </div>
     <div class="form-group">
       <label>Trail Splat Size</label>
       <div class="form-fields">
-        <input type="text" name="blood-n-guts.trailSplatSize" value="200" data-dtype="Number">
+        <input type="text" class="advanced-config-font-details" name="trailSplatSize" data-dtype="Number">
       </div>
       <p class="notes">This will increase the size of splats in a blood trail</p>
     </div>
     <div class="form-group">
       <label>Trail Splat Density</label>
       <div class="form-fields">
-        <input type="text" name="blood-n-guts.trailSplatDensity" value="100" data-dtype="Number">
+        <input type="text" class="advanced-config-font-details" name="trailSplatDensity"  data-dtype="Number">
       </div>
       <p class="notes">This will increase the amount of blood splats in a trail</p>
     </div>
-      <button type="submit" name="submit" value="1"><i class="fas fa-dice"></i>Submit</button>
+    <div class="form-group">
+      <label>Splat Spread</label>
+      <div class="form-fields">
+        <input type="text" class="advanced-config-font-details" name="splatSpread"  data-dtype="Number">
+      </div>
+      <p class="notes">This will determine the random spread of splats</p>
+    </div>
+      <button type="submit" class="advanced-config-submit" name="submit"><i class="fas fa-dice"></i>Submit</button>
   </div>
 </form>
 

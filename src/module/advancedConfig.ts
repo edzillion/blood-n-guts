@@ -1,44 +1,31 @@
-interface Font {
-  name: string;
-  size: number;
-  availableGlyphs: Array<string>;  
-}
+import { log, LogLevel } from './logging';
+import { MODULE_ID } from '../constants';
 
 export class AdvancedConfig extends FormApplication {
+  font: SplatFont;
+  allAsciiCharacters: string;
 
-  font:Font;
-  allAsciiCharacters:String;
-
-  constructor(...args) {
-    // @ts-ignore
-    super(...args);
+  constructor(object: any, options?: FormApplicationOptions) {
+    super(object, options);
+    console.log(object, options);
+    game.settings.sheet.close();
     game.users.apps.push(this);
-    // @ts-ignore
-    //this.activities = game.settings.get("blood-n-guts", "activities");
-    let allAsciiCharacters = Array.from(Array(127).keys()).slice(32).map(a => String.fromCharCode(a));
-    console.log(allAsciiCharacters);
   }
 
-  
-  static get defaultOptions() {
+  static get defaultOptions(): FormApplicationOptions {
     const options = super.defaultOptions;
-    options.title = "Configure Blood n Guts Advanced Settings";
-    options.id = "blood-n-guts";
-    options.template = "modules/blood-n-guts/templates/advanced-config.html";
+    options.title = 'Configure Blood n Guts Advanced Settings';
+    options.id = MODULE_ID;
+    options.template = 'modules/blood-n-guts/templates/advanced-config.html';
     options.closeOnSubmit = true;
     options.popOut = true;
     options.width = 600;
-    options.height = "auto";
+    options.height = 'auto';
     return options;
   }
 
-  async getData() {
-    // @ts-ignore
-    // const activities = this.activities;
-    // return {
-    //   activities,
-    // };
-  }
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  async getData() {}
 
   render(force, context = {}) {
     return super.render(force, context);
@@ -46,18 +33,29 @@ export class AdvancedConfig extends FormApplication {
 
   activateListeners(html) {
     super.activateListeners(html);
-    
-    let selector = html.find(".select-blood-n-guts-font");
-    selector.change((event) => this.changeFontDisplayed(event));
-  }
 
-  changeFontDisplayed(event) {
-        // Set up some variables
-    console.log(event)
-    this.font.name = event.target.value;    
+    // pre-select font dropdowns & add change listener
+    const selects = html.find('.advanced-config-select-font');
+    for (let i = 0; i < selects.length; i++) {
+      for (let j = 0; j < selects[i].options.length; j++) {
+        if (selects[i].options[j].value === game.settings.get(MODULE_ID, selects[i].name)) {
+          selects[i].selectedIndex = j;
+          break;
+        }
+      }
+    }
+    // pre-fill font size, density inputs
+    const inputs = html.find('.advanced-config-font-details');
+    for (let i = 0; i < inputs.length; i++) {
+      inputs[i].value = game.settings.get(MODULE_ID, inputs[i].name);
+    }
   }
 
   async _updateObject(event, formData) {
+    console.log(event, formData);
+    for (const setting in formData) {
+      game.settings.set(MODULE_ID, setting, formData[setting]);
+    }
     return;
   }
 }

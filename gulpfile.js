@@ -164,11 +164,11 @@ async function copyFiles() {
 		'lang',
 		'fonts',
 		'assets',
-		'data',
 		'templates',
 		'module.json',
 		'system.json',
 		'template.json',
+		'blood-n-guts.css'
 	];
 	try {
 		for (const file of statics) {

@@ -1,9 +1,0 @@
-@font-face {
-    font-family: 'splatter';
-    src: url('splatter.woff2') format('woff2'),
-        url('splatter.woff') format('woff');
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
-}
-
