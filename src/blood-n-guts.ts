@@ -180,7 +180,6 @@ async function checkForDamage(token: Token, actorDataChanges) {
         splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
         game.settings.get(MODULE_ID, 'floorSplatSize'),
         game.settings.get(MODULE_ID, 'floorSplatDensity') * 2,
-        game.settings.get(MODULE_ID, 'splatSpread'),
       );
     }
   } else if (currentHP > lastHP) {
@@ -189,13 +188,7 @@ async function checkForDamage(token: Token, actorDataChanges) {
   }
 }
 
-function generateSplats(
-  token: Token,
-  font: SplatFont,
-  size: number,
-  density: number,
-  splatSpread?: number,
-): Array<Splat> {
+function generateSplats(token: Token, font: SplatFont, size: number, density: number): Array<Splat> {
   if (density === 0) return;
 
   log(LogLevel.INFO, 'generateSplats', font);
@@ -209,17 +202,22 @@ function generateSplats(
     align: 'center',
   });
 
-  const pixelSpread = splatSpread ? canvas.grid.size * splatSpread : 0;
-  const randX = randomBoxMuller() * pixelSpread - pixelSpread / 2;
-  const randY = randomBoxMuller() * pixelSpread - pixelSpread / 2;
+  const pixelSpread = canvas.grid.size * game.settings.get(MODULE_ID, 'splatSpread');
 
-  log(LogLevel.DEBUG, 'randX,Y', randX, randY);
+  // as a font the glyphs are always taller than they are wide
+  const textHeight = PIXI.TextMetrics.measureText(glyphArray[0], style).height;
+  const maxDistance = textHeight / 2 + pixelSpread;
+  const sight = computeSightFromPoint(token.center, maxDistance);
 
   const splats: Array<Splat> = glyphArray.map((glyph) => {
     const tm = PIXI.TextMetrics.measureText(glyph, style);
     const text = new PIXI.Text(glyph, style);
-    // text.x = token.center.x - tm.width / 2 + randX;
-    // text.y = token.center.y - tm.height / 2 + randY;
+    const randX = randomBoxMuller() * pixelSpread - pixelSpread / 2;
+    const randY = randomBoxMuller() * pixelSpread - pixelSpread / 2;
+
+    log(LogLevel.DEBUG, 'randX,Y', randX, randY);
+    text.x = -tm.width / 2;
+    text.y = -tm.height / 2;
     return {
       text: text,
       token: token,
@@ -227,8 +225,8 @@ function generateSplats(
         img: 'data:image/png;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
         width: tm.width,
         height: tm.height,
-        x: token.center.x - tm.width / 2 + randX,
-        y: token.center.y - tm.height / 2 + randY,
+        x: token.center.x + randX, // - tm.width / 2 + randX,
+        y: token.center.y + randY, // - tm.height / 2 + randY,
       },
     };
   });
@@ -237,18 +235,14 @@ function generateSplats(
     const splat = splats[i];
 
     log(LogLevel.DEBUG, 'generateSplats splat.tileData: ', splat.tileData);
-    const distance = Math.max(splat.tileData.width, splat.tileData.height);
-    const sight = computeSightFromPoint(token.center, distance);
     const sightMask = new PIXI.Graphics();
-    sightMask.moveTo(0, 0);
     sightMask.beginFill(1, 1);
     sightMask.drawPolygon(sight);
     sightMask.endFill();
-    const sightContainer = new PIXI.Container();
-    sightContainer.addChild(sightMask);
-    splat.sightMask = sightContainer;
+
+    splat.sightMask = sightMask;
   }
-  console.log('splats', splats);
+
   return splats;
 }
 
@@ -257,6 +251,8 @@ function saveTokenState(token) {
   log(LogLevel.DEBUG, 'saveTokenState name:' + token.data.name);
 
   let saveObj: SaveObject = {
+    x: token.x,
+    y: token.y,
     centerX: token.center.x,
     centerY: token.center.y,
     hp: token.actor.data.data.attributes.hp.value,
@@ -286,18 +282,12 @@ async function splatFloor(splats: Array<Splat>) {
   generateTiles(splats);
 }
 
-async function splatTrail(
-  splats: Array<Splat>,
-  startPtCentered: PIXI.Point,
-  endPtCentered: PIXI.Point,
-  splatSpread?: number,
-) {
+async function splatTrail(splats: Array<Splat>, startPtCentered: PIXI.Point, endPtCentered: PIXI.Point) {
+  if (!game.settings.get(MODULE_ID, 'trailSplatDensity')) return;
   log(LogLevel.INFO, 'splatTrail: (start), (end) ', startPtCentered, endPtCentered);
   const direction = getDirectionNrml(startPtCentered, endPtCentered);
 
-  const pixelSpread = splatSpread
-    ? canvas.grid.size * splatSpread
-    : canvas.grid.size * game.settings.get(MODULE_ID, 'splatSpread');
+  const pixelSpread = canvas.grid.size * game.settings.get(MODULE_ID, 'splatSpread');
   const rand = randomBoxMuller() * pixelSpread - pixelSpread / 2;
 
   log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpread, rand);
@@ -313,8 +303,6 @@ async function splatTrail(
 
   for (let i = 0, j = 0; i < splats.length; i++, j += 1 / game.settings.get(MODULE_ID, 'trailSplatDensity')) {
     [{ x: splats[i].tileData.x, y: splats[i].tileData.y }] = [getPointAt(startPtCentered, controlPt, endPtCentered, j)];
-    splats[i].tileData.x -= splats[i].tileData.width / 2;
-    splats[i].tileData.y -= splats[i].tileData.height / 2;
   }
 
   generateTiles(splats);
@@ -397,27 +385,35 @@ async function generateTiles(splats: any[]) {
   splats.map(async (splat) => {
     const tile: Tile = await Tile.create(splat.tileData);
 
-    log(LogLevel.DEBUG, 'generateTiles splat.tileData: ', splat.tileData);
-
-    // tile.x = currToken.x;
-    // tile.y = currToken.y;
-    console.log('splat.text.xy', splat.text.x, splat.text.y, splat.tileData.token);
-    if (CONFIG.logLevel >= LogLevel.DEBUG) {
-      const myRect = new PIXI.Graphics();
-      myRect.lineStyle(2, 0xff00ff).drawRect(tile.x, tile.y, tile.width, tile.height);
-      canvas.drawings.addChild(myRect);
-      log(LogLevel.DEBUG, 'generateTiles: added Rect');
-    }
-    const container = new PIXI.Container();
+    log(LogLevel.DEBUG, 'generateTiles splat: ', splat);
 
     tile.addChild(splat.text);
-    //container.addChild(splat.text);
-    //container.addChild(splat.sightMask);
-    //container.mask = splat.sightMask;
-    //tile.addChild(splat.text);
-    //const ourToken = canvas.tokens.placeables.filter((t) => t._id === splat.tileData.token.actorId)[0];
-    //splat.token.addChild(splat.text);
+    tile.addChild(splat.sightMask);
+    //tile.mask = splat.sightMask;
+    // tile.x = splat.token.center.x;
+    // tile.y = splat.token.center.y;
     canvas.tiles.addChild(tile);
+
+    if (CONFIG.logLevel >= LogLevel.DEBUG) {
+      const myRect = new PIXI.Graphics();
+      myRect
+        .lineStyle(1, 0xffffff)
+        .drawRect(tile.x - tile.width / 2, tile.y - tile.height / 2, tile.width, tile.height);
+      canvas.drawings.addChild(myRect);
+      log(LogLevel.DEBUG, 'generateTiles: added Rect');
+
+      const myRect2 = new PIXI.Graphics();
+      myRect2
+        .lineStyle(5, 0x0000ff)
+        .drawRect(splat.sightMask.x, splat.sightMask.y, splat.sightMask.width, splat.sightMask.height);
+      canvas.drawings.addChild(myRect2);
+      log(LogLevel.DEBUG, 'generateTiles: added sightMask');
+
+      const myRect3 = new PIXI.Graphics();
+      myRect3.lineStyle(2, 0xff0000).drawRect(splat.text.x, splat.text.y, splat.text.width, splat.text.height);
+      canvas.drawings.addChild(myRect3);
+      log(LogLevel.DEBUG, 'generateTiles: added sightMask');
+    }
   });
 }
 
@@ -439,6 +435,19 @@ function computeSightFromPoint(origin: Point, range: number): [number] {
     density,
     walls,
   );
+  sight.fov.points;
+  let lowestX = canvas.dimensions.sceneWidth;
+  let lowestY = canvas.dimensions.sceneHeight;
+
+  for (let i = 0; i < sight.fov.points.length; i += 2) {
+    console.log('currentLowestX:' + lowestX, 'currentLowestY:' + lowestY);
+    lowestX = sight.fov.points[i] < lowestX ? sight.fov.points[i] : lowestX;
+    lowestY = sight.fov.points[i + 1] < lowestY ? sight.fov.points[i + 1] : lowestY;
+  }
+  for (let j = 0; j < sight.fov.points.length; j += 2) {
+    sight.fov.points[j] -= origin.x;
+    sight.fov.points[j + 1] -= origin.y;
+  }
   return sight.fov.points;
 }
 

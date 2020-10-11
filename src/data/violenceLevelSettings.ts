@@ -6,7 +6,7 @@ export const level = [
     trailSplatSize: 35,
     floorSplatSize: 100,
     tokenSplatSize: 25,
-    splatSpread: 0.5,
+    splatSpread: 5,
   },
   {
     trailSplatDensity: 4,
