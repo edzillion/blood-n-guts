@@ -39,7 +39,7 @@ const lastTokenState: Array<SaveObject> = [];
 (document as any).fonts.onloadingdone = (fontFaceSetEvent) => {
   log(LogLevel.DEBUG, 'onloadingdone we have ' + fontFaceSetEvent.fontfaces.length + ' font faces loaded');
   const check = (document as any).fonts.check('1em splatter');
-  log(LogLevel.DEBUG, 'splatter loaded? ' + check); // true
+  log(LogLevel.DEBUG, 'splatter loaded? ' + check);
 };
 
 /* ------------------------------------ */
@@ -215,18 +215,15 @@ const drawFloorSplats = (token: Token, font: SplatFont, size: number, density: n
   });
 
   const offset = alignSplatsAndGetOffset(splats);
-  console.log('(' + offset.x + ',' + offset.y + ')');
-
   splatsContainer.x = offset.x;
   splatsContainer.y = offset.y;
   for (let j = 0; j < splats.length; j++) {
     splatsContainer.addChild(splats[j]);
-    //drawDebugRect(splats[j], 1, 0xffffff);
+    if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splats[j], 1, 0xffffff);
   }
   const maxDistance = Math.max(splatsContainer.width, splatsContainer.height);
   const sight = computeSightFromPoint(token.center, maxDistance);
 
-  // log(LogLevel.DEBUG, 'drawSplats sightMask');
   const sightMask = new PIXI.Graphics();
   sightMask.beginFill(1, 1);
   sightMask.drawPolygon(sight);
@@ -270,21 +267,20 @@ const drawTrailSplats = (token: Token, font: SplatFont, size: number, density: n
   const currPosOrigin = new PIXI.Point(0, 0);
   const direction = getDirectionNrml(lastPosOrigin, currPosOrigin);
 
-  // first go half the distance in the direction we are going
-  const controlPt: PIXI.Point = new PIXI.Point(
-    lastPosOrigin.x + direction.x * (canvas.grid.size / 2),
-    lastPosOrigin.y + direction.y * (canvas.grid.size / 2),
-  );
-
   //horiz or vert movement
   const pixelSpread = direction.x
     ? token.width * game.settings.get(MODULE_ID, 'splatSpread')
     : token.height * game.settings.get(MODULE_ID, 'splatSpread');
 
   const rand = randomBoxMuller() * pixelSpread - pixelSpread / 2;
+
+  // first go half the distance in the direction we are going
+  const controlPt: PIXI.Point = new PIXI.Point(
+    lastPosOrigin.x + direction.x * (canvas.grid.size / 2),
+    lastPosOrigin.y + direction.y * (canvas.grid.size / 2),
+  );
   // then swap direction y,x to give us an position to the side
   controlPt.set(controlPt.x + direction.y * rand, controlPt.y + direction.x * rand);
-  console.log('ctrl', controlPt);
 
   const increment = 1 / game.settings.get(MODULE_ID, 'trailSplatDensity');
   let dist = increment;
@@ -299,19 +295,16 @@ const drawTrailSplats = (token: Token, font: SplatFont, size: number, density: n
   });
 
   const offset = alignSplatsAndGetOffset(splats);
-  console.log('(' + offset.x + ',' + offset.y + ')');
-
   splatsContainer.x = offset.x;
   splatsContainer.y = offset.y;
   for (let j = 0; j < splats.length; j++) {
     splatsContainer.addChild(splats[j]);
-    //drawDebugRect(splats[j], 1, 0xffffff);
+    if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splats[j], 1, 0xffffff);
   }
 
   const maxDistance = Math.max(splatsContainer.width, splatsContainer.height);
   const sight = computeSightFromPoint(token.center, maxDistance);
 
-  // log(LogLevel.DEBUG, 'drawSplats sightMask');
   const sightMask = new PIXI.Graphics();
   sightMask.beginFill(1, 1);
   sightMask.drawPolygon(sight);
@@ -325,6 +318,7 @@ const drawTrailSplats = (token: Token, font: SplatFont, size: number, density: n
   splatsContainer.x += token.center.x;
   splatsContainer.y += token.center.y;
   canvas.tiles.addChild(splatsContainer);
+  if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
 };
 
 const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: number) => {
@@ -353,18 +347,6 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
 
   tokenSprite.width = token.width;
   tokenSprite.height = token.height;
-
-  // scale sprite down to grid bounds
-  // if (tokenSprite.width > tokenSprite.height) {
-  //   const w = canvas.grid.size / tokenSprite.width;
-  //   tokenSprite.height *= w;
-  //   tokenSprite.width = canvas.grid.size;
-  // } else {
-  //   const h = canvas.grid.size / tokenSprite.height;
-  //   tokenSprite.width *= h;
-  //   tokenSprite.height = canvas.grid.size;
-  // }
-
   maskSprite.width = tokenSprite.width;
   maskSprite.height = tokenSprite.height;
 
@@ -394,8 +376,8 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
 
   canvas.app.renderer.render(textureContainer, renderTexture);
 
-  const pixelSpreadX = token.width * game.settings.get(MODULE_ID, 'splatSpread');
-  const pixelSpreadY = token.height * game.settings.get(MODULE_ID, 'splatSpread');
+  const pixelSpreadX = token.width * game.settings.get(MODULE_ID, 'splatSpread') * 2;
+  const pixelSpreadY = token.height * game.settings.get(MODULE_ID, 'splatSpread') * 2;
 
   log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpreadX, pixelSpreadY);
 
