@@ -87,7 +87,8 @@ Hooks.once('ready', () => {
   for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
 });
 
-Hooks.on('createToken', (_scene, token) => {
+Hooks.on('createToken', (_scene, tokenData) => {
+  const token = new Token(tokenData);
   saveTokenState(token);
 });
 
@@ -237,7 +238,8 @@ const drawFloorSplats = (token: Token, font: SplatFont, size: number, density: n
   splatsContainer.x += token.center.x;
   splatsContainer.y += token.center.y;
   canvas.tiles.addChild(splatsContainer);
-  //drawDebugRect(splatsContainer);
+
+  if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
 };
 
 const drawTrailSplats = (token: Token, font: SplatFont, size: number, density: number) => {
@@ -342,7 +344,6 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
   const imgPath = token.data.img;
   const tokenSprite = PIXI.Sprite.from(imgPath);
   const maskSprite = PIXI.Sprite.from(imgPath);
-  // mergedSprite = PIXI.Sprite.from(imgPath);
 
   // scale sprite down to grid bounds
   if (tokenSprite.width > tokenSprite.height) {
@@ -359,8 +360,6 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
   maskSprite.height = tokenSprite.height;
 
   const textureContainer = new PIXI.Container();
-  //const maskContainer = new PIXI.Container();
-
   textureContainer.addChild(maskSprite);
 
   const bwMatrix = new PIXI.filters.ColorMatrixFilter();
@@ -384,7 +383,6 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
 
   splatsContainer.addChild(renderSprite);
 
-  //canvas.effects.addChild(maskContainer)
   canvas.app.renderer.render(textureContainer, renderTexture);
 
   const splats: Array<PIXI.Text> = glyphArray.map((glyph) => {
@@ -399,50 +397,18 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
   });
 
   const offset = alignSplatsAndGetOffset(splats);
-  console.log('(' + offset.x + ',' + offset.y + ')');
   splatsContainer.x += offset.x;
   splatsContainer.y += offset.y;
   renderSprite.x -= offset.x;
   renderSprite.y -= offset.y;
-
-  //maskContainer.addChild(splat.text);
-  //const tokenCenterPt = new PIXI.Point(splat.token.center.x, splat.token.center.y);
-  //maskContainer.x = tokenCenterPt.x;
-  //maskContainer.y = tokenCenterPt.y;
-  splatsContainer.mask = renderSprite;
-
-  const textureContainer2 = new PIXI.Container();
-  //const maskContainer = new PIXI.Container();
-  textureContainer2.addChild(tokenSprite);
-  textureContainer2.addChild(maskSprite);
-
-  const renderTexture2 = new PIXI.RenderTexture(
-    new PIXI.BaseRenderTexture({
-      width: tokenSprite.width,
-      height: tokenSprite.height,
-      // scaleMode: PIXI.SCALE_MODES.LINEAR,
-      // resolution: 1
-    }),
-  );
-
-  const mergedSprite = new PIXI.Sprite(renderTexture2);
-  mergedSprite.x -= canvas.grid.size / 2;
-  mergedSprite.y -= canvas.grid.size / 2;
-
-  //splatsContainer.addChild(renderSprite);
-
-  //canvas.effects.addChild(maskContainer)
-  canvas.app.renderer.render(textureContainer2, renderTexture2);
-
   tokenSprite.x -= offset.x;
   tokenSprite.y -= offset.y;
-  // tokenSprite.x -= canvas.grid.size / 2;
-  // tokenSprite.y -= canvas.grid.size / 2;
-  //splatsContainer.addChildAt(tokenSprite, 1);
-  splatsContainer.x += canvas.grid.size / 2;
-  splatsContainer.y += canvas.grid.size / 2;
-  //canvas.effects.addChild(splatsContainer);
-  token.addChildAt(splatsContainer, 7);
+
+  splatsContainer.x += token.width / 2;
+  splatsContainer.y += token.height / 2;
+
+  if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer, 2, 0x00ffff);
+  token.addChildAt(splatsContainer, token.children.length);
 };
 
 const saveTokenState = (token: Token): void => {
