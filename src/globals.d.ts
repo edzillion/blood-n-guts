@@ -1,24 +1,6 @@
-// eslint-disable-next-line no-var
-declare var bngConfig: BloodNGutsConfig;
-
-interface Window {
-  bloodNGutsConfig: BloodNGutsConfig;
-  testypoo: string;
-  violenceLevel: ViolenceLevel;
-}
-
 interface SplatFont {
   name: string;
   availableGlyphs: Array<string>;
-}
-
-interface Splat {
-  text: PIXI.Text;
-  container?: PIXI.Container;
-  tileData?: any;
-  sightMask?: any;
-  origin?: PIXI.Point;
-  token: Token;
 }
 
 interface ViolenceLevel {
@@ -37,11 +19,4 @@ interface SaveObject {
   centerX: number;
   centerY: number;
   hp: number;
-}
-
-interface BloodNGutsConfig {
-  trailSplatFont: SplatFont;
-  floorSplatFont: SplatFont;
-  tokenSplatFont: SplatFont;
-  violenceLevel: ViolenceLevel;
 }
