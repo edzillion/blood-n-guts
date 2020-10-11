@@ -8,7 +8,7 @@
  */
 
 //CONFIG.debug.hooks = true;
-CONFIG.logLevel = 2;
+CONFIG.logLevel = 1;
 
 // Import JavaScript modules
 import { registerSettings } from './module/settings';
@@ -188,24 +188,26 @@ const drawFloorSplats = (token: Token, font: SplatFont, size: number, density: n
 
   const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
 
+  // scale the font based on token size
+  const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
+
   const style: PIXI.TextStyle = new PIXI.TextStyle({
     fontFamily: font.name,
-    fontSize: size,
+    fontSize: fontSize,
     fill: lookupTokenBloodColor(token),
     align: 'center',
   });
 
-  const pixelSpread = canvas.grid.size * game.settings.get(MODULE_ID, 'splatSpread');
-
-  log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpread);
-
   const splatsContainer = new PIXI.Container();
 
+  const pixelSpreadX = token.width * game.settings.get(MODULE_ID, 'splatSpread');
+  const pixelSpreadY = token.height * game.settings.get(MODULE_ID, 'splatSpread');
+  log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpreadX, pixelSpreadY);
   log(LogLevel.DEBUG, 'drawSplatPositions: floor ');
   const splats: Array<PIXI.Text> = glyphArray.map((glyph) => {
     const tm = PIXI.TextMetrics.measureText(glyph, style);
-    const randX = randomBoxMuller() * pixelSpread - pixelSpread / 2;
-    const randY = randomBoxMuller() * pixelSpread - pixelSpread / 2;
+    const randX = randomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
+    const randY = randomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
     const text = new PIXI.Text(glyph, style);
     text.x = randX - tm.width / 2;
     text.y = randY - tm.height / 2;
@@ -247,16 +249,15 @@ const drawTrailSplats = (token: Token, font: SplatFont, size: number, density: n
 
   const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
 
+  // scale the font based on token size
+  const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
+
   const style: PIXI.TextStyle = new PIXI.TextStyle({
     fontFamily: font.name,
-    fontSize: size,
+    fontSize: fontSize,
     fill: lookupTokenBloodColor(token),
     align: 'center',
   });
-
-  const pixelSpread = canvas.grid.size * game.settings.get(MODULE_ID, 'splatSpread');
-
-  log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpread);
 
   const splatsContainer = new PIXI.Container();
 
@@ -274,6 +275,12 @@ const drawTrailSplats = (token: Token, font: SplatFont, size: number, density: n
     lastPosOrigin.x + direction.x * (canvas.grid.size / 2),
     lastPosOrigin.y + direction.y * (canvas.grid.size / 2),
   );
+
+  //horiz or vert movement
+  const pixelSpread = direction.x
+    ? token.width * game.settings.get(MODULE_ID, 'splatSpread')
+    : token.height * game.settings.get(MODULE_ID, 'splatSpread');
+
   const rand = randomBoxMuller() * pixelSpread - pixelSpread / 2;
   // then swap direction y,x to give us an position to the side
   controlPt.set(controlPt.x + direction.y * rand, controlPt.y + direction.x * rand);
@@ -325,16 +332,15 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
 
   const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
 
+  // scale the font based on token size
+  const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
+
   const style: PIXI.TextStyle = new PIXI.TextStyle({
     fontFamily: font.name,
-    fontSize: size,
+    fontSize: fontSize,
     fill: lookupTokenBloodColor(token),
     align: 'center',
   });
-
-  const pixelSpread = canvas.grid.size * game.settings.get(MODULE_ID, 'splatSpread');
-
-  log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpread);
 
   const splatsContainer = new PIXI.Container();
 
@@ -345,16 +351,19 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
   const tokenSprite = PIXI.Sprite.from(imgPath);
   const maskSprite = PIXI.Sprite.from(imgPath);
 
+  tokenSprite.width = token.width;
+  tokenSprite.height = token.height;
+
   // scale sprite down to grid bounds
-  if (tokenSprite.width > tokenSprite.height) {
-    const w = canvas.grid.size / tokenSprite.width;
-    tokenSprite.height *= w;
-    tokenSprite.width = canvas.grid.size;
-  } else {
-    const h = canvas.grid.size / tokenSprite.height;
-    tokenSprite.width *= h;
-    tokenSprite.height = canvas.grid.size;
-  }
+  // if (tokenSprite.width > tokenSprite.height) {
+  //   const w = canvas.grid.size / tokenSprite.width;
+  //   tokenSprite.height *= w;
+  //   tokenSprite.width = canvas.grid.size;
+  // } else {
+  //   const h = canvas.grid.size / tokenSprite.height;
+  //   tokenSprite.width *= h;
+  //   tokenSprite.height = canvas.grid.size;
+  // }
 
   maskSprite.width = tokenSprite.width;
   maskSprite.height = tokenSprite.height;
@@ -378,17 +387,22 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
   );
 
   const renderSprite = new PIXI.Sprite(renderTexture);
-  renderSprite.x -= canvas.grid.size / 2;
-  renderSprite.y -= canvas.grid.size / 2;
-
+  renderSprite.x -= token.width / 2;
+  renderSprite.y -= token.height / 2;
+  splatsContainer.mask = renderSprite;
   splatsContainer.addChild(renderSprite);
 
   canvas.app.renderer.render(textureContainer, renderTexture);
 
+  const pixelSpreadX = token.width * game.settings.get(MODULE_ID, 'splatSpread');
+  const pixelSpreadY = token.height * game.settings.get(MODULE_ID, 'splatSpread');
+
+  log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpreadX, pixelSpreadY);
+
   const splats: Array<PIXI.Text> = glyphArray.map((glyph) => {
     const tm = PIXI.TextMetrics.measureText(glyph, style);
-    const randX = randomBoxMuller() * pixelSpread - pixelSpread / 2;
-    const randY = randomBoxMuller() * pixelSpread - pixelSpread / 2;
+    const randX = randomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
+    const randY = randomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
     const text = new PIXI.Text(glyph, style);
     text.x = randX - tm.width / 2;
     text.y = randY - tm.height / 2;
