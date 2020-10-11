@@ -31,3 +31,4 @@ This is a work in progress.
 ## Bugs
 1. No trail when moving to a grid coord y < grid.size
 1. tokensplat mask alignment is slightly off
+er1. sometimes tokensplats don't appear on damage (also on death?)
