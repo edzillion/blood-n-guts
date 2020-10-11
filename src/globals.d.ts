@@ -11,6 +11,7 @@ interface ViolenceLevel {
   floorSplatSize: number;
   tokenSplatSize: number;
   splatSpread: number;
+  splatPoolSize: number;
 }
 
 interface SaveObject {

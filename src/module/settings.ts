@@ -146,4 +146,15 @@ export const registerSettings = (): void => {
       log(LogLevel.DEBUG, 'Settings: splatSpread set to ' + value);
     },
   });
+
+  game.settings.register('blood-n-guts', 'splatPoolSize', {
+    scope: 'client', // This specifies a client-stored setting
+    config: false, // This specifies that the setting appears in the configuration view
+    type: Number,
+    default: 100, // The default value for the setting
+    onChange: (value) => {
+      // A callback function which triggers when the setting is changed
+      log(LogLevel.DEBUG, 'Settings: splatPoolSize set to ' + value);
+    },
+  });
 };
