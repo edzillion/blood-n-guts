@@ -79,10 +79,10 @@ export const randomBoxMuller = (): number => {
   return num;
 };
 
-export const lookupTokenBloodColor = (token) => {
+export const lookupTokenBloodColor = (token: Token): string => {
   log(LogLevel.INFO, 'lookupTokenBloodColor: ' + token.name);
 
-  const actor: Actor = token.actor ? token.actor : game.actors.get(token.actorId);
+  const actor: Actor = token.actor;
   const actorType: string = actor.data.type;
   const type: string = actorType === 'npc' ? actor.data.data.details.type : actor.data.data.details.race;
 
@@ -110,7 +110,7 @@ export const lookupTokenBloodColor = (token) => {
   return bloodColor;
 };
 
-export const getActorColorByName = (actor): string => {
+export const getActorColorByName = (actor: Actor): string => {
   log(LogLevel.DEBUG, 'getActorColorByName:' + actor.data.name);
   let color: Array<number>;
   let colorString: string;
@@ -128,7 +128,7 @@ export const getActorColorByName = (actor): string => {
   return colorString;
 };
 
-export const drawDebugRect = (container: any, width = 2, color = 0xff0000) => {
+export const drawDebugRect = (container: PIXI.Container, width = 2, color = 0xff0000): void => {
   const rect = new PIXI.Graphics();
   rect.lineStyle(width, color).drawRect(container.x, container.y, container.width, container.height);
   canvas.drawings.addChild(rect);
