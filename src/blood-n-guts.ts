@@ -8,7 +8,7 @@
  */
 
 //CONFIG.debug.hooks = true;
-CONFIG.logLevel = 1;
+CONFIG.logLevel = 2;
 
 // Import JavaScript modules
 import { registerSettings } from './module/settings';
@@ -34,6 +34,7 @@ import { MODULE_ID } from './constants';
 const lastTokenState: Array<SaveObject> = [];
 const splatPool: Array<PIXI.Container> = [];
 const fadingSplatPool: Array<PIXI.Container> = [];
+let activeScene;
 
 (document as any).fonts.ready.then(() => {
   log(LogLevel.DEBUG, 'All fonts in use by visible text have loaded.');
@@ -92,6 +93,17 @@ Hooks.once('ready', () => {
 Hooks.on('createToken', (_scene, tokenData) => {
   const token = new Token(tokenData);
   saveTokenState(token);
+});
+
+Hooks.once('canvasInit', (canvas) => {
+  log(LogLevel.INFO, 'canvasInit', canvas);
+  if (canvas.scene.active) activeScene = canvas.scene;
+  //redraw containers?
+
+  const splatP = activeScene.getFlag(MODULE_ID, 'splatPool');
+  if (splatP) {
+    console.log(JSON.parse(splatP));
+  }
 });
 
 Hooks.once('canvasReady', () => {
@@ -445,5 +457,12 @@ const addToSplatPool = (container: PIXI.Container): void => {
     fadingSplatPool.push(fadingSplat);
   }
   splatPool.push(container);
+  saveSplatsToScene();
   log(LogLevel.DEBUG, `addToSplatPool splatPool:${splatPool.length}, fadingSplatPool:${fadingSplatPool.length}`);
+};
+
+const saveSplatsToScene = async () => {
+  //const sp = JSON.stringify(splatPool);
+  console.log(splatPool);
+  //activeScene.setFlag(MODULE_ID, 'splatPool', sp);
 };
