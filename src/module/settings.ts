@@ -26,7 +26,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'useBloodColor', {
+  game.settings.register(MODULE_ID, 'useBloodColor', {
     name: 'Blood Color',
     hint: 'If unchecked all blood will be red',
     scope: 'client', // This specifies a client-stored setting
@@ -39,7 +39,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.registerMenu('blood-n-guts', 'advancedConfig', {
+  game.settings.registerMenu(MODULE_ID, 'advancedConfig', {
     name: 'Advanced Config',
     label: 'Advanced Configuration',
     hint: 'Access advanced configuration menu to find additional options',
@@ -49,7 +49,7 @@ export const registerSettings = (): void => {
   });
 
   // Settings in Advanced Configuration
-  game.settings.register('blood-n-guts', 'floorSplatFont', {
+  game.settings.register(MODULE_ID, 'floorSplatFont', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: String,
@@ -60,7 +60,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'tokenSplatFont', {
+  game.settings.register(MODULE_ID, 'tokenSplatFont', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: String,
@@ -71,7 +71,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'trailSplatFont', {
+  game.settings.register(MODULE_ID, 'trailSplatFont', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: String,
@@ -82,7 +82,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'floorSplatSize', {
+  game.settings.register(MODULE_ID, 'floorSplatSize', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: Number,
@@ -93,7 +93,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'floorSplatDensity', {
+  game.settings.register(MODULE_ID, 'floorSplatDensity', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: Number,
@@ -104,7 +104,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'tokenSplatSize', {
+  game.settings.register(MODULE_ID, 'tokenSplatSize', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: Number,
@@ -115,7 +115,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'tokenSplatDensity', {
+  game.settings.register(MODULE_ID, 'tokenSplatDensity', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: Number,
@@ -126,7 +126,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'trailSplatSize', {
+  game.settings.register(MODULE_ID, 'trailSplatSize', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: Number,
@@ -137,7 +137,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'trailSplatDensity', {
+  game.settings.register(MODULE_ID, 'trailSplatDensity', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: Number,
@@ -148,7 +148,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'splatSpread', {
+  game.settings.register(MODULE_ID, 'splatSpread', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: Number,
@@ -159,7 +159,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register('blood-n-guts', 'splatPoolSize', {
+  game.settings.register(MODULE_ID, 'splatPoolSize', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: Number,
