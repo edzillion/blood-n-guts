@@ -1,6 +1,7 @@
 import { log, LogLevel } from './logging';
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import { colors, getRGBA } from './colors';
+import { MODULE_ID } from '../constants';
 
 export const alignSplatsAndGetOffset = (splats: Array<PIXI.Text>): PIXI.Point => {
   let lowestX = canvas.dimensions.sceneWidth;
@@ -80,16 +81,19 @@ export const randomBoxMuller = (): number => {
 };
 
 export const lookupTokenBloodColor = (token: Token): string => {
-  log(LogLevel.INFO, 'lookupTokenBloodColor: ' + token.name);
+  const enabled = game.settings.get(MODULE_ID, 'useBloodColor');
+  log(LogLevel.INFO, 'lookupTokenBloodColor enabled?: ' + enabled);
 
   const actor: Actor = token.actor;
   const actorType: string = actor.data.type;
   const type: string = actorType === 'npc' ? actor.data.data.details.type : actor.data.data.details.race;
 
-  log(LogLevel.DEBUG, 'lookupTokenBloodColor: ', actorType, type);
+  log(LogLevel.DEBUG, 'lookupTokenBloodColor: ', token.name, actorType, type);
   let bloodColor: string;
   const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
-  bloodColor = bloodColorSettings.color[type];
+
+  // if useBloodColor is disabled then all blood is red
+  bloodColor = enabled ? bloodColorSettings.color[type] : 'red';
   let rgba;
   if (bloodColor === 'name') {
     rgba = getActorColorByName(actor);
