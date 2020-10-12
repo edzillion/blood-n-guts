@@ -32,8 +32,8 @@ import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 const lastTokenState: Array<TokenSaveObject> = [];
-const splatPool: Array<PIXI.Container> = [];
-const fadingSplatPool: Array<PIXI.Container> = [];
+const splatPool: Array<SplatPoolObject> = [];
+const fadingSplatPool: Array<SplatPoolObject> = [];
 let activeScene;
 
 (document as any).fonts.ready.then(() => {
@@ -99,8 +99,8 @@ Hooks.once('canvasInit', (canvas) => {
   log(LogLevel.INFO, 'canvasInit', canvas);
   if (canvas.scene.active) activeScene = canvas.scene;
   //redraw containers?
-  const savedSplats = activeScene.getFlag(MODULE_ID, 'savedSplats');
-  console.log('savedSplats', savedSplats);
+  const p = activeScene.getFlag(MODULE_ID, 'splatPool');
+  console.log('splatPool', p);
 });
 
 Hooks.once('canvasReady', () => {
@@ -216,8 +216,6 @@ const drawFloorSplats = (token: Token, font: SplatFont, size: number, density: n
   log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpreadX, pixelSpreadY);
   log(LogLevel.DEBUG, 'drawSplatPositions: floor ');
   const splats: Array<PIXI.Text> = glyphArray.map((glyph) => {
-    let saveSplat: Splat;
-    saveSplat.glyph = glyph;
     const tm = PIXI.TextMetrics.measureText(glyph, style);
     const randX = randomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
     const randY = randomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
@@ -250,8 +248,7 @@ const drawFloorSplats = (token: Token, font: SplatFont, size: number, density: n
   splatsContainer.x += token.center.x;
   splatsContainer.y += token.center.y;
 
-  saveSplatObject(splatsContainer, style, sight);
-  addToSplatPool(splatsContainer);
+  addToSplatPool(splatsContainer, style, sight);
   canvas.tiles.addChild(splatsContainer);
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
@@ -335,8 +332,7 @@ const drawTrailSplats = (token: Token, font: SplatFont, size: number, density: n
   splatsContainer.x += token.center.x;
   splatsContainer.y += token.center.y;
 
-  saveSplatObject(splatsContainer, styleData, sight);
-  addToSplatPool(splatsContainer);
+  addToSplatPool(splatsContainer, styleData, sight);
   canvas.tiles.addChild(splatsContainer);
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
@@ -350,12 +346,13 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
   // scale the font based on token size
   const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
 
-  const style = new PIXI.TextStyle({
+  const styleData = {
     fontFamily: font.name,
     fontSize: fontSize,
     fill: lookupTokenBloodColor(token),
     align: 'center',
-  });
+  };
+  const style = new PIXI.TextStyle(styleData);
 
   const splatsContainer = new PIXI.Container();
 
@@ -424,7 +421,7 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
   splatsContainer.x += token.width / 2;
   splatsContainer.y += token.height / 2;
 
-  addToSplatPool(splatsContainer);
+  addToSplatPool(splatsContainer, styleData);
   token.addChildAt(splatsContainer, token.children.length);
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer, 2, 0x00ffff);
@@ -445,49 +442,57 @@ const saveTokenState = (token: Token): void => {
   saveObj = JSON.parse(JSON.stringify(saveObj));
   log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
   lastTokenState[token.id] = Object.assign(saveObj);
+  saveSceneSplats();
 };
 
-const addToSplatPool = (container: PIXI.Container): void => {
+const addToSplatPool = (splatContainer, styleData, maskPolygon?): void => {
   log(LogLevel.DEBUG, 'addToSplatPool');
+  const poolObj: SplatPoolObject = makeSplatPoolObject(splatContainer, styleData, maskPolygon);
   if (splatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize')) {
-    const fadingSplat = splatPool.shift();
-    fadingSplat.alpha = 0.3;
+    const fadingSplatPoolObj = splatPool.shift();
+    fadingSplatPoolObj.splatContainer.alpha = 0.3;
     if (fadingSplatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize') / 5) {
-      const destroySplat = fadingSplatPool.shift();
-      destroySplat.destroy({ children: true });
+      const destroy = fadingSplatPool.shift();
+      destroy.splatContainer.destroy({ children: true });
     }
-    fadingSplatPool.push(fadingSplat);
+    fadingSplatPool.push(fadingSplatPoolObj);
   }
-  splatPool.push(container);
+  splatPool.push(poolObj);
 
   log(LogLevel.DEBUG, `addToSplatPool splatPool:${splatPool.length}, fadingSplatPool:${fadingSplatPool.length}`);
 };
 
-const saveSplatObject = async (splatContainer, styleData, maskPolygon) => {
-  console.log('saveSplatObject');
-  const save: SplatSaveObject = {
-    x: splatContainer.x,
-    y: splatContainer.y,
-    styleData: styleData,
-    maskPolygon: maskPolygon,
-    splats: splatContainer.children
-      .filter((c) => c.text) // filter out the mask
-      .map((splatText) => {
-        if (!splatText.text) return;
-        const s: Splat = { x: splatText.x, y: splatText.y, glyph: splatText.text };
-        return s;
-      }),
+const makeSplatPoolObject = (splatContainer, styleData, maskPolygon) => {
+  console.log('makeSplatPoolObject');
+  const pool: SplatPoolObject = {
+    save: {
+      x: splatContainer.x,
+      y: splatContainer.y,
+      styleData: styleData,
+      maskPolygon: maskPolygon,
+      splats: splatContainer.children
+        .filter((c) => c.text) // filter out the mask
+        .map((splatText) => {
+          if (!splatText.text) return;
+          const s: Splat = { x: splatText.x, y: splatText.y, glyph: splatText.text };
+          return s;
+        }),
+    },
+    splatContainer: splatContainer,
   };
-  console.log('save', save);
-  let savedSplats = activeScene.getFlag(MODULE_ID, 'savedSplats');
-  if (savedSplats) savedSplats.push(save);
-  else savedSplats = [save];
-  activeScene.setFlag(MODULE_ID, 'savedSplats', savedSplats);
+  console.log('save', pool);
+  return pool;
+  // let savedSplats = activeScene.getFlag(MODULE_ID, 'savedSplats');
+  // if (savedSplats) savedSplats.push(save);
+  // else savedSplats = [save];
+  // activeScene.setFlag(MODULE_ID, 'savedSplats', savedSplats);
 };
 
-// const SaveSceneSplats = async () => {
-//   splatPool.forEach((splat) => {});
-// };
+const saveSceneSplats = async () => {
+  const pool = splatPool.map((splat) => splat.save);
+  console.log('pool', pool);
+  return activeScene.setFlag(MODULE_ID, 'splatPool', pool);
+};
 
 //const drawSceneSplats = async (splatSaveObjects) => {
 //   const splatSaveObject: SplatSaveObject = {};
