@@ -32,6 +32,8 @@ import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 const lastTokenState: Array<SaveObject> = [];
+const splatPool: Array<PIXI.Container> = [];
+const fadingSplatPool: Array<PIXI.Container> = [];
 
 (document as any).fonts.ready.then(() => {
   log(LogLevel.DEBUG, 'All fonts in use by visible text have loaded.');
@@ -236,6 +238,8 @@ const drawFloorSplats = (token: Token, font: SplatFont, size: number, density: n
 
   splatsContainer.x += token.center.x;
   splatsContainer.y += token.center.y;
+
+  addToSplatPool(splatsContainer);
   canvas.tiles.addChild(splatsContainer);
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
@@ -317,7 +321,10 @@ const drawTrailSplats = (token: Token, font: SplatFont, size: number, density: n
 
   splatsContainer.x += token.center.x;
   splatsContainer.y += token.center.y;
+
+  addToSplatPool(splatsContainer);
   canvas.tiles.addChild(splatsContainer);
+
   if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
 };
 
@@ -403,8 +410,10 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
   splatsContainer.x += token.width / 2;
   splatsContainer.y += token.height / 2;
 
-  if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer, 2, 0x00ffff);
+  addToSplatPool(splatsContainer);
   token.addChildAt(splatsContainer, token.children.length);
+
+  if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer, 2, 0x00ffff);
 };
 
 const saveTokenState = (token: Token): void => {
@@ -422,4 +431,19 @@ const saveTokenState = (token: Token): void => {
   saveObj = JSON.parse(JSON.stringify(saveObj));
   log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
   lastTokenState[token.id] = Object.assign(saveObj);
+};
+
+const addToSplatPool = (container: PIXI.Container): void => {
+  log(LogLevel.DEBUG, 'addToSplatPool');
+  if (splatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize')) {
+    const fadingSplat = splatPool.shift();
+    fadingSplat.alpha = 0.3;
+    if (fadingSplatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize') / 5) {
+      const destroySplat = fadingSplatPool.shift();
+      destroySplat.destroy({ children: true });
+    }
+    fadingSplatPool.push(fadingSplat);
+  }
+  splatPool.push(container);
+  log(LogLevel.DEBUG, `addToSplatPool splatPool:${splatPool.length}, fadingSplatPool:${fadingSplatPool.length}`);
 };
