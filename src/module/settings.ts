@@ -19,11 +19,23 @@ export const registerSettings = (): void => {
     },
     default: 0, // The default value for the setting
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.level[value]));
       for (const key in violenceLevel) {
         game.settings.set(MODULE_ID, key, violenceLevel[key]);
       }
+    },
+  });
+
+  game.settings.register('blood-n-guts', 'useBloodColor', {
+    name: 'Blood Color',
+    hint: 'If unchecked all blood will be red',
+    scope: 'client', // This specifies a client-stored setting
+    config: true, // This specifies that the setting appears in the configuration view
+    type: Boolean,
+    default: true, // The default value for the setting
+    onChange: (value) => {
+      // A callback function which triggers when the setting is changed
+      log(LogLevel.DEBUG, 'Settings: useBloodColor set to ' + value);
     },
   });
 
