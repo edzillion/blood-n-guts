@@ -10,22 +10,10 @@ export const alignSplatsAndGetOffset = (splats: Array<PIXI.Text>): PIXI.Point =>
   let highestY = 0;
   for (let i = 0; i < splats.length; i++) {
     const txt = splats[i];
-    if (txt.x < lowestX) {
-      console.log('lowestX', txt.x);
-      lowestX = txt.x;
-    }
-    if (txt.y < lowestY) {
-      console.log('lowestY', txt.y);
-      lowestY = txt.y;
-    }
-    if (txt.x + txt.width > highestX) {
-      console.log('highestX', txt.x);
-      highestX = txt.x + txt.width;
-    }
-    if (txt.y + txt.height > highestY) {
-      console.log('highestY', txt.y);
-      highestY = txt.y + txt.height;
-    }
+    if (txt.x < lowestX) lowestX = txt.x;
+    if (txt.y < lowestY) lowestY = txt.y;
+    if (txt.x + txt.width > highestX) highestX = txt.x + txt.width;
+    if (txt.y + txt.height > highestY) highestY = txt.y + txt.height;
   }
   for (let j = 0; j < splats.length; j++) {
     const t = splats[j];
@@ -58,7 +46,6 @@ export const computeSightFromPoint = (origin: Point, range: number): [number] =>
   let lowestY = canvas.dimensions.sceneHeight;
 
   for (let i = 0; i < sight.fov.points.length; i += 2) {
-    console.log('currentLowestX:' + lowestX, 'currentLowestY:' + lowestY);
     lowestX = sight.fov.points[i] < lowestX ? sight.fov.points[i] : lowestX;
     lowestY = sight.fov.points[i + 1] < lowestY ? sight.fov.points[i + 1] : lowestY;
   }
