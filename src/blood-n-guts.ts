@@ -8,7 +8,7 @@
  */
 
 //CONFIG.debug.hooks = true;
-CONFIG.logLevel = 2;
+CONFIG.logLevel = 1;
 
 // Import JavaScript modules
 import { registerSettings } from './module/settings';
@@ -31,7 +31,7 @@ import * as splatFonts from './data/splatFonts';
 
 import { MODULE_ID } from './constants';
 
-const lastTokenState: Array<SaveObject> = [];
+const lastTokenState: Array<TokenSaveObject> = [];
 const splatPool: Array<PIXI.Container> = [];
 const fadingSplatPool: Array<PIXI.Container> = [];
 let activeScene;
@@ -99,11 +99,8 @@ Hooks.once('canvasInit', (canvas) => {
   log(LogLevel.INFO, 'canvasInit', canvas);
   if (canvas.scene.active) activeScene = canvas.scene;
   //redraw containers?
-
-  const splatP = activeScene.getFlag(MODULE_ID, 'splatPool');
-  if (splatP) {
-    console.log(JSON.parse(splatP));
-  }
+  const savedSplats = activeScene.getFlag(MODULE_ID, 'savedSplats');
+  console.log('savedSplats', savedSplats);
 });
 
 Hooks.once('canvasReady', () => {
@@ -205,7 +202,7 @@ const drawFloorSplats = (token: Token, font: SplatFont, size: number, density: n
   // scale the font based on token size
   const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
 
-  const style: PIXI.TextStyle = new PIXI.TextStyle({
+  const style = new PIXI.TextStyle({
     fontFamily: font.name,
     fontSize: fontSize,
     fill: lookupTokenBloodColor(token),
@@ -219,6 +216,8 @@ const drawFloorSplats = (token: Token, font: SplatFont, size: number, density: n
   log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpreadX, pixelSpreadY);
   log(LogLevel.DEBUG, 'drawSplatPositions: floor ');
   const splats: Array<PIXI.Text> = glyphArray.map((glyph) => {
+    let saveSplat: Splat;
+    saveSplat.glyph = glyph;
     const tm = PIXI.TextMetrics.measureText(glyph, style);
     const randX = randomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
     const randY = randomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
@@ -251,6 +250,7 @@ const drawFloorSplats = (token: Token, font: SplatFont, size: number, density: n
   splatsContainer.x += token.center.x;
   splatsContainer.y += token.center.y;
 
+  saveSplatObject(splatsContainer, style, sight);
   addToSplatPool(splatsContainer);
   canvas.tiles.addChild(splatsContainer);
 
@@ -265,12 +265,13 @@ const drawTrailSplats = (token: Token, font: SplatFont, size: number, density: n
   // scale the font based on token size
   const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
 
-  const style: PIXI.TextStyle = new PIXI.TextStyle({
+  const styleData = {
     fontFamily: font.name,
     fontSize: fontSize,
     fill: lookupTokenBloodColor(token),
     align: 'center',
-  });
+  };
+  const style = new PIXI.TextStyle(styleData);
 
   const splatsContainer = new PIXI.Container();
 
@@ -334,6 +335,7 @@ const drawTrailSplats = (token: Token, font: SplatFont, size: number, density: n
   splatsContainer.x += token.center.x;
   splatsContainer.y += token.center.y;
 
+  saveSplatObject(splatsContainer, styleData, sight);
   addToSplatPool(splatsContainer);
   canvas.tiles.addChild(splatsContainer);
 
@@ -348,7 +350,7 @@ const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: n
   // scale the font based on token size
   const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
 
-  const style: PIXI.TextStyle = new PIXI.TextStyle({
+  const style = new PIXI.TextStyle({
     fontFamily: font.name,
     fontSize: fontSize,
     fill: lookupTokenBloodColor(token),
@@ -432,7 +434,7 @@ const saveTokenState = (token: Token): void => {
   log(LogLevel.DEBUG, 'saveTokenState:', token);
   log(LogLevel.DEBUG, 'saveTokenState name:' + token.data.name);
 
-  let saveObj: SaveObject = {
+  let saveObj: TokenSaveObject = {
     x: token.x,
     y: token.y,
     centerX: token.center.x,
@@ -457,12 +459,49 @@ const addToSplatPool = (container: PIXI.Container): void => {
     fadingSplatPool.push(fadingSplat);
   }
   splatPool.push(container);
-  saveSplatsToScene();
+
   log(LogLevel.DEBUG, `addToSplatPool splatPool:${splatPool.length}, fadingSplatPool:${fadingSplatPool.length}`);
 };
 
-const saveSplatsToScene = async () => {
-  //const sp = JSON.stringify(splatPool);
-  console.log(splatPool);
-  //activeScene.setFlag(MODULE_ID, 'splatPool', sp);
+const saveSplatObject = async (splatContainer, styleData, maskPolygon) => {
+  console.log('saveSplatObject');
+  const save: SplatSaveObject = {
+    x: splatContainer.x,
+    y: splatContainer.y,
+    styleData: styleData,
+    maskPolygon: maskPolygon,
+    splats: splatContainer.children
+      .filter((c) => c.text) // filter out the mask
+      .map((splatText) => {
+        if (!splatText.text) return;
+        const s: Splat = { x: splatText.x, y: splatText.y, glyph: splatText.text };
+        return s;
+      }),
+  };
+  console.log('save', save);
+  let savedSplats = activeScene.getFlag(MODULE_ID, 'savedSplats');
+  if (savedSplats) savedSplats.push(save);
+  else savedSplats = [save];
+  activeScene.setFlag(MODULE_ID, 'savedSplats', savedSplats);
 };
+
+// const SaveSceneSplats = async () => {
+//   splatPool.forEach((splat) => {});
+// };
+
+//const drawSceneSplats = async (splatSaveObjects) => {
+//   const splatSaveObject: SplatSaveObject = {};
+//   let splatContainer: PIXI.Container;
+
+//   splatSaveObjects.forEach((splatSaveObj: SplatSaveObject) => {
+//     splatContainer = new PIXI.Container();
+//     splatContainer.x = splatSaveObj.x;
+//     splatContainer.y = splatSaveObj.y;
+//     const style = new PIXI.TextStyle(splatSaveObj.style);
+//     splatSaveObjects.splats.forEach((splat: Splat) => {
+//       const text = new PIXI.Text(splat.glyph, style);
+//       text.x = splat.x;
+//       text.y = splat.y;
+//     });
+//   });
+// };

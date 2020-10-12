@@ -14,10 +14,24 @@ interface ViolenceLevel {
   splatPoolSize: number;
 }
 
-interface SaveObject {
+interface TokenSaveObject {
   x: number;
   y: number;
   centerX: number;
   centerY: number;
   hp: number;
+}
+
+interface SplatSaveObject {
+  x: number;
+  y: number;
+  styleData: any;
+  splats: Array<Splat>;
+  maskPolygon: Array<number>;
+}
+
+interface Splat {
+  glyph: string;
+  x: number;
+  y: number;
 }
