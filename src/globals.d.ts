@@ -30,8 +30,10 @@ interface SplatSaveObject {
   y: number;
   styleData: any;
   splats: Array<Splat>;
-  maskPolygon: Array<number>;
   offset: PIXI.Point;
+  maskPolygon?: Array<number>;
+  imgPath?: string;
+  tokenId?: string;
 }
 
 interface Splat {

@@ -179,18 +179,18 @@ async function checkForDamage(token: Token, actorDataChanges) {
     const deathMult = actorDataChanges.data.attributes.hp.value === 0 ? 2 : 1;
     if (deathMult === 2) log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
 
-    generateFloorSplats(
-      token,
-      splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
-      game.settings.get(MODULE_ID, 'floorSplatSize'),
-      game.settings.get(MODULE_ID, 'floorSplatDensity') * deathMult,
-    );
-    // drawTokenSplats(
+    // generateFloorSplats(
     //   token,
-    //   splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
-    //   game.settings.get(MODULE_ID, 'tokenSplatSize'),
-    //   game.settings.get(MODULE_ID, 'tokenSplatDensity') * deathMult,
+    //   splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
+    //   game.settings.get(MODULE_ID, 'floorSplatSize'),
+    //   game.settings.get(MODULE_ID, 'floorSplatDensity') * deathMult,
     // );
+    generateTokenSplats(
+      token,
+      splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
+      game.settings.get(MODULE_ID, 'tokenSplatSize'),
+      game.settings.get(MODULE_ID, 'tokenSplatDensity') * deathMult,
+    );
 
     await token.setFlag(MODULE_ID, 'bleeding', true);
     log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:true');
@@ -400,91 +400,60 @@ const generateFloorSplats = (token: Token, font: SplatFont, size: number, densit
 
 const generateTokenSplats = (token: Token, font: SplatFont, size: number, density: number) => {
   if (!density) return;
+  log(LogLevel.INFO, 'generateTokenSplats');
 
-  const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
+  const splatSaveObj: Partial<SplatSaveObject> = {};
 
   // scale the font based on token size
   const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
-
-  const styleData = {
+  splatSaveObj.styleData = {
     fontFamily: font.name,
     fontSize: fontSize,
     fill: lookupTokenBloodColor(token),
     align: 'center',
   };
-  const style = new PIXI.TextStyle(styleData);
-
-  const splatsContainer = new PIXI.Container();
-
-  log(LogLevel.INFO, 'splatToken');
+  const style = new PIXI.TextStyle(splatSaveObj.styleData);
 
   // @ts-ignore
-  const imgPath = token.data.img;
-  const tokenSprite = PIXI.Sprite.from(imgPath);
-  const maskSprite = PIXI.Sprite.from(imgPath);
+  splatSaveObj.tokenId = token.id;
 
-  tokenSprite.width = token.width;
-  tokenSprite.height = token.height;
-  maskSprite.width = tokenSprite.width;
-  maskSprite.height = tokenSprite.height;
-
-  const textureContainer = new PIXI.Container();
-  textureContainer.addChild(maskSprite);
-
-  const bwMatrix = new PIXI.filters.ColorMatrixFilter();
-  const negativeMatrix = new PIXI.filters.ColorMatrixFilter();
-  maskSprite.filters = [bwMatrix, negativeMatrix];
-  bwMatrix.brightness(0, false);
-  negativeMatrix.negative(false);
-
-  const renderTexture = new PIXI.RenderTexture(
-    new PIXI.BaseRenderTexture({
-      width: tokenSprite.width,
-      height: tokenSprite.height,
-      // scaleMode: PIXI.SCALE_MODES.LINEAR,
-      // resolution: 1
-    }),
-  );
-
-  const renderSprite = new PIXI.Sprite(renderTexture);
-  renderSprite.x -= token.width / 2;
-  renderSprite.y -= token.height / 2;
-  splatsContainer.mask = renderSprite;
-  splatsContainer.addChild(renderSprite);
-
-  canvas.app.renderer.render(textureContainer, renderTexture);
-
+  const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
   const pixelSpreadX = token.width * game.settings.get(MODULE_ID, 'splatSpread') * 2;
   const pixelSpreadY = token.height * game.settings.get(MODULE_ID, 'splatSpread') * 2;
 
-  log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpreadX, pixelSpreadY);
+  log(LogLevel.DEBUG, 'generateTokenSplats pixelSpread', pixelSpreadX, pixelSpreadY);
 
-  const splats: Array<PIXI.Text> = glyphArray.map((glyph) => {
+  splatSaveObj.splats = glyphArray.map((glyph) => {
     const tm = PIXI.TextMetrics.measureText(glyph, style);
     const randX = randomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
     const randY = randomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
-    const text = new PIXI.Text(glyph, style);
-    text.x = randX - tm.width / 2;
-    text.y = randY - tm.height / 2;
-    splatsContainer.addChild(text);
-    return text;
+    return {
+      x: randX - tm.width / 2,
+      y: randY - tm.height / 2,
+      width: tm.width,
+      height: tm.height,
+      glyph: glyph,
+    };
   });
 
-  const offset = alignSplatsAndGetOffset1(splats);
-  splatsContainer.x += offset.x;
-  splatsContainer.y += offset.y;
-  renderSprite.x -= offset.x;
-  renderSprite.y -= offset.y;
-  tokenSprite.x -= offset.x;
-  tokenSprite.y -= offset.y;
+  const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatSaveObj.splats);
+  console.log(offset, width, height);
+  splatSaveObj.offset = offset;
+  splatSaveObj.x = offset.x + token.width / 2;
+  splatSaveObj.y = offset.y + token.height / 2;
 
-  splatsContainer.x += token.width / 2;
-  splatsContainer.y += token.height / 2;
+  //splatsContainer.x += offset.x;
+  //splatsContainer.y += offset.y;
+  // renderSprite.x -= offset.x;
+  // renderSprite.y -= offset.y;
+  // tokenSprite.x -= offset.x;
+  // tokenSprite.y -= offset.y;
 
-  addToSplatPool(splatsContainer, styleData);
-  token.addChildAt(splatsContainer, token.children.length);
+  drawSplat(splatSaveObj);
+  // addToSplatPool(splatsContainer, styleData);
+  // token.addChildAt(splatsContainer, token.children.length);
 
-  if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer, 2, 0x00ffff);
+  //if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect2(splatSaveObj, 2, 0x00ffff);
 };
 
 const generateTrailSplats = (token: Token, font: SplatFont, size: number, density: number) => {
@@ -580,18 +549,69 @@ const drawSplat = (splatSaveObj) => {
     return text;
   });
 
-  const sightMask = new PIXI.Graphics();
-  sightMask.beginFill(1, 1);
-  sightMask.drawPolygon(splatSaveObj.maskPolygon);
-  sightMask.endFill();
+  if (splatSaveObj.maskPolygon) {
+    log(LogLevel.DEBUG, 'drawSplat: splatSaveObj.maskPolygon');
+    const sightMask = new PIXI.Graphics();
+    sightMask.beginFill(1, 1);
+    sightMask.drawPolygon(splatSaveObj.maskPolygon);
+    sightMask.endFill();
 
-  splatsContainer.addChild(sightMask);
-  splatsContainer.mask = sightMask;
+    splatsContainer.addChild(sightMask);
+    splatsContainer.mask = sightMask;
+
+    canvas.tiles.addChild(splatsContainer);
+  } else if (splatSaveObj.tokenId) {
+    log(LogLevel.DEBUG, 'drawSplat: splatSaveObj.imgPath');
+
+    const token = canvas.tokens.placeables.find((t) => t.data._id === splatSaveObj.tokenId);
+    if (!token) log(LogLevel.ERROR, 'drawSplat token not found!');
+
+    const tokenSprite = PIXI.Sprite.from(token.data.img);
+    const maskSprite = PIXI.Sprite.from(token.data.img);
+
+    tokenSprite.width = token.width;
+    tokenSprite.height = token.height;
+    maskSprite.width = tokenSprite.width;
+    maskSprite.height = tokenSprite.height;
+
+    const textureContainer = new PIXI.Container();
+    textureContainer.addChild(maskSprite);
+
+    // todo: do I need both these?
+    const bwMatrix = new PIXI.filters.ColorMatrixFilter();
+    const negativeMatrix = new PIXI.filters.ColorMatrixFilter();
+    maskSprite.filters = [bwMatrix, negativeMatrix];
+    bwMatrix.brightness(0, false);
+    negativeMatrix.negative(false);
+
+    const renderTexture = new PIXI.RenderTexture(
+      new PIXI.BaseRenderTexture({
+        width: tokenSprite.width,
+        height: tokenSprite.height,
+        // scaleMode: PIXI.SCALE_MODES.LINEAR,
+        // resolution: 1
+      }),
+    );
+
+    const renderSprite = new PIXI.Sprite(renderTexture);
+    renderSprite.x -= token.width / 2;
+    renderSprite.y -= token.height / 2;
+    splatsContainer.mask = renderSprite;
+    splatsContainer.addChild(renderSprite);
+
+    canvas.app.renderer.render(textureContainer, renderTexture);
+
+    renderSprite.x -= splatSaveObj.offset.x;
+    renderSprite.y -= splatSaveObj.offset.y;
+    tokenSprite.x -= splatSaveObj.offset.x;
+    tokenSprite.y -= splatSaveObj.offset.y;
+
+    token.addChildAt(splatsContainer, token.children.length - 1);
+  } else log(LogLevel.ERROR, 'drawSplat: splatSaveObj should have either .imgPath or .maskPolygon!');
 
   splatsContainer.x = splatSaveObj.x;
   splatsContainer.y = splatSaveObj.y;
 
-  canvas.tiles.addChild(splatsContainer);
   addToSplatPool(splatsContainer, splatSaveObj);
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
