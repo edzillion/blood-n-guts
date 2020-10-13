@@ -3,7 +3,7 @@ import * as bloodColorSettings from '../data/bloodColorSettings';
 import { colors, getRGBA } from './colors';
 import { MODULE_ID } from '../constants';
 
-export const alignSplatsAndGetOffset = (splats: Array<PIXI.Text>): PIXI.Point => {
+export const alignSplatsAndGetOffset1 = (splats: Array<PIXI.Text>): PIXI.Point => {
   let lowestX = canvas.dimensions.sceneWidth;
   let lowestY = canvas.dimensions.sceneHeight;
   let highestX = 0;
@@ -21,6 +21,30 @@ export const alignSplatsAndGetOffset = (splats: Array<PIXI.Text>): PIXI.Point =>
     t.y -= lowestY;
   }
   return new PIXI.Point(lowestX, lowestY);
+};
+
+export const alignSplatsGetOffsetAndDimensions = (splats: Array<Splat>) => {
+  let lowestX = canvas.dimensions.sceneWidth;
+  let lowestY = canvas.dimensions.sceneHeight;
+  let highestX = 0;
+  let highestY = 0;
+  for (let i = 0; i < splats.length; i++) {
+    const splat = splats[i];
+    if (splat.x < lowestX) lowestX = splat.x;
+    if (splat.y < lowestY) lowestY = splat.y;
+    if (splat.x + splat.width > highestX) highestX = splat.x + splat.width;
+    if (splat.y + splat.height > highestY) highestY = splat.y + splat.height;
+  }
+  for (let j = 0; j < splats.length; j++) {
+    const t = splats[j];
+    t.x -= lowestX;
+    t.y -= lowestY;
+  }
+  return {
+    offset: new PIXI.Point(lowestX, lowestY),
+    width: highestX - lowestX,
+    height: highestY - lowestY,
+  };
 };
 
 export const computeSightFromPoint = (origin: Point, range: number): [number] => {

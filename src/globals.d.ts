@@ -31,10 +31,13 @@ interface SplatSaveObject {
   styleData: any;
   splats: Array<Splat>;
   maskPolygon: Array<number>;
+  offset: PIXI.Point;
 }
 
 interface Splat {
   glyph: string;
   x: number;
   y: number;
+  width: number;
+  height: number;
 }
