@@ -150,6 +150,12 @@ export const drawDebugRect = (container: PIXI.Container, width = 2, color = 0xff
   log(LogLevel.DEBUG, 'drawDebugRect: ', container);
 };
 
+export const drawDebugRect2 = (x, y, w, h): void => {
+  const rect = new PIXI.Graphics();
+  rect.lineStyle(2, 0xff0000).drawRect(x, y, w, h);
+  canvas.drawings.addChild(rect);
+};
+
 export const getDirectionNrml = (lastPosition: Point, changes: any): PIXI.Point => {
   let x = Number(changes.x > lastPosition.x);
   let y = Number(changes.y > lastPosition.y);

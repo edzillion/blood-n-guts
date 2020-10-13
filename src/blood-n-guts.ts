@@ -22,6 +22,7 @@ import {
   lookupTokenBloodColor,
   computeSightFromPoint,
   drawDebugRect,
+  drawDebugRect2,
   randomBoxMuller,
   getDirectionNrml,
   alignSplatsAndGetOffset1,
@@ -557,7 +558,7 @@ const generateFloorSplats = (token: Token, font: SplatFont, size: number, densit
   const sight = computeSightFromPoint(token.center, maxDistance);
 
   splatSaveObj.maskPolygon = sight;
-  drawSplat(splatSaveObj);
+  drawSplat(splatSaveObj, token);
 };
 
 const generateTokenSplats = (token: Token, font: SplatFont, size: number, density: number) => {
@@ -706,19 +707,19 @@ const generateTrailSplats = (token: Token, font: SplatFont, size: number, densit
   log(LogLevel.DEBUG, 'generateTrailSplats splatSaveObj.splats', splatSaveObj.splats);
 
   const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatSaveObj.splats);
-
+  console.log(offset, width, height);
   splatSaveObj.offset = offset;
-  splatSaveObj.x = offset.x += token.center.x;
-  splatSaveObj.y = offset.y += token.center.y;
+  splatSaveObj.x = offset.x;
+  splatSaveObj.y = offset.y;
 
   const maxDistance = Math.max(width, height);
   const sight = computeSightFromPoint(token.center, maxDistance);
   splatSaveObj.maskPolygon = sight;
 
-  drawSplat(splatSaveObj);
+  drawSplat(splatSaveObj, token, width, height);
 };
 
-const drawSplat = (splatSaveObj) => {
+const drawSplat = (splatSaveObj, token, w?, h?) => {
   const splatsContainer = new PIXI.Container();
   const style = new PIXI.TextStyle(splatSaveObj.styleData);
 
@@ -734,17 +735,24 @@ const drawSplat = (splatSaveObj) => {
   sightMask.beginFill(1, 1);
   sightMask.drawPolygon(splatSaveObj.maskPolygon);
   sightMask.endFill();
-
   sightMask.x -= splatSaveObj.offset.x;
   sightMask.y -= splatSaveObj.offset.y;
+  //sightMask.visible = false;
   splatsContainer.addChild(sightMask);
-  //splatsContainer.mask = sightMask;
-  splatsContainer.x = splatSaveObj.x;
-  splatsContainer.y = splatSaveObj.y;
-  sightMask.x += splatSaveObj.x;
-  sightMask.y += splatSaveObj.y;
+  splatsContainer.mask = sightMask;
+
+  // sightMask.x += splatSaveObj.offset.x;
+  // sightMask.y += splatSaveObj.offset.y;
+  // sightMask.x -= splatSaveObj.offset.x;
+  // sightMask.y -= splatSaveObj.offset.y;
+  //splatsContainer.addChild(sightMask);
+  // //splatsContainer.mask = sightMask;
+  splatsContainer.x = splatSaveObj.x + token.center.x;
+  splatsContainer.y = splatSaveObj.y + token.center.y;
+  // sightMask.x += splatSaveObj.x;
+  // sightMask.y += splatSaveObj.y;
   //addToSplatPool(splatsContainer, style, sight);
   canvas.tiles.addChild(splatsContainer);
 
-  if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
+  if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect2(splatsContainer.x, splatsContainer.y, w, h);
 };
