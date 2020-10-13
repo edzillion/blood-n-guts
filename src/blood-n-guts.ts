@@ -8,7 +8,7 @@
  */
 
 //CONFIG.debug.hooks = true;
-CONFIG.logLevel = 2;
+CONFIG.logLevel = 1;
 
 // Import JavaScript modules
 import { registerSettings } from './module/settings';
@@ -120,8 +120,9 @@ Hooks.once('canvasReady', () => {
     const check = (document as any).fonts.check('1em splatter');
     log(LogLevel.DEBUG, 'splatter loaded? ' + check);
     if (!check) return;
+
     const pool = activeScene.getFlag(MODULE_ID, 'splatPool');
-    console.log('splatPool', pool);
+    log(LogLevel.INFO, 'splatPool loaded:', pool);
     drawSceneSplats(pool);
   };
 });
@@ -179,12 +180,12 @@ async function checkForDamage(token: Token, actorDataChanges) {
     const deathMult = actorDataChanges.data.attributes.hp.value === 0 ? 2 : 1;
     if (deathMult === 2) log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
 
-    // generateFloorSplats(
-    //   token,
-    //   splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
-    //   game.settings.get(MODULE_ID, 'floorSplatSize'),
-    //   game.settings.get(MODULE_ID, 'floorSplatDensity') * deathMult,
-    // );
+    generateFloorSplats(
+      token,
+      splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
+      game.settings.get(MODULE_ID, 'floorSplatSize'),
+      game.settings.get(MODULE_ID, 'floorSplatDensity') * deathMult,
+    );
     generateTokenSplats(
       token,
       splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
@@ -199,145 +200,6 @@ async function checkForDamage(token: Token, actorDataChanges) {
     log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:unset');
   }
 }
-
-const drawTokenSplats = (token: Token, font: SplatFont, size: number, density: number) => {
-  if (!density) return;
-
-  const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
-
-  // scale the font based on token size
-  const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
-
-  const styleData = {
-    fontFamily: font.name,
-    fontSize: fontSize,
-    fill: lookupTokenBloodColor(token),
-    align: 'center',
-  };
-  const style = new PIXI.TextStyle(styleData);
-
-  const splatsContainer = new PIXI.Container();
-
-  log(LogLevel.INFO, 'splatToken');
-
-  // @ts-ignore
-  const imgPath = token.data.img;
-  const tokenSprite = PIXI.Sprite.from(imgPath);
-  const maskSprite = PIXI.Sprite.from(imgPath);
-
-  tokenSprite.width = token.width;
-  tokenSprite.height = token.height;
-  maskSprite.width = tokenSprite.width;
-  maskSprite.height = tokenSprite.height;
-
-  const textureContainer = new PIXI.Container();
-  textureContainer.addChild(maskSprite);
-
-  const bwMatrix = new PIXI.filters.ColorMatrixFilter();
-  const negativeMatrix = new PIXI.filters.ColorMatrixFilter();
-  maskSprite.filters = [bwMatrix, negativeMatrix];
-  bwMatrix.brightness(0, false);
-  negativeMatrix.negative(false);
-
-  const renderTexture = new PIXI.RenderTexture(
-    new PIXI.BaseRenderTexture({
-      width: tokenSprite.width,
-      height: tokenSprite.height,
-      // scaleMode: PIXI.SCALE_MODES.LINEAR,
-      // resolution: 1
-    }),
-  );
-
-  const renderSprite = new PIXI.Sprite(renderTexture);
-  renderSprite.x -= token.width / 2;
-  renderSprite.y -= token.height / 2;
-  splatsContainer.mask = renderSprite;
-  splatsContainer.addChild(renderSprite);
-
-  canvas.app.renderer.render(textureContainer, renderTexture);
-
-  const pixelSpreadX = token.width * game.settings.get(MODULE_ID, 'splatSpread') * 2;
-  const pixelSpreadY = token.height * game.settings.get(MODULE_ID, 'splatSpread') * 2;
-
-  log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpreadX, pixelSpreadY);
-
-  const splats: Array<PIXI.Text> = glyphArray.map((glyph) => {
-    const tm = PIXI.TextMetrics.measureText(glyph, style);
-    const randX = randomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
-    const randY = randomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
-    const text = new PIXI.Text(glyph, style);
-    text.x = randX - tm.width / 2;
-    text.y = randY - tm.height / 2;
-    splatsContainer.addChild(text);
-    return text;
-  });
-
-  const offset = alignSplatsAndGetOffset1(splats);
-  splatsContainer.x += offset.x;
-  splatsContainer.y += offset.y;
-  renderSprite.x -= offset.x;
-  renderSprite.y -= offset.y;
-  tokenSprite.x -= offset.x;
-  tokenSprite.y -= offset.y;
-
-  splatsContainer.x += token.width / 2;
-  splatsContainer.y += token.height / 2;
-
-  addToSplatPool(splatsContainer, styleData);
-  token.addChildAt(splatsContainer, token.children.length);
-
-  if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer, 2, 0x00ffff);
-};
-
-const saveTokenState = (token: Token): void => {
-  log(LogLevel.DEBUG, 'saveTokenState:', token);
-  log(LogLevel.DEBUG, 'saveTokenState name:' + token.data.name);
-
-  let saveObj: TokenSaveObject = {
-    x: token.x,
-    y: token.y,
-    centerX: token.center.x,
-    centerY: token.center.y,
-    hp: token.actor.data.data.attributes.hp.value,
-  };
-
-  saveObj = JSON.parse(JSON.stringify(saveObj));
-  log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
-  lastTokenState[token.id] = Object.assign(saveObj);
-};
-
-const addToSplatPool = (splatContainer, splatSaveObj): void => {
-  log(LogLevel.DEBUG, 'addToSplatPool');
-  const poolObj = { save: splatSaveObj, splatContainer: splatContainer };
-  if (splatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize')) {
-    const fadingSplatPoolObj = splatPool.shift();
-    fadingSplatPoolObj.splatContainer.alpha = 0.3;
-    if (fadingSplatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize') / 5) {
-      const destroy = fadingSplatPool.shift();
-      destroy.splatContainer.destroy({ children: true });
-    }
-    fadingSplatPool.push(fadingSplatPoolObj);
-  }
-  splatPool.push(poolObj);
-
-  log(LogLevel.DEBUG, `addToSplatPool splatPool:${splatPool.length}, fadingSplatPool:${fadingSplatPool.length}`);
-  saveSceneSplats();
-};
-
-const saveSceneSplats = async () => {
-  log(LogLevel.INFO, 'saveSceneSplats');
-  const pool = splatPool.map((splat) => splat.save);
-  log(LogLevel.DEBUG, 'saveSceneSplats: pool', pool);
-  await activeScene.setFlag(MODULE_ID, 'splatPool', pool);
-};
-
-const drawSceneSplats = async (splatSaveObjects) => {
-  if (!splatSaveObjects) return;
-  log(LogLevel.INFO, 'drawSceneSplats');
-  splatSaveObjects.forEach((splatSaveObj: SplatSaveObject) => {
-    drawSplat(splatSaveObj);
-  });
-};
 
 const generateFloorSplats = (token: Token, font: SplatFont, size: number, density: number) => {
   if (!density) return;
@@ -414,7 +276,6 @@ const generateTokenSplats = (token: Token, font: SplatFont, size: number, densit
   };
   const style = new PIXI.TextStyle(splatSaveObj.styleData);
 
-  // @ts-ignore
   splatSaveObj.tokenId = token.id;
 
   const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
@@ -436,24 +297,12 @@ const generateTokenSplats = (token: Token, font: SplatFont, size: number, densit
     };
   });
 
-  const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatSaveObj.splats);
-  console.log(offset, width, height);
+  const { offset } = alignSplatsGetOffsetAndDimensions(splatSaveObj.splats);
   splatSaveObj.offset = offset;
   splatSaveObj.x = offset.x + token.width / 2;
   splatSaveObj.y = offset.y + token.height / 2;
 
-  //splatsContainer.x += offset.x;
-  //splatsContainer.y += offset.y;
-  // renderSprite.x -= offset.x;
-  // renderSprite.y -= offset.y;
-  // tokenSprite.x -= offset.x;
-  // tokenSprite.y -= offset.y;
-
   drawSplat(splatSaveObj);
-  // addToSplatPool(splatsContainer, styleData);
-  // token.addChildAt(splatsContainer, token.children.length);
-
-  //if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect2(splatSaveObj, 2, 0x00ffff);
 };
 
 const generateTrailSplats = (token: Token, font: SplatFont, size: number, density: number) => {
@@ -471,14 +320,14 @@ const generateTrailSplats = (token: Token, font: SplatFont, size: number, densit
     align: 'center',
   };
   const style = new PIXI.TextStyle(splatSaveObj.styleData);
-  console.log(lastTokenState[token.id]);
+
   const lastPosOrigin = new PIXI.Point(
     lastTokenState[token.id].centerX - token.center.x,
     lastTokenState[token.id].centerY - token.center.y,
   );
   const currPosOrigin = new PIXI.Point(0, 0);
   const direction = getDirectionNrml(lastPosOrigin, currPosOrigin);
-  console.log(direction);
+
   //horiz or vert movement
   const pixelSpread = direction.x
     ? token.width * game.settings.get(MODULE_ID, 'splatSpread')
@@ -513,7 +362,7 @@ const generateTrailSplats = (token: Token, font: SplatFont, size: number, densit
   log(LogLevel.DEBUG, 'generateTrailSplats splatSaveObj.splats', splatSaveObj.splats);
 
   const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatSaveObj.splats);
-  console.log(offset, width, height);
+
   splatSaveObj.offset = offset;
   splatSaveObj.x = offset.x;
   splatSaveObj.y = offset.y;
@@ -615,4 +464,54 @@ const drawSplat = (splatSaveObj) => {
   addToSplatPool(splatsContainer, splatSaveObj);
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
+};
+
+const saveTokenState = (token: Token): void => {
+  log(LogLevel.DEBUG, 'saveTokenState:', token);
+  log(LogLevel.DEBUG, 'saveTokenState name:' + token.data.name);
+
+  let saveObj: TokenSaveObject = {
+    x: token.x,
+    y: token.y,
+    centerX: token.center.x,
+    centerY: token.center.y,
+    hp: token.actor.data.data.attributes.hp.value,
+  };
+
+  saveObj = JSON.parse(JSON.stringify(saveObj));
+  log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
+  lastTokenState[token.id] = Object.assign(saveObj);
+};
+
+const addToSplatPool = (splatContainer, splatSaveObj): void => {
+  log(LogLevel.DEBUG, 'addToSplatPool');
+  const poolObj = { save: splatSaveObj, splatContainer: splatContainer };
+  if (splatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize')) {
+    const fadingSplatPoolObj = splatPool.shift();
+    fadingSplatPoolObj.splatContainer.alpha = 0.3;
+    if (fadingSplatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize') / 5) {
+      const destroy = fadingSplatPool.shift();
+      destroy.splatContainer.destroy({ children: true });
+    }
+    fadingSplatPool.push(fadingSplatPoolObj);
+  }
+  splatPool.push(poolObj);
+
+  log(LogLevel.DEBUG, `addToSplatPool splatPool:${splatPool.length}, fadingSplatPool:${fadingSplatPool.length}`);
+  saveSceneSplats();
+};
+
+const saveSceneSplats = async () => {
+  log(LogLevel.INFO, 'saveSceneSplats');
+  const pool = splatPool.map((splat) => splat.save);
+  log(LogLevel.DEBUG, 'saveSceneSplats: pool', pool);
+  await activeScene.setFlag(MODULE_ID, 'splatPool', pool);
+};
+
+const drawSceneSplats = async (splatSaveObjects) => {
+  if (!splatSaveObjects) return;
+  log(LogLevel.INFO, 'drawSceneSplats');
+  splatSaveObjects.forEach((splatSaveObj: SplatSaveObject) => {
+    drawSplat(splatSaveObj);
+  });
 };
