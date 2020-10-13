@@ -119,7 +119,7 @@ Hooks.once('canvasReady', () => {
     log(LogLevel.DEBUG, 'onloadingdone we have ' + fontFaceSetEvent.fontfaces.length + ' font faces loaded');
     const check = (document as any).fonts.check('1em splatter');
     log(LogLevel.DEBUG, 'splatter loaded? ' + check);
-
+    if (!check) return;
     const pool = activeScene.getFlag(MODULE_ID, 'splatPool');
     console.log('splatPool', pool);
     drawSceneSplats(pool);
@@ -325,10 +325,10 @@ const addToSplatPool = (splatContainer, splatSaveObj): void => {
 };
 
 const saveSceneSplats = async () => {
-  log(LogLevel.INFO, 'drawSceneSplats');
+  log(LogLevel.INFO, 'saveSceneSplats');
   const pool = splatPool.map((splat) => splat.save);
-  log(LogLevel.DEBUG, 'drawSceneSplats: pool', pool);
-  return activeScene.setFlag(MODULE_ID, 'splatPool', pool);
+  log(LogLevel.DEBUG, 'saveSceneSplats: pool', pool);
+  await activeScene.setFlag(MODULE_ID, 'splatPool', pool);
 };
 
 const drawSceneSplats = async (splatSaveObjects) => {

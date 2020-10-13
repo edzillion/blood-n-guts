@@ -34,3 +34,4 @@ This is a work in progress.
 1. tokensplat mask alignment is slightly off
 1. sometimes tokensplats don't appear on damage (also on death?)
 1. ux - enter on adv config just closes doesnot save
+1. reloading splats deletes the latest splat?
