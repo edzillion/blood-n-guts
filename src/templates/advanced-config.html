@@ -4,76 +4,95 @@
     <div class="form-group submenu">
       <label>Floor Splat Font:</label>
       <select type="select" class="advanced-config-select-font" name="floorSplatFont">    
-        <option value="splatter"> splatter </option>
-        <option value="WC Rhesus A Bta"> WC Rhesus A Bta </option>                       
+        {{#select floorSplatFont}}
+          {{#each fonts}}
+            <option value="{{name}}"> {{name}} </option>
+          {{/each}}
+        {{/select}}                    
       </select>      
       <p class="notes">Select the font to use for blood splatter on the floor</p>
     </div>
     <div class="form-group">
       <label>Token Splat Font:</label>
-      <select type="select" class="advanced-config-select-font" name="tokenSplatFont">    
-        <option> splatter </option>
-        <option> WC Rhesus A Bta </option>                       
+      <select type="select" class="advanced-config-select-font" name="tokenSplatFont">
+        {{#select tokenSplatFont}}
+          {{#each fonts}}
+            <option value="{{name}}"> {{name}} </option>
+          {{/each}}
+        {{/select}}                    
+      </select>      
       </select>
       <p class="notes">Select the font to use for token blood splatter</p>
     </div>
     <div class="form-group">
       <label>Trail Splat Font:</label>
       <select type="select" class="advanced-config-select-font" name="trailSplatFont">    
-        <option> splatter </option>
-        <option> WC Rhesus A Bta </option>                       
+        {{#select trailSplatFont}}
+          {{#each fonts}}
+            <option value="{{name}}"> {{name}} </option>
+          {{/each}}
+        {{/select}}                    
+      </select>                           
       </select>
       <p class="notes">Select the font to use for blood trails</p>
     <div>
     <div class="form-group">
       <label>Floor Splat Size</label>
       <div class="form-fields">
-        <input type="text" class="advanced-config-font-details" name="floorSplatSize" data-dtype="Number">
+        <input type="number" value="{{ floorSplatSize }}" class="advanced-config-font-details" name="floorSplatSize" data-dtype="Number">
       </div>
       <p class="notes">This will increase the size of floor splats</p>
     </div>
     <div class="form-group">
       <label>Floor Splat Density</label>
       <div class="form-fields">
-        <input type="text" class="advanced-config-font-details" name="floorSplatDensity" data-dtype="Number">
+        <input type="number" value="{{ floorSplatDensity }}" class="advanced-config-font-details" name="floorSplatDensity" data-dtype="Number">
       </div>
       <p class="notes">This will increase the amount of floor spats per hit</p>
     </div>
     <div class="form-group">
       <label>Token Splat Size</label>
       <div class="form-fields">
-        <input type="text" class="advanced-config-font-details" name="tokenSplatSize" data-dtype="Number">
+        <input type="number" value="{{ tokenSplatSize }}" class="advanced-config-font-details" name="tokenSplatSize" data-dtype="Number">
       </div>
       <p class="notes">This will increase the size of token splats</p>
     </div>
     <div class="form-group">
       <label>Token Splat Density</label>
       <div class="form-fields">
-        <input type="text" class="advanced-config-font-details" name="tokenSplatDensity" data-dtype="Number">
+        <input type="number" value="{{ tokenSplatDensity }}" class="advanced-config-font-details" name="tokenSplatDensity" data-dtype="Number">
       </div>
       <p class="notes">This will increase the amount of token splats per hit</p>
     </div>
     <div class="form-group">
       <label>Trail Splat Size</label>
       <div class="form-fields">
-        <input type="text" class="advanced-config-font-details" name="trailSplatSize" data-dtype="Number">
+        <input type="number" value="{{ trailSplatSize }}" class="advanced-config-font-details" name="trailSplatSize" data-dtype="Number">
       </div>
       <p class="notes">This will increase the size of splats in a blood trail</p>
     </div>
     <div class="form-group">
       <label>Trail Splat Density</label>
       <div class="form-fields">
-        <input type="text" class="advanced-config-font-details" name="trailSplatDensity"  data-dtype="Number">
+        <input type="number" value="{{ trailSplatDensity }}" class="advanced-config-font-details" name="trailSplatDensity"  data-dtype="Number">
       </div>
-      <p class="notes">This will increase the amount of blood splats in a trail</p>
+      <p class="notes">This will increase the amount of blood splats  in a trail</p>
     </div>
     <div class="form-group">
       <label>Splat Spread</label>
       <div class="form-fields">
-        <input type="text" class="advanced-config-font-details" name="splatSpread"  data-dtype="Number">
+        <input type="number" value="{{ splatSpread }}" class="advanced-config-font-details" name="splatSpread"  data-dtype="Number">
       </div>
       <p class="notes">This will determine the random spread of splats</p>
     </div>
+    <div class="form-group">
+      <label>Splat Pool Size</label>
+      <div class="form-fields">
+        <input type="number" value="{{ splatPoolSize }}" class="advanced-config-font-details" name="splatPoolSize"  data-dtype="Number">
+      </div>
+      <p class="notes">The max amount of splats to display at once before reuse</p>
+    </div>
+      <button type="button" class="advanced-config-wipe-pool" name="wipe-pool"><i class="fas fa-trash-alt"></i>Wipe Pool</button>
       <button type="submit" class="advanced-config-submit" name="submit"><i class="fas fa-dice"></i>Submit</button>
   </div>
 </form>

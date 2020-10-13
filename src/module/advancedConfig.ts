@@ -1,5 +1,9 @@
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
+import * as violenceLevelSettings from '../data/violenceLevelSettings';
+import * as splatFonts from '../data/splatFonts';
+
+let activeScene;
 
 export class AdvancedConfig extends FormApplication {
   font: SplatFont;
@@ -7,9 +11,9 @@ export class AdvancedConfig extends FormApplication {
 
   constructor(object: any, options?: FormApplicationOptions) {
     super(object, options);
-    console.log(object, options);
     game.settings.sheet.close();
     game.users.apps.push(this);
+    if (canvas.scene.active) activeScene = canvas.scene;
   }
 
   static get defaultOptions(): FormApplicationOptions {
@@ -24,8 +28,22 @@ export class AdvancedConfig extends FormApplication {
     return options;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  async getData() {}
+  async getData(options) {
+    // todo: sort out this permissions stuff
+    // const canConfigure = game.user.can('SETTINGS_MODIFY');
+
+    const dataObject = {};
+    const level = game.settings.get(MODULE_ID, 'violenceLevel');
+    const violenceLevel = violenceLevelSettings.level[level];
+    for (const key in violenceLevel) {
+      dataObject[key] = game.settings.get(MODULE_ID, key);
+    }
+    dataObject['fonts'] = splatFonts.fonts;
+    dataObject['floorSplatFont'] = game.settings.get(MODULE_ID, 'floorSplatFont');
+    dataObject['tokenSplatFont'] = game.settings.get(MODULE_ID, 'tokenSplatFont');
+    dataObject['trailSplatFont'] = game.settings.get(MODULE_ID, 'trailSplatFont');
+    return dataObject;
+  }
 
   render(force, context = {}) {
     return super.render(force, context);
@@ -34,25 +52,14 @@ export class AdvancedConfig extends FormApplication {
   activateListeners(html) {
     super.activateListeners(html);
 
-    // pre-select font dropdowns & add change listener
-    const selects = html.find('.advanced-config-select-font');
-    for (let i = 0; i < selects.length; i++) {
-      for (let j = 0; j < selects[i].options.length; j++) {
-        if (selects[i].options[j].value === game.settings.get(MODULE_ID, selects[i].name)) {
-          selects[i].selectedIndex = j;
-          break;
-        }
-      }
-    }
-    // pre-fill font size, density inputs
-    const inputs = html.find('.advanced-config-font-details');
-    for (let i = 0; i < inputs.length; i++) {
-      inputs[i].value = game.settings.get(MODULE_ID, inputs[i].name);
-    }
+    const wipeButton = html.find('.advanced-config-wipe-pool');
+    wipeButton.click((e) => {
+      activeScene.setFlag(MODULE_ID, 'splatPool', null);
+      this.close();
+    });
   }
 
   async _updateObject(event, formData) {
-    console.log(event, formData);
     for (const setting in formData) {
       game.settings.set(MODULE_ID, setting, formData[setting]);
     }

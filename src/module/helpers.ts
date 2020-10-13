@@ -1,30 +1,19 @@
 import { log, LogLevel } from './logging';
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import { colors, getRGBA } from './colors';
+import { MODULE_ID } from '../constants';
 
-export const alignSplatsAndGetOffset = (splats: Array<PIXI.Text>): PIXI.Point => {
+export const alignSplatsAndGetOffset1 = (splats: Array<PIXI.Text>): PIXI.Point => {
   let lowestX = canvas.dimensions.sceneWidth;
   let lowestY = canvas.dimensions.sceneHeight;
   let highestX = 0;
   let highestY = 0;
   for (let i = 0; i < splats.length; i++) {
     const txt = splats[i];
-    if (txt.x < lowestX) {
-      console.log('lowestX', txt.x);
-      lowestX = txt.x;
-    }
-    if (txt.y < lowestY) {
-      console.log('lowestY', txt.y);
-      lowestY = txt.y;
-    }
-    if (txt.x + txt.width > highestX) {
-      console.log('highestX', txt.x);
-      highestX = txt.x + txt.width;
-    }
-    if (txt.y + txt.height > highestY) {
-      console.log('highestY', txt.y);
-      highestY = txt.y + txt.height;
-    }
+    if (txt.x < lowestX) lowestX = txt.x;
+    if (txt.y < lowestY) lowestY = txt.y;
+    if (txt.x + txt.width > highestX) highestX = txt.x + txt.width;
+    if (txt.y + txt.height > highestY) highestY = txt.y + txt.height;
   }
   for (let j = 0; j < splats.length; j++) {
     const t = splats[j];
@@ -32,6 +21,30 @@ export const alignSplatsAndGetOffset = (splats: Array<PIXI.Text>): PIXI.Point =>
     t.y -= lowestY;
   }
   return new PIXI.Point(lowestX, lowestY);
+};
+
+export const alignSplatsGetOffsetAndDimensions = (splats: Array<Splat>) => {
+  let lowestX = canvas.dimensions.sceneWidth;
+  let lowestY = canvas.dimensions.sceneHeight;
+  let highestX = 0;
+  let highestY = 0;
+  for (let i = 0; i < splats.length; i++) {
+    const splat = splats[i];
+    if (splat.x < lowestX) lowestX = splat.x;
+    if (splat.y < lowestY) lowestY = splat.y;
+    if (splat.x + splat.width > highestX) highestX = splat.x + splat.width;
+    if (splat.y + splat.height > highestY) highestY = splat.y + splat.height;
+  }
+  for (let j = 0; j < splats.length; j++) {
+    const t = splats[j];
+    t.x -= lowestX;
+    t.y -= lowestY;
+  }
+  return {
+    offset: new PIXI.Point(lowestX, lowestY),
+    width: highestX - lowestX,
+    height: highestY - lowestY,
+  };
 };
 
 export const computeSightFromPoint = (origin: Point, range: number): [number] => {
@@ -57,7 +70,6 @@ export const computeSightFromPoint = (origin: Point, range: number): [number] =>
   let lowestY = canvas.dimensions.sceneHeight;
 
   for (let i = 0; i < sight.fov.points.length; i += 2) {
-    console.log('currentLowestX:' + lowestX, 'currentLowestY:' + lowestY);
     lowestX = sight.fov.points[i] < lowestX ? sight.fov.points[i] : lowestX;
     lowestY = sight.fov.points[i + 1] < lowestY ? sight.fov.points[i + 1] : lowestY;
   }
@@ -80,16 +92,19 @@ export const randomBoxMuller = (): number => {
 };
 
 export const lookupTokenBloodColor = (token: Token): string => {
-  log(LogLevel.INFO, 'lookupTokenBloodColor: ' + token.name);
+  const enabled = game.settings.get(MODULE_ID, 'useBloodColor');
+  log(LogLevel.INFO, 'lookupTokenBloodColor enabled?: ' + enabled);
 
   const actor: Actor = token.actor;
   const actorType: string = actor.data.type;
   const type: string = actorType === 'npc' ? actor.data.data.details.type : actor.data.data.details.race;
 
-  log(LogLevel.DEBUG, 'lookupTokenBloodColor: ', actorType, type);
+  log(LogLevel.DEBUG, 'lookupTokenBloodColor: ', token.name, actorType, type);
   let bloodColor: string;
   const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
-  bloodColor = bloodColorSettings.color[type];
+
+  // if useBloodColor is disabled then all blood is red
+  bloodColor = enabled ? bloodColorSettings.color[type] : 'red';
   let rgba;
   if (bloodColor === 'name') {
     rgba = getActorColorByName(actor);
@@ -133,6 +148,12 @@ export const drawDebugRect = (container: PIXI.Container, width = 2, color = 0xff
   rect.lineStyle(width, color).drawRect(container.x, container.y, container.width, container.height);
   canvas.drawings.addChild(rect);
   log(LogLevel.DEBUG, 'drawDebugRect: ', container);
+};
+
+export const drawDebugRect2 = (x, y, w, h): void => {
+  const rect = new PIXI.Graphics();
+  rect.lineStyle(2, 0xff0000).drawRect(x, y, w, h);
+  canvas.drawings.addChild(rect);
 };
 
 export const getDirectionNrml = (lastPosition: Point, changes: any): PIXI.Point => {
