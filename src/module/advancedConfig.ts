@@ -54,7 +54,12 @@ export class AdvancedConfig extends FormApplication {
 
     const wipeButton = html.find('.advanced-config-wipe-pool');
     wipeButton.click((e) => {
+      log(LogLevel.INFO, 'wipeButton: wiping splatPool');
       activeScene.setFlag(MODULE_ID, 'splatPool', null);
+      globalThis.splatPool.forEach((poolObj) => {
+        poolObj.splatContainer.destroy();
+      });
+      globalThis.splatPool = [];
       this.close();
     });
   }

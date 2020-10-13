@@ -8,7 +8,7 @@
  */
 
 //CONFIG.debug.hooks = true;
-CONFIG.logLevel = 1;
+CONFIG.logLevel = 2;
 
 // Import JavaScript modules
 import { registerSettings } from './module/settings';
@@ -34,9 +34,12 @@ import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 const lastTokenState: Array<TokenSaveObject> = [];
-const splatPool: Array<any> = [];
+
+globalThis.splatPool = [];
 const fadingSplatPool: Array<any> = [];
 let activeScene;
+
+let damageScale = 1;
 
 /* ------------------------------------ */
 /* Initialize module					*/
@@ -79,7 +82,7 @@ Hooks.once('ready', () => {
   document.body.appendChild(stub);
   document.body.appendChild(stub2);
 
-  const canvasTokens = canvas.tokens.placeables;
+  const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
   for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
 });
 
@@ -131,7 +134,14 @@ Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
   log(LogLevel.DEBUG, tokenData, changes, uid);
 
   const token = canvas.tokens.placeables.find((t) => t.data._id === tokenData._id);
-  if (!token) log(LogLevel.ERROR, 'updateToken token not found!');
+  if (!token) {
+    log(LogLevel.ERROR, 'updateToken token not found!');
+    return;
+  }
+  if (!token.actor) {
+    log(LogLevel.DEBUG, 'token has no actor, skipping');
+    return;
+  }
 
   await checkForMovement(token, changes);
   checkForDamage(token, changes.actorData);
@@ -177,6 +187,10 @@ async function checkForDamage(token: Token, actorDataChanges) {
 
   if (currentHP < lastHP) {
     log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - hp down');
+    damageScale = (lastHP - currentHP) / token.actor.data.data.attributes.hp.max;
+    damageScale += 1;
+    console.log('damageScale', damageScale);
+
     const deathMult = actorDataChanges.data.attributes.hp.value === 0 ? 2 : 1;
     if (deathMult === 2) log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
 
@@ -184,13 +198,13 @@ async function checkForDamage(token: Token, actorDataChanges) {
       token,
       splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
       game.settings.get(MODULE_ID, 'floorSplatSize'),
-      game.settings.get(MODULE_ID, 'floorSplatDensity') * deathMult,
+      Math.round(game.settings.get(MODULE_ID, 'floorSplatDensity') * deathMult * damageScale),
     );
     generateTokenSplats(
       token,
       splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
       game.settings.get(MODULE_ID, 'tokenSplatSize'),
-      game.settings.get(MODULE_ID, 'tokenSplatDensity') * deathMult,
+      Math.round(game.settings.get(MODULE_ID, 'tokenSplatDensity') * deathMult * damageScale),
     );
 
     await token.setFlag(MODULE_ID, 'bleeding', true);
@@ -486,8 +500,8 @@ const saveTokenState = (token: Token): void => {
 const addToSplatPool = (splatContainer, splatSaveObj): void => {
   log(LogLevel.DEBUG, 'addToSplatPool');
   const poolObj = { save: splatSaveObj, splatContainer: splatContainer };
-  if (splatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize')) {
-    const fadingSplatPoolObj = splatPool.shift();
+  if (globalThis.splatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize')) {
+    const fadingSplatPoolObj = globalThis.splatPool.shift();
     fadingSplatPoolObj.splatContainer.alpha = 0.3;
     if (fadingSplatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize') / 5) {
       const destroy = fadingSplatPool.shift();
@@ -495,15 +509,18 @@ const addToSplatPool = (splatContainer, splatSaveObj): void => {
     }
     fadingSplatPool.push(fadingSplatPoolObj);
   }
-  splatPool.push(poolObj);
+  globalThis.splatPool.push(poolObj);
 
-  log(LogLevel.DEBUG, `addToSplatPool splatPool:${splatPool.length}, fadingSplatPool:${fadingSplatPool.length}`);
+  log(
+    LogLevel.DEBUG,
+    `addToSplatPool splatPool:${globalThis.splatPool.length}, fadingSplatPool:${fadingSplatPool.length}`,
+  );
   saveSceneSplats();
 };
 
 const saveSceneSplats = async () => {
   log(LogLevel.INFO, 'saveSceneSplats');
-  const pool = splatPool.map((splat) => splat.save);
+  const pool = globalThis.splatPool.map((splat) => splat.save);
   log(LogLevel.DEBUG, 'saveSceneSplats: pool', pool);
   await activeScene.setFlag(MODULE_ID, 'splatPool', pool);
 };
