@@ -129,7 +129,7 @@ Hooks.on('updateToken', async (scene, tokenData, changes, options, uid) => {
   if (!token) log(LogLevel.ERROR, 'updateToken token not found!');
 
   await checkForMovement(token, changes);
-  //checkForDamage(token, changes.actorData);
+  checkForDamage(token, changes.actorData);
   saveTokenState(token);
 });
 
@@ -550,9 +550,9 @@ const generateFloorSplats = (token: Token, font: SplatFont, size: number, densit
 
   const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatSaveObj.splats);
 
-  splatSaveObj.x = offset.x + token.center.x;
-  splatSaveObj.y = offset.y + token.center.y;
   splatSaveObj.offset = offset;
+  splatSaveObj.x = offset.x;
+  splatSaveObj.y = offset.y;
 
   const maxDistance = Math.max(width, height);
   const sight = computeSightFromPoint(token.center, maxDistance);
