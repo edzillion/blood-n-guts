@@ -29,6 +29,7 @@ This is a work in progress.
 1. use token velocity for direction?
 1. i18n
 1. Are both filters needed to get a sprite mask
+1. use duplicate helper?
 
 ## Bugs
 1. No trail when moving to a grid coord y < grid.size

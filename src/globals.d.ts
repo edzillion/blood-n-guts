@@ -21,10 +21,12 @@ interface TokenSaveObject {
   centerY: number;
   hp: number;
 }
+
 interface SplatPoolObject {
   save: SplatSaveObject;
   splatContainer: PIXI.Container;
 }
+
 interface SplatSaveObject {
   x: number;
   y: number;
@@ -32,7 +34,6 @@ interface SplatSaveObject {
   splats: Array<Splat>;
   offset: PIXI.Point;
   maskPolygon?: Array<number>;
-  imgPath?: string;
   tokenId?: string;
 }
 
