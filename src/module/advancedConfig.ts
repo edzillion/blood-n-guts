@@ -3,6 +3,8 @@ import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import * as splatFonts from '../data/splatFonts';
 
+let activeScene;
+
 export class AdvancedConfig extends FormApplication {
   font: SplatFont;
   allAsciiCharacters: string;
@@ -11,6 +13,7 @@ export class AdvancedConfig extends FormApplication {
     super(object, options);
     game.settings.sheet.close();
     game.users.apps.push(this);
+    if (canvas.scene.active) activeScene = canvas.scene;
   }
 
   static get defaultOptions(): FormApplicationOptions {
@@ -48,6 +51,12 @@ export class AdvancedConfig extends FormApplication {
 
   activateListeners(html) {
     super.activateListeners(html);
+
+    const wipeButton = html.find('.advanced-config-wipe-pool');
+    wipeButton.click((e) => {
+      activeScene.setFlag(MODULE_ID, 'splatPool', null);
+      this.close();
+    });
   }
 
   async _updateObject(event, formData) {

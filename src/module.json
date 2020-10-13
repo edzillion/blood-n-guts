@@ -3,7 +3,7 @@
   "title": "Blood n Guts - An Example FVTT Module",
   "description": "A simple module created as a demo for working in the Foundry Virtual Tabletop framework.",
   "author": "edzillion",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "minimumCoreVersion": "0.0.1",
   "esmodules": ["./blood-n-guts.js"],
   "styles": ["./blood-n-guts.css"]  

@@ -27,8 +27,12 @@ This is a work in progress.
 1. implement Tile pool to reuse tiles instead of creating new.
 1. thank vance and skimble on release
 1. use token velocity for direction?
+1. i18n
+1. Are both filters needed to get a sprite mask
 
 ## Bugs
 1. No trail when moving to a grid coord y < grid.size
 1. tokensplat mask alignment is slightly off
 1. sometimes tokensplats don't appear on damage (also on death?)
+1. ux - enter on adv config just closes doesnot save
+1. reloading splats deletes the latest splat?
