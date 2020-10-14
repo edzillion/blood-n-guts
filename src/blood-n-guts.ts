@@ -7,8 +7,8 @@
  * 					 determines how others may use and modify your module
  */
 
-//CONFIG.debug.hooks = true;
-CONFIG.logLevel = 1;
+CONFIG.debug.hooks = false;
+CONFIG.logLevel = 2;
 
 // Import JavaScript modules
 import { registerSettings } from './module/settings';
@@ -34,9 +34,13 @@ import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 const lastTokenState: Array<TokenSaveObject> = [];
-const splatPool: Array<any> = [];
+
+globalThis.sceneSplatPool = [];
 const fadingSplatPool: Array<any> = [];
 let activeScene;
+
+let damageScale = 1;
+let fontsLoaded = false;
 
 /* ------------------------------------ */
 /* Initialize module					*/
@@ -51,7 +55,6 @@ Hooks.once('init', async () => {
 
   // Preload Handlebars templates
   await preloadTemplates();
-
   // Register custom sheets (if any)
 });
 
@@ -68,7 +71,7 @@ Hooks.once('setup', () => {
 /* When ready							              */
 /* ------------------------------------ */
 Hooks.once('ready', () => {
-  log(LogLevel.DEBUG, 'ready, inserting preload stub');
+  log(LogLevel.INFO, 'ready, inserting preload stub');
   // Insert a div that uses the font so that it preloads
   const stub = document.createElement('div');
   stub.style.cssText = "visibility:hidden; font-family: 'splatter';";
@@ -78,26 +81,24 @@ Hooks.once('ready', () => {
   stub2.innerHTML = 'A';
   document.body.appendChild(stub);
   document.body.appendChild(stub2);
-
-  const canvasTokens = canvas.tokens.placeables;
-  for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
 });
 
 Hooks.on('createToken', (_scene, tokenData) => {
+  log(LogLevel.INFO, 'createToken');
   const token = new Token(tokenData);
   saveTokenState(token);
 });
 
-Hooks.once('canvasInit', (canvas) => {
+Hooks.on('canvasInit', (canvas) => {
   log(LogLevel.INFO, 'canvasInit', canvas);
   if (canvas.scene.active) activeScene = canvas.scene;
-  //redraw containers?
 });
 
-Hooks.once('canvasReady', () => {
-  //const pool = activeScene.setFlag(MODULE_ID, 'splatPool', null);
-
+Hooks.on('canvasReady', () => {
   log(LogLevel.INFO, 'canvasReady');
+
+  globalThis.sceneSplatPool = [];
+
   if (CONFIG.logLevel >= LogLevel.DEBUG) {
     document.addEventListener(
       'click',
@@ -111,27 +112,47 @@ Hooks.once('canvasReady', () => {
       false,
     );
   }
+  if (!fontsLoaded) {
+    (document as any).fonts.ready.then(() => {
+      log(LogLevel.DEBUG, 'All fonts in use by visible text have loaded.');
+    });
+    (document as any).fonts.onloadingdone = (fontFaceSetEvent) => {
+      log(LogLevel.DEBUG, 'onloadingdone we have ' + fontFaceSetEvent.fontfaces.length + ' font faces loaded');
+      const check = (document as any).fonts.check('1em splatter');
+      log(LogLevel.DEBUG, 'splatter loaded? ' + check);
+      if (!check) return;
+      fontsLoaded = true;
+      //activeScene.setFlag(MODULE_ID, 'sceneSplatPool', null);
+      const pool = activeScene.getFlag(MODULE_ID, 'sceneSplatPool');
+      log(LogLevel.INFO, 'sceneSplatPool loaded:', pool);
+      drawSceneSplats(pool);
 
-  (document as any).fonts.ready.then(() => {
-    log(LogLevel.DEBUG, 'All fonts in use by visible text have loaded.');
-  });
-  (document as any).fonts.onloadingdone = (fontFaceSetEvent) => {
-    log(LogLevel.DEBUG, 'onloadingdone we have ' + fontFaceSetEvent.fontfaces.length + ' font faces loaded');
-    const check = (document as any).fonts.check('1em splatter');
-    log(LogLevel.DEBUG, 'splatter loaded? ' + check);
-    if (!check) return;
-
-    const pool = activeScene.getFlag(MODULE_ID, 'splatPool');
-    log(LogLevel.INFO, 'splatPool loaded:', pool);
+      const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
+      for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
+    };
+  } else {
+    //activeScene.setFlag(MODULE_ID, 'sceneSplatPool', null);
+    const pool = activeScene.getFlag(MODULE_ID, 'sceneSplatPool');
+    log(LogLevel.INFO, 'sceneSplatPool loaded:', pool);
     drawSceneSplats(pool);
-  };
+
+    const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
+    for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
+  }
 });
 
 Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
   log(LogLevel.DEBUG, tokenData, changes, uid);
 
   const token = canvas.tokens.placeables.find((t) => t.data._id === tokenData._id);
-  if (!token) log(LogLevel.ERROR, 'updateToken token not found!');
+  if (!token) {
+    log(LogLevel.ERROR, 'updateToken token not found!');
+    return;
+  }
+  if (!token.actor) {
+    log(LogLevel.DEBUG, 'token has no actor, skipping');
+    return;
+  }
 
   await checkForMovement(token, changes);
   checkForDamage(token, changes.actorData);
@@ -177,6 +198,9 @@ async function checkForDamage(token: Token, actorDataChanges) {
 
   if (currentHP < lastHP) {
     log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - hp down');
+    damageScale = (lastHP - currentHP) / token.actor.data.data.attributes.hp.max;
+    damageScale += 1;
+
     const deathMult = actorDataChanges.data.attributes.hp.value === 0 ? 2 : 1;
     if (deathMult === 2) log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
 
@@ -184,13 +208,13 @@ async function checkForDamage(token: Token, actorDataChanges) {
       token,
       splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
       game.settings.get(MODULE_ID, 'floorSplatSize'),
-      game.settings.get(MODULE_ID, 'floorSplatDensity') * deathMult,
+      Math.round(game.settings.get(MODULE_ID, 'floorSplatDensity') * deathMult * damageScale),
     );
     generateTokenSplats(
       token,
       splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
       game.settings.get(MODULE_ID, 'tokenSplatSize'),
-      game.settings.get(MODULE_ID, 'tokenSplatDensity') * deathMult,
+      Math.round(game.settings.get(MODULE_ID, 'tokenSplatDensity') * deathMult * damageScale),
     );
 
     await token.setFlag(MODULE_ID, 'bleeding', true);
@@ -410,10 +434,10 @@ const drawSplat = (splatSaveObj) => {
 
     canvas.tiles.addChild(splatsContainer);
   } else if (splatSaveObj.tokenId) {
-    log(LogLevel.DEBUG, 'drawSplat: splatSaveObj.imgPath');
+    log(LogLevel.DEBUG, 'drawSplat: splatSaveObj.tokenId');
 
     const token = canvas.tokens.placeables.find((t) => t.data._id === splatSaveObj.tokenId);
-    if (!token) log(LogLevel.ERROR, 'drawSplat token not found!');
+    if (!token) log(LogLevel.ERROR, 'drawSplat token not found!', splatSaveObj);
 
     const tokenSprite = PIXI.Sprite.from(token.data.img);
     const maskSprite = PIXI.Sprite.from(token.data.img);
@@ -422,6 +446,7 @@ const drawSplat = (splatSaveObj) => {
     tokenSprite.height = token.height;
     maskSprite.width = tokenSprite.width;
     maskSprite.height = tokenSprite.height;
+    log(LogLevel.DEBUG, 'drawSplat: ', tokenSprite.width, tokenSprite.height);
 
     const textureContainer = new PIXI.Container();
     textureContainer.addChild(maskSprite);
@@ -467,8 +492,7 @@ const drawSplat = (splatSaveObj) => {
 };
 
 const saveTokenState = (token: Token): void => {
-  log(LogLevel.DEBUG, 'saveTokenState:', token);
-  log(LogLevel.DEBUG, 'saveTokenState name:' + token.data.name);
+  log(LogLevel.INFO, 'saveTokenState:', token.data.name, token.id);
 
   let saveObj: TokenSaveObject = {
     x: token.x,
@@ -478,39 +502,41 @@ const saveTokenState = (token: Token): void => {
     hp: token.actor.data.data.attributes.hp.value,
   };
 
-  saveObj = JSON.parse(JSON.stringify(saveObj));
+  saveObj = duplicate(saveObj);
   log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
   lastTokenState[token.id] = Object.assign(saveObj);
 };
 
 const addToSplatPool = (splatContainer, splatSaveObj): void => {
-  log(LogLevel.DEBUG, 'addToSplatPool');
   const poolObj = { save: splatSaveObj, splatContainer: splatContainer };
-  if (splatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize')) {
-    const fadingSplatPoolObj = splatPool.shift();
+  if (globalThis.sceneSplatPool.length >= game.settings.get(MODULE_ID, 'sceneSplatPoolSize')) {
+    const fadingSplatPoolObj = globalThis.sceneSplatPool.shift();
     fadingSplatPoolObj.splatContainer.alpha = 0.3;
-    if (fadingSplatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize') / 5) {
+    if (fadingSplatPool.length >= game.settings.get(MODULE_ID, 'sceneSplatPoolSize') / 5) {
       const destroy = fadingSplatPool.shift();
       destroy.splatContainer.destroy({ children: true });
     }
     fadingSplatPool.push(fadingSplatPoolObj);
   }
-  splatPool.push(poolObj);
+  globalThis.sceneSplatPool.push(poolObj);
 
-  log(LogLevel.DEBUG, `addToSplatPool splatPool:${splatPool.length}, fadingSplatPool:${fadingSplatPool.length}`);
+  log(
+    LogLevel.DEBUG,
+    `addToSplatPool sceneSplatPool:${globalThis.sceneSplatPool.length}, fadingSplatPool:${fadingSplatPool.length}`,
+  );
   saveSceneSplats();
 };
 
 const saveSceneSplats = async () => {
-  log(LogLevel.INFO, 'saveSceneSplats');
-  const pool = splatPool.map((splat) => splat.save);
+  log(LogLevel.INFO, 'saveSceneSplats', activeScene.name);
+  const pool = globalThis.sceneSplatPool.map((splat) => splat.save);
   log(LogLevel.DEBUG, 'saveSceneSplats: pool', pool);
-  await activeScene.setFlag(MODULE_ID, 'splatPool', pool);
+  await activeScene.setFlag(MODULE_ID, 'sceneSplatPool', pool);
 };
 
 const drawSceneSplats = async (splatSaveObjects) => {
   if (!splatSaveObjects) return;
-  log(LogLevel.INFO, 'drawSceneSplats');
+  log(LogLevel.INFO, 'drawSceneSplats', activeScene.name);
   splatSaveObjects.forEach((splatSaveObj: SplatSaveObject) => {
     drawSplat(splatSaveObj);
   });

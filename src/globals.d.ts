@@ -1,3 +1,7 @@
+interface Global {
+  sceneSplatPool: Array<SplatPoolObject>;
+}
+
 interface SplatFont {
   name: string;
   availableGlyphs: Array<string>;
@@ -11,7 +15,7 @@ interface ViolenceLevel {
   floorSplatSize: number;
   tokenSplatSize: number;
   splatSpread: number;
-  splatPoolSize: number;
+  sceneSplatPoolSize: number;
 }
 
 interface TokenSaveObject {
@@ -21,10 +25,12 @@ interface TokenSaveObject {
   centerY: number;
   hp: number;
 }
+
 interface SplatPoolObject {
   save: SplatSaveObject;
   splatContainer: PIXI.Container;
 }
+
 interface SplatSaveObject {
   x: number;
   y: number;
@@ -32,7 +38,6 @@ interface SplatSaveObject {
   splats: Array<Splat>;
   offset: PIXI.Point;
   maskPolygon?: Array<number>;
-  imgPath?: string;
   tokenId?: string;
 }
 

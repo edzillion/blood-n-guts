@@ -159,14 +159,14 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register(MODULE_ID, 'splatPoolSize', {
+  game.settings.register(MODULE_ID, 'sceneSplatPoolSize', {
     scope: 'client', // This specifies a client-stored setting
     config: false, // This specifies that the setting appears in the configuration view
     type: Number,
     default: 100, // The default value for the setting
     onChange: (value) => {
       // A callback function which triggers when the setting is changed
-      log(LogLevel.DEBUG, 'Settings: splatPoolSize set to ' + value);
+      log(LogLevel.DEBUG, 'Settings: sceneSplatPoolSize set to ' + value);
     },
   });
 };
