@@ -41,6 +41,7 @@ let activeScene;
 
 let damageScale = 1;
 let fontsLoaded = false;
+let active = false;
 
 /* ------------------------------------ */
 /* Initialize module					*/
@@ -90,12 +91,15 @@ Hooks.on('createToken', (_scene, tokenData) => {
 });
 
 Hooks.on('canvasInit', (canvas) => {
-  log(LogLevel.INFO, 'canvasInit', canvas);
-  if (canvas.scene.active) activeScene = canvas.scene;
+  log(LogLevel.INFO, 'canvasInit', canvas.scene.name);
+  active = canvas.scene.active;
+  if (!active) log(LogLevel.INFO, 'canvasInit, skipping inactive scene');
+  else activeScene = canvas.scene;
 });
 
-Hooks.on('canvasReady', () => {
-  log(LogLevel.INFO, 'canvasReady');
+Hooks.on('canvasReady', (canvas) => {
+  if (!active) return;
+  log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
 
   globalThis.sceneSplatPool = [];
 
@@ -142,6 +146,7 @@ Hooks.on('canvasReady', () => {
 });
 
 Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
+  if (!active) return;
   log(LogLevel.DEBUG, tokenData, changes, uid);
 
   const token = canvas.tokens.placeables.find((t) => t.data._id === tokenData._id);
@@ -160,6 +165,7 @@ Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
 });
 
 Hooks.on('updateActor', async (actor, changes, diff) => {
+  if (!active) return;
   log(LogLevel.DEBUG, actor, changes, diff);
 
   const token = canvas.tokens.placeables.find((t) => t.actor.id === actor.id);
@@ -485,7 +491,6 @@ const drawSplat = (splatSaveObj) => {
 
   splatsContainer.x = splatSaveObj.x;
   splatsContainer.y = splatSaveObj.y;
-
   addToSplatPool(splatsContainer, splatSaveObj);
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
