@@ -7,7 +7,7 @@ export const level = [
     floorSplatSize: 75,
     tokenSplatSize: 40,
     splatSpread: 0.8,
-    splatPoolSize: 100,
+    sceneSplatPoolSize: 100,
   },
   {
     trailSplatDensity: 4,
@@ -17,7 +17,7 @@ export const level = [
     floorSplatSize: 100,
     tokenSplatSize: 75,
     splatSpread: 1,
-    splatPoolSize: 150,
+    sceneSplatPoolSize: 150,
   },
   {
     trailSplatDensity: 7,
@@ -27,6 +27,6 @@ export const level = [
     floorSplatSize: 300,
     tokenSplatSize: 125,
     splatSpread: 1.5,
-    splatPoolSize: 500,
+    sceneSplatPoolSize: 500,
   },
 ];

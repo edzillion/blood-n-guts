@@ -7,8 +7,8 @@
  * 					 determines how others may use and modify your module
  */
 
-CONFIG.debug.hooks = true;
-CONFIG.logLevel = 1;
+CONFIG.debug.hooks = false;
+CONFIG.logLevel = 2;
 
 // Import JavaScript modules
 import { registerSettings } from './module/settings';
@@ -35,7 +35,7 @@ import { MODULE_ID } from './constants';
 
 const lastTokenState: Array<TokenSaveObject> = [];
 
-globalThis.splatPool = [];
+globalThis.sceneSplatPool = [];
 const fadingSplatPool: Array<any> = [];
 let activeScene;
 
@@ -55,7 +55,6 @@ Hooks.once('init', async () => {
 
   // Preload Handlebars templates
   await preloadTemplates();
-
   // Register custom sheets (if any)
 });
 
@@ -96,9 +95,10 @@ Hooks.on('canvasInit', (canvas) => {
 });
 
 Hooks.on('canvasReady', () => {
-  //const pool = activeScene.setFlag(MODULE_ID, 'splatPool', null);
-
   log(LogLevel.INFO, 'canvasReady');
+
+  globalThis.sceneSplatPool = [];
+
   if (CONFIG.logLevel >= LogLevel.DEBUG) {
     document.addEventListener(
       'click',
@@ -122,34 +122,23 @@ Hooks.on('canvasReady', () => {
       log(LogLevel.DEBUG, 'splatter loaded? ' + check);
       if (!check) return;
       fontsLoaded = true;
-      //activeScene.setFlag(MODULE_ID, 'splatPool', null);
-      const pool = activeScene.getFlag(MODULE_ID, 'splatPool');
-      log(LogLevel.INFO, 'splatPool loaded:', pool);
+      //activeScene.setFlag(MODULE_ID, 'sceneSplatPool', null);
+      const pool = activeScene.getFlag(MODULE_ID, 'sceneSplatPool');
+      log(LogLevel.INFO, 'sceneSplatPool loaded:', pool);
       drawSceneSplats(pool);
 
       const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
       for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
     };
   } else {
-    activeScene.setFlag(MODULE_ID, 'splatPool', null);
-    const pool = activeScene.getFlag(MODULE_ID, 'splatPool');
-    log(LogLevel.INFO, 'splatPool loaded:', pool);
+    //activeScene.setFlag(MODULE_ID, 'sceneSplatPool', null);
+    const pool = activeScene.getFlag(MODULE_ID, 'sceneSplatPool');
+    log(LogLevel.INFO, 'sceneSplatPool loaded:', pool);
     drawSceneSplats(pool);
 
     const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
     for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
   }
-});
-
-Hooks.on('preUpdateScene ', async (scene, options, _diff, _uid) => {
-  log(LogLevel.INFO, 'preUpdateScene ', options.active, options._id);
-  saveSceneSplats();
-  lastTokenState.length = 0;
-});
-
-Hooks.on('updateScene', async (scene, options, _diff, _uid) => {
-  log(LogLevel.INFO, 'updateScene', options.active, options._id);
-  if (options.active) activeScene = scene;
 });
 
 Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
@@ -445,10 +434,10 @@ const drawSplat = (splatSaveObj) => {
 
     canvas.tiles.addChild(splatsContainer);
   } else if (splatSaveObj.tokenId) {
-    log(LogLevel.DEBUG, 'drawSplat: splatSaveObj.imgPath');
+    log(LogLevel.DEBUG, 'drawSplat: splatSaveObj.tokenId');
 
     const token = canvas.tokens.placeables.find((t) => t.data._id === splatSaveObj.tokenId);
-    if (!token) log(LogLevel.ERROR, 'drawSplat token not found!');
+    if (!token) log(LogLevel.ERROR, 'drawSplat token not found!', splatSaveObj);
 
     const tokenSprite = PIXI.Sprite.from(token.data.img);
     const maskSprite = PIXI.Sprite.from(token.data.img);
@@ -503,7 +492,7 @@ const drawSplat = (splatSaveObj) => {
 };
 
 const saveTokenState = (token: Token): void => {
-  log(LogLevel.INFO, 'saveTokenState:', token.data.name);
+  log(LogLevel.INFO, 'saveTokenState:', token.data.name, token.id);
 
   let saveObj: TokenSaveObject = {
     x: token.x,
@@ -513,42 +502,41 @@ const saveTokenState = (token: Token): void => {
     hp: token.actor.data.data.attributes.hp.value,
   };
 
-  saveObj = JSON.parse(JSON.stringify(saveObj));
+  saveObj = duplicate(saveObj);
   log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
   lastTokenState[token.id] = Object.assign(saveObj);
 };
 
 const addToSplatPool = (splatContainer, splatSaveObj): void => {
-  log(LogLevel.DEBUG, 'addToSplatPool');
   const poolObj = { save: splatSaveObj, splatContainer: splatContainer };
-  if (globalThis.splatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize')) {
-    const fadingSplatPoolObj = globalThis.splatPool.shift();
+  if (globalThis.sceneSplatPool.length >= game.settings.get(MODULE_ID, 'sceneSplatPoolSize')) {
+    const fadingSplatPoolObj = globalThis.sceneSplatPool.shift();
     fadingSplatPoolObj.splatContainer.alpha = 0.3;
-    if (fadingSplatPool.length >= game.settings.get(MODULE_ID, 'splatPoolSize') / 5) {
+    if (fadingSplatPool.length >= game.settings.get(MODULE_ID, 'sceneSplatPoolSize') / 5) {
       const destroy = fadingSplatPool.shift();
       destroy.splatContainer.destroy({ children: true });
     }
     fadingSplatPool.push(fadingSplatPoolObj);
   }
-  globalThis.splatPool.push(poolObj);
+  globalThis.sceneSplatPool.push(poolObj);
 
   log(
     LogLevel.DEBUG,
-    `addToSplatPool splatPool:${globalThis.splatPool.length}, fadingSplatPool:${fadingSplatPool.length}`,
+    `addToSplatPool sceneSplatPool:${globalThis.sceneSplatPool.length}, fadingSplatPool:${fadingSplatPool.length}`,
   );
   saveSceneSplats();
 };
 
 const saveSceneSplats = async () => {
-  log(LogLevel.INFO, 'saveSceneSplats');
-  const pool = globalThis.splatPool.map((splat) => splat.save);
+  log(LogLevel.INFO, 'saveSceneSplats', activeScene.name);
+  const pool = globalThis.sceneSplatPool.map((splat) => splat.save);
   log(LogLevel.DEBUG, 'saveSceneSplats: pool', pool);
-  await activeScene.setFlag(MODULE_ID, 'splatPool', pool);
+  await activeScene.setFlag(MODULE_ID, 'sceneSplatPool', pool);
 };
 
 const drawSceneSplats = async (splatSaveObjects) => {
   if (!splatSaveObjects) return;
-  log(LogLevel.INFO, 'drawSceneSplats');
+  log(LogLevel.INFO, 'drawSceneSplats', activeScene.name);
   splatSaveObjects.forEach((splatSaveObj: SplatSaveObject) => {
     drawSplat(splatSaveObj);
   });

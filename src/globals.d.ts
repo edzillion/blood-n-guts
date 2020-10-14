@@ -1,5 +1,5 @@
 interface Global {
-  splatPool: Array<SplatPoolObject>;
+  sceneSplatPool: Array<SplatPoolObject>;
 }
 
 interface SplatFont {
@@ -15,7 +15,7 @@ interface ViolenceLevel {
   floorSplatSize: number;
   tokenSplatSize: number;
   splatSpread: number;
-  splatPoolSize: number;
+  sceneSplatPoolSize: number;
 }
 
 interface TokenSaveObject {
