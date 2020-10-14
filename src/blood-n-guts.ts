@@ -7,8 +7,8 @@
  * 					 determines how others may use and modify your module
  */
 
-//CONFIG.debug.hooks = true;
-CONFIG.logLevel = 2;
+CONFIG.debug.hooks = true;
+CONFIG.logLevel = 1;
 
 // Import JavaScript modules
 import { registerSettings } from './module/settings';
@@ -40,6 +40,7 @@ const fadingSplatPool: Array<any> = [];
 let activeScene;
 
 let damageScale = 1;
+let fontsLoaded = false;
 
 /* ------------------------------------ */
 /* Initialize module					*/
@@ -71,7 +72,7 @@ Hooks.once('setup', () => {
 /* When ready							              */
 /* ------------------------------------ */
 Hooks.once('ready', () => {
-  log(LogLevel.DEBUG, 'ready, inserting preload stub');
+  log(LogLevel.INFO, 'ready, inserting preload stub');
   // Insert a div that uses the font so that it preloads
   const stub = document.createElement('div');
   stub.style.cssText = "visibility:hidden; font-family: 'splatter';";
@@ -81,23 +82,20 @@ Hooks.once('ready', () => {
   stub2.innerHTML = 'A';
   document.body.appendChild(stub);
   document.body.appendChild(stub2);
-
-  const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
-  for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
 });
 
 Hooks.on('createToken', (_scene, tokenData) => {
+  log(LogLevel.INFO, 'createToken');
   const token = new Token(tokenData);
   saveTokenState(token);
 });
 
-Hooks.once('canvasInit', (canvas) => {
+Hooks.on('canvasInit', (canvas) => {
   log(LogLevel.INFO, 'canvasInit', canvas);
   if (canvas.scene.active) activeScene = canvas.scene;
-  //redraw containers?
 });
 
-Hooks.once('canvasReady', () => {
+Hooks.on('canvasReady', () => {
   //const pool = activeScene.setFlag(MODULE_ID, 'splatPool', null);
 
   log(LogLevel.INFO, 'canvasReady');
@@ -114,20 +112,44 @@ Hooks.once('canvasReady', () => {
       false,
     );
   }
+  if (!fontsLoaded) {
+    (document as any).fonts.ready.then(() => {
+      log(LogLevel.DEBUG, 'All fonts in use by visible text have loaded.');
+    });
+    (document as any).fonts.onloadingdone = (fontFaceSetEvent) => {
+      log(LogLevel.DEBUG, 'onloadingdone we have ' + fontFaceSetEvent.fontfaces.length + ' font faces loaded');
+      const check = (document as any).fonts.check('1em splatter');
+      log(LogLevel.DEBUG, 'splatter loaded? ' + check);
+      if (!check) return;
+      fontsLoaded = true;
+      //activeScene.setFlag(MODULE_ID, 'splatPool', null);
+      const pool = activeScene.getFlag(MODULE_ID, 'splatPool');
+      log(LogLevel.INFO, 'splatPool loaded:', pool);
+      drawSceneSplats(pool);
 
-  (document as any).fonts.ready.then(() => {
-    log(LogLevel.DEBUG, 'All fonts in use by visible text have loaded.');
-  });
-  (document as any).fonts.onloadingdone = (fontFaceSetEvent) => {
-    log(LogLevel.DEBUG, 'onloadingdone we have ' + fontFaceSetEvent.fontfaces.length + ' font faces loaded');
-    const check = (document as any).fonts.check('1em splatter');
-    log(LogLevel.DEBUG, 'splatter loaded? ' + check);
-    if (!check) return;
-
+      const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
+      for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
+    };
+  } else {
+    activeScene.setFlag(MODULE_ID, 'splatPool', null);
     const pool = activeScene.getFlag(MODULE_ID, 'splatPool');
     log(LogLevel.INFO, 'splatPool loaded:', pool);
     drawSceneSplats(pool);
-  };
+
+    const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
+    for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
+  }
+});
+
+Hooks.on('preUpdateScene ', async (scene, options, _diff, _uid) => {
+  log(LogLevel.INFO, 'preUpdateScene ', options.active, options._id);
+  saveSceneSplats();
+  lastTokenState.length = 0;
+});
+
+Hooks.on('updateScene', async (scene, options, _diff, _uid) => {
+  log(LogLevel.INFO, 'updateScene', options.active, options._id);
+  if (options.active) activeScene = scene;
 });
 
 Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
@@ -189,7 +211,6 @@ async function checkForDamage(token: Token, actorDataChanges) {
     log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - hp down');
     damageScale = (lastHP - currentHP) / token.actor.data.data.attributes.hp.max;
     damageScale += 1;
-    console.log('damageScale', damageScale);
 
     const deathMult = actorDataChanges.data.attributes.hp.value === 0 ? 2 : 1;
     if (deathMult === 2) log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
@@ -436,6 +457,7 @@ const drawSplat = (splatSaveObj) => {
     tokenSprite.height = token.height;
     maskSprite.width = tokenSprite.width;
     maskSprite.height = tokenSprite.height;
+    log(LogLevel.DEBUG, 'drawSplat: ', tokenSprite.width, tokenSprite.height);
 
     const textureContainer = new PIXI.Container();
     textureContainer.addChild(maskSprite);
@@ -481,8 +503,7 @@ const drawSplat = (splatSaveObj) => {
 };
 
 const saveTokenState = (token: Token): void => {
-  log(LogLevel.DEBUG, 'saveTokenState:', token);
-  log(LogLevel.DEBUG, 'saveTokenState name:' + token.data.name);
+  log(LogLevel.INFO, 'saveTokenState:', token.data.name);
 
   let saveObj: TokenSaveObject = {
     x: token.x,
