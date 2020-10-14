@@ -157,6 +157,14 @@ Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
     return;
   }
 
+  if (changes.rotation != undefined) {
+    globalThis.sceneSplatPool
+      .filter((s) => s.save.tokenId === token.id)
+      .map((s) => {
+        s.splatContainer.angle = changes.rotation;
+      });
+  }
+
   await checkForMovement(token, changes);
   checkForDamage(token, changes.actorData);
   saveTokenState(token);
@@ -436,6 +444,8 @@ const drawSplat = (splatSaveObj) => {
     splatsContainer.addChild(sightMask);
     splatsContainer.mask = sightMask;
 
+    splatsContainer.x = splatSaveObj.x;
+    splatsContainer.y = splatSaveObj.y;
     canvas.tiles.addChild(splatsContainer);
   } else if (splatSaveObj.tokenId) {
     log(LogLevel.DEBUG, 'drawSplat: splatSaveObj.tokenId');
@@ -466,20 +476,19 @@ const drawSplat = (splatSaveObj) => {
         // resolution: 1
       }),
     );
-
     const renderSprite = new PIXI.Sprite(renderTexture);
     canvas.app.renderer.render(textureContainer, renderTexture);
 
-    renderSprite.x -= splatSaveObj.offset.x + token.w / 2;
-    renderSprite.y -= splatSaveObj.offset.y + token.h / 2;
     splatsContainer.addChild(renderSprite);
     splatsContainer.mask = renderSprite;
 
-    token.addChildAt(splatsContainer, token.children.length - 1);
+    splatsContainer.pivot.set(token.w / 2, token.h / 2);
+    splatsContainer.position.set(token.w / 2, token.h / 2);
+
+    splatsContainer.angle = token.data.rotation;
+    token.addChildAt(splatsContainer, 2);
   } else log(LogLevel.ERROR, 'drawSplat: splatSaveObj should have either .imgPath or .maskPolygon!');
 
-  splatsContainer.x = splatSaveObj.x;
-  splatsContainer.y = splatSaveObj.y;
   addToSplatPool(splatsContainer, splatSaveObj);
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
