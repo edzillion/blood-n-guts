@@ -24,18 +24,17 @@ This is a work in progress.
 1. ~~wire up advanced config form~~
 1. order of settings in config window
 1. ~~clearly separate token from tokenData objects~~
-1. implement Tile pool to reuse tiles instead of creating new.
+1. ~~implement Tile pool to reuse tiles instead of creating new.~~
 1. thank vance and skimble on release
 1. use token velocity for direction?
 1. i18n
 1. Are both filters needed to get a sprite mask
 1. use duplicate helper?
-1. Scene change gracefully
+1. ~~Scene change gracefully~~
 
 ## Bugs
 1. No trail when moving to a grid coord y < grid.size
 1. tokensplat mask alignment is slightly off
 1. sometimes tokensplats don't appear on damage (also on death?)
-1. ux - enter on adv config just closes doesnot save
+1. ~~ux - enter on adv config just closes doesnot save~~
 1. reloading splats deletes the latest splat? changing scenes also, change away and back
-1. sprite mask alignment issue
