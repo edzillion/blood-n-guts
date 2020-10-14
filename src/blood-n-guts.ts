@@ -82,12 +82,6 @@ Hooks.once('ready', () => {
   document.body.appendChild(stub2);
 });
 
-Hooks.on('createToken', (_scene, tokenData) => {
-  log(LogLevel.INFO, 'createToken');
-  const token = new Token(tokenData);
-  saveTokenState(token);
-});
-
 Hooks.on('canvasInit', (canvas) => {
   log(LogLevel.INFO, 'canvasInit', canvas.scene.name);
   active = canvas.scene.active;
@@ -141,6 +135,12 @@ Hooks.on('canvasReady', (canvas) => {
     const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
     for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
   }
+});
+
+Hooks.on('createToken', (_scene, tokenData) => {
+  log(LogLevel.INFO, 'createToken', tokenData);
+  const token = new Token(tokenData);
+  saveTokenState(token);
 });
 
 Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
@@ -236,7 +236,7 @@ const generateFloorSplats = (token: Token, font: SplatFont, size: number, densit
   const splatSaveObj: Partial<SplatSaveObject> = {};
 
   // scale the font based on token size
-  const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
+  const fontSize = size * Math.round((token.w + token.h) / canvas.grid.size / 2);
 
   splatSaveObj.styleData = {
     fontFamily: font.name,
@@ -247,8 +247,8 @@ const generateFloorSplats = (token: Token, font: SplatFont, size: number, densit
   const style = new PIXI.TextStyle(splatSaveObj.styleData);
 
   const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
-  const pixelSpreadX = token.width * game.settings.get(MODULE_ID, 'splatSpread');
-  const pixelSpreadY = token.height * game.settings.get(MODULE_ID, 'splatSpread');
+  const pixelSpreadX = token.w * game.settings.get(MODULE_ID, 'splatSpread');
+  const pixelSpreadY = token.h * game.settings.get(MODULE_ID, 'splatSpread');
   log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpreadX, pixelSpreadY);
   log(LogLevel.DEBUG, 'drawSplatPositions: floor ');
 
@@ -295,7 +295,7 @@ const generateTokenSplats = (token: Token, font: SplatFont, size: number, densit
   const splatSaveObj: Partial<SplatSaveObject> = {};
 
   // scale the font based on token size
-  const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
+  const fontSize = size * Math.round((token.w + token.h) / canvas.grid.size / 2);
   splatSaveObj.styleData = {
     fontFamily: font.name,
     fontSize: fontSize,
@@ -307,8 +307,8 @@ const generateTokenSplats = (token: Token, font: SplatFont, size: number, densit
   splatSaveObj.tokenId = token.id;
 
   const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
-  const pixelSpreadX = token.width * game.settings.get(MODULE_ID, 'splatSpread') * 2;
-  const pixelSpreadY = token.height * game.settings.get(MODULE_ID, 'splatSpread') * 2;
+  const pixelSpreadX = token.w * game.settings.get(MODULE_ID, 'splatSpread') * 2;
+  const pixelSpreadY = token.h * game.settings.get(MODULE_ID, 'splatSpread') * 2;
 
   log(LogLevel.DEBUG, 'generateTokenSplats pixelSpread', pixelSpreadX, pixelSpreadY);
 
@@ -327,8 +327,8 @@ const generateTokenSplats = (token: Token, font: SplatFont, size: number, densit
 
   const { offset } = alignSplatsGetOffsetAndDimensions(splatSaveObj.splats);
   splatSaveObj.offset = offset;
-  splatSaveObj.x = offset.x + token.width / 2;
-  splatSaveObj.y = offset.y + token.height / 2;
+  splatSaveObj.x = offset.x + token.w / 2;
+  splatSaveObj.y = offset.y + token.h / 2;
 
   drawSplat(splatSaveObj);
 };
@@ -340,7 +340,7 @@ const generateTrailSplats = (token: Token, font: SplatFont, size: number, densit
   const splatSaveObj: Partial<SplatSaveObject> = {};
 
   // scale the font based on token size
-  const fontSize = size * Math.round((token.width + token.height) / canvas.grid.size / 2);
+  const fontSize = size * Math.round((token.w + token.h) / canvas.grid.size / 2);
   splatSaveObj.styleData = {
     fontFamily: font.name,
     fontSize: fontSize,
@@ -358,8 +358,8 @@ const generateTrailSplats = (token: Token, font: SplatFont, size: number, densit
 
   //horiz or vert movement
   const pixelSpread = direction.x
-    ? token.width * game.settings.get(MODULE_ID, 'splatSpread')
-    : token.height * game.settings.get(MODULE_ID, 'splatSpread');
+    ? token.w * game.settings.get(MODULE_ID, 'splatSpread')
+    : token.h * game.settings.get(MODULE_ID, 'splatSpread');
 
   const rand = randomBoxMuller() * pixelSpread - pixelSpread / 2;
   log(LogLevel.DEBUG, 'generateTrailSplats rand', rand);
@@ -443,19 +443,15 @@ const drawSplat = (splatSaveObj) => {
     const token = canvas.tokens.placeables.find((t) => t.data._id === splatSaveObj.tokenId);
     if (!token) log(LogLevel.ERROR, 'drawSplat token not found!', splatSaveObj);
 
-    const tokenSprite = PIXI.Sprite.from(token.data.img);
     const maskSprite = PIXI.Sprite.from(token.data.img);
 
-    tokenSprite.width = token.width;
-    tokenSprite.height = token.height;
-    maskSprite.width = tokenSprite.width;
-    maskSprite.height = tokenSprite.height;
-    log(LogLevel.DEBUG, 'drawSplat: ', tokenSprite.width, tokenSprite.height);
+    maskSprite.width = token.w;
+    maskSprite.height = token.h;
+    log(LogLevel.DEBUG, 'drawSplat maskSprite: ', duplicate(maskSprite.width), duplicate(maskSprite.height));
 
     const textureContainer = new PIXI.Container();
     textureContainer.addChild(maskSprite);
 
-    // todo: do I need both these?
     const bwMatrix = new PIXI.filters.ColorMatrixFilter();
     const negativeMatrix = new PIXI.filters.ColorMatrixFilter();
     maskSprite.filters = [bwMatrix, negativeMatrix];
@@ -464,25 +460,20 @@ const drawSplat = (splatSaveObj) => {
 
     const renderTexture = new PIXI.RenderTexture(
       new PIXI.BaseRenderTexture({
-        width: tokenSprite.width,
-        height: tokenSprite.height,
+        width: token.w,
+        height: token.h,
         // scaleMode: PIXI.SCALE_MODES.LINEAR,
         // resolution: 1
       }),
     );
 
     const renderSprite = new PIXI.Sprite(renderTexture);
-    renderSprite.x -= token.width / 2;
-    renderSprite.y -= token.height / 2;
-    splatsContainer.mask = renderSprite;
-    splatsContainer.addChild(renderSprite);
-
     canvas.app.renderer.render(textureContainer, renderTexture);
 
-    renderSprite.x -= splatSaveObj.offset.x;
-    renderSprite.y -= splatSaveObj.offset.y;
-    tokenSprite.x -= splatSaveObj.offset.x;
-    tokenSprite.y -= splatSaveObj.offset.y;
+    renderSprite.x -= splatSaveObj.offset.x + token.w / 2;
+    renderSprite.y -= splatSaveObj.offset.y + token.h / 2;
+    splatsContainer.addChild(renderSprite);
+    splatsContainer.mask = renderSprite;
 
     token.addChildAt(splatsContainer, token.children.length - 1);
   } else log(LogLevel.ERROR, 'drawSplat: splatSaveObj should have either .imgPath or .maskPolygon!');
