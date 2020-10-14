@@ -22,10 +22,8 @@ import {
   lookupTokenBloodColor,
   computeSightFromPoint,
   drawDebugRect,
-  drawDebugRect2,
   randomBoxMuller,
   getDirectionNrml,
-  alignSplatsAndGetOffset1,
   alignSplatsGetOffsetAndDimensions,
 } from './module/helpers';
 

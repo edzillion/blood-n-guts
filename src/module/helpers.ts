@@ -3,26 +3,6 @@ import * as bloodColorSettings from '../data/bloodColorSettings';
 import { colors, getRGBA } from './colors';
 import { MODULE_ID } from '../constants';
 
-export const alignSplatsAndGetOffset1 = (splats: Array<PIXI.Text>): PIXI.Point => {
-  let lowestX = canvas.dimensions.sceneWidth;
-  let lowestY = canvas.dimensions.sceneHeight;
-  let highestX = 0;
-  let highestY = 0;
-  for (let i = 0; i < splats.length; i++) {
-    const txt = splats[i];
-    if (txt.x < lowestX) lowestX = txt.x;
-    if (txt.y < lowestY) lowestY = txt.y;
-    if (txt.x + txt.width > highestX) highestX = txt.x + txt.width;
-    if (txt.y + txt.height > highestY) highestY = txt.y + txt.height;
-  }
-  for (let j = 0; j < splats.length; j++) {
-    const t = splats[j];
-    t.x -= lowestX;
-    t.y -= lowestY;
-  }
-  return new PIXI.Point(lowestX, lowestY);
-};
-
 export const alignSplatsGetOffsetAndDimensions = (splats: Array<Splat>) => {
   let lowestX = canvas.dimensions.sceneWidth;
   let lowestY = canvas.dimensions.sceneHeight;
@@ -148,12 +128,6 @@ export const drawDebugRect = (container: PIXI.Container, width = 2, color = 0xff
   rect.lineStyle(width, color).drawRect(container.x, container.y, container.width, container.height);
   canvas.drawings.addChild(rect);
   log(LogLevel.DEBUG, 'drawDebugRect: ', container);
-};
-
-export const drawDebugRect2 = (x, y, w, h): void => {
-  const rect = new PIXI.Graphics();
-  rect.lineStyle(2, 0xff0000).drawRect(x, y, w, h);
-  canvas.drawings.addChild(rect);
 };
 
 export const getDirectionNrml = (lastPosition: Point, changes: any): PIXI.Point => {
