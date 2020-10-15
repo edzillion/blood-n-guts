@@ -8,7 +8,7 @@
  */
 
 CONFIG.debug.hooks = false;
-CONFIG.logLevel = 2;
+CONFIG.logLevel = 0;
 
 // Import JavaScript modules
 import { registerSettings } from './module/settings';

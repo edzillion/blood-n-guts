@@ -83,8 +83,8 @@ export const lookupTokenBloodColor = (token: Token): string => {
   let bloodColor: string;
   const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
 
-  // if useBloodColor is disabled then all blood is red
-  bloodColor = enabled ? bloodColorSettings.color[type] : 'red';
+  // if useBloodColor is disabled then all blood is blood red
+  bloodColor = enabled ? bloodColorSettings.color[type] : 'blood';
   let rgba;
   if (bloodColor === 'name') {
     rgba = getActorColorByName(actor);

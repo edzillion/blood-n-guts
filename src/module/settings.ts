@@ -14,8 +14,9 @@ export const registerSettings = (): void => {
     choices: {
       // If choices are defined, the resulting setting will be a select menu
       0: 'Shrieker',
-      1: 'Ogre',
-      2: 'Hecatoncheires',
+      1: 'Kobold',
+      2: 'Ogre',
+      3: 'Hecatoncheires',
     },
     default: 0, // The default value for the setting
     onChange: (value) => {

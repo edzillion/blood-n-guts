@@ -16,6 +16,7 @@ export const colors = {
   beige: [245, 245, 220],
   bisque: [255, 228, 196],
   black: [0, 0, 0],
+  blood: [138, 7, 7],
   blanchedalmond: [255, 235, 205],
   blue: [0, 0, 255],
   blueviolet: [138, 43, 226],
