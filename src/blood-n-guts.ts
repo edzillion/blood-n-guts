@@ -455,21 +455,21 @@ const drawSplat = (splatSaveObj) => {
 
     const token = canvas.tokens.placeables.find((t) => t.data._id === splatSaveObj.tokenId);
     if (!token) log(LogLevel.ERROR, 'drawSplat token not found!', splatSaveObj);
-    const ww = token.data.width * canvas.grid.size * token.data.scale;
-    const hh = token.data.height * canvas.grid.size * token.data.scale;
+    const tokenSpriteWidth = token.data.width * canvas.grid.size * token.data.scale;
+    const tokenSpriteHeight = token.data.height * canvas.grid.size * token.data.scale;
 
     splatSaveObj.splats.forEach((splat) => {
       const text = new PIXI.Text(splat.glyph, style);
-      text.x = splat.x + splatSaveObj.offset.x + ww / 2;
-      text.y = splat.y + splatSaveObj.offset.y + hh / 2;
+      text.x = splat.x + splatSaveObj.offset.x + tokenSpriteWidth / 2;
+      text.y = splat.y + splatSaveObj.offset.y + tokenSpriteHeight / 2;
       splatsContainer.addChild(text);
       return text;
     });
 
     const maskSprite = PIXI.Sprite.from(token.data.img);
 
-    maskSprite.width = ww;
-    maskSprite.height = hh;
+    maskSprite.width = tokenSpriteWidth;
+    maskSprite.height = tokenSpriteHeight;
     log(LogLevel.DEBUG, 'drawSplat maskSprite: ', duplicate(maskSprite.width), duplicate(maskSprite.height));
 
     const textureContainer = new PIXI.Container();
@@ -483,8 +483,8 @@ const drawSplat = (splatSaveObj) => {
 
     const renderTexture = new PIXI.RenderTexture(
       new PIXI.BaseRenderTexture({
-        width: ww,
-        height: hh,
+        width: tokenSpriteWidth,
+        height: tokenSpriteHeight,
         // scaleMode: PIXI.SCALE_MODES.LINEAR,
         // resolution: 1
       }),
@@ -495,7 +495,7 @@ const drawSplat = (splatSaveObj) => {
     splatsContainer.addChild(renderSprite);
     splatsContainer.mask = renderSprite;
 
-    splatsContainer.pivot.set(ww / 2, hh / 2);
+    splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
     splatsContainer.position.set(token.w / 2, token.h / 2);
 
     splatsContainer.angle = token.data.rotation;
