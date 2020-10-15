@@ -34,7 +34,7 @@ import { MODULE_ID } from './constants';
 const lastTokenState: Array<TokenSaveObject> = [];
 
 globalThis.sceneSplatPool = [];
-const fadingSplatPool: Array<any> = [];
+let fadingSplatPool: Array<SplatPoolObject> = [];
 let activeScene;
 
 let damageScale = 1;
@@ -94,6 +94,7 @@ Hooks.on('canvasReady', (canvas) => {
   log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
 
   globalThis.sceneSplatPool = [];
+  fadingSplatPool = [];
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) {
     document.addEventListener(
@@ -164,6 +165,8 @@ Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
         s.splatContainer.angle = changes.rotation;
       });
   }
+
+  log(LogLevel.DEBUG, 'updateToken token:', token.name, token);
 
   await checkForMovement(token, changes);
   checkForDamage(token, changes.actorData);
@@ -426,15 +429,15 @@ const drawSplat = (splatSaveObj) => {
   const splatsContainer = new PIXI.Container();
   const style = new PIXI.TextStyle(splatSaveObj.styleData);
 
-  splatSaveObj.splats.forEach((splat) => {
-    const text = new PIXI.Text(splat.glyph, style);
-    text.x = splat.x;
-    text.y = splat.y;
-    splatsContainer.addChild(text);
-    return text;
-  });
-
   if (splatSaveObj.maskPolygon) {
+    splatSaveObj.splats.forEach((splat) => {
+      const text = new PIXI.Text(splat.glyph, style);
+      text.x = splat.x;
+      text.y = splat.y;
+      splatsContainer.addChild(text);
+      return text;
+    });
+
     log(LogLevel.DEBUG, 'drawSplat: splatSaveObj.maskPolygon');
     const sightMask = new PIXI.Graphics();
     sightMask.beginFill(1, 1);
@@ -452,11 +455,21 @@ const drawSplat = (splatSaveObj) => {
 
     const token = canvas.tokens.placeables.find((t) => t.data._id === splatSaveObj.tokenId);
     if (!token) log(LogLevel.ERROR, 'drawSplat token not found!', splatSaveObj);
+    const ww = token.data.width * canvas.grid.size * token.data.scale;
+    const hh = token.data.height * canvas.grid.size * token.data.scale;
+
+    splatSaveObj.splats.forEach((splat) => {
+      const text = new PIXI.Text(splat.glyph, style);
+      text.x = splat.x + splatSaveObj.offset.x + ww / 2;
+      text.y = splat.y + splatSaveObj.offset.y + hh / 2;
+      splatsContainer.addChild(text);
+      return text;
+    });
 
     const maskSprite = PIXI.Sprite.from(token.data.img);
 
-    maskSprite.width = token.w;
-    maskSprite.height = token.h;
+    maskSprite.width = ww;
+    maskSprite.height = hh;
     log(LogLevel.DEBUG, 'drawSplat maskSprite: ', duplicate(maskSprite.width), duplicate(maskSprite.height));
 
     const textureContainer = new PIXI.Container();
@@ -470,8 +483,8 @@ const drawSplat = (splatSaveObj) => {
 
     const renderTexture = new PIXI.RenderTexture(
       new PIXI.BaseRenderTexture({
-        width: token.w,
-        height: token.h,
+        width: ww,
+        height: hh,
         // scaleMode: PIXI.SCALE_MODES.LINEAR,
         // resolution: 1
       }),
@@ -482,7 +495,7 @@ const drawSplat = (splatSaveObj) => {
     splatsContainer.addChild(renderSprite);
     splatsContainer.mask = renderSprite;
 
-    splatsContainer.pivot.set(token.w / 2, token.h / 2);
+    splatsContainer.pivot.set(ww / 2, hh / 2);
     splatsContainer.position.set(token.w / 2, token.h / 2);
 
     splatsContainer.angle = token.data.rotation;
