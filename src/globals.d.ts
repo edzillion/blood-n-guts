@@ -25,11 +25,13 @@ interface ViolenceLevel {
 }
 
 interface TokenSaveObject {
+  id: string;
   x: number;
   y: number;
   centerX: number;
   centerY: number;
   hp: number;
+  severity: number;
 }
 
 interface SplatPoolObject {

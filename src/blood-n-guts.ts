@@ -25,11 +25,9 @@ import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 globalThis.sceneSplatPool = [];
-let lastTokenState: Array<TokenSaveObject> = [];
+const lastTokenState: Array<TokenSaveObject> = [];
 let fadingSplatPool: Array<SplatPoolObject> = [];
-
-let damageScale = 1;
-let fontsLoaded = false;
+let allFontsLoaded = false;
 
 /* ------------------------------------ */
 /* Initialize module					*/
@@ -84,8 +82,6 @@ Hooks.on('canvasReady', (canvas) => {
   // wipe pools to be refilled from scene flag data
   globalThis.sceneSplatPool = [];
   fadingSplatPool = [];
-  // wipe token state, to be refilled by saveTokenState below
-  lastTokenState = [];
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) {
     document.addEventListener(
@@ -102,7 +98,7 @@ Hooks.on('canvasReady', (canvas) => {
   }
 
   // need to wait on fonts loading before we can drawSceneSplats
-  if (!fontsLoaded) {
+  if (!allFontsLoaded)
     (document as any).fonts.onloadingdone = () => {
       const allFontsPresent =
         (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'floorSplatFont')) &&
@@ -110,24 +106,11 @@ Hooks.on('canvasReady', (canvas) => {
         (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'trailSplatFont'));
 
       if (!allFontsPresent) return;
-      log(LogLevel.DEBUG, 'canvasReady allFontsPresent loaded:');
-      fontsLoaded = true;
-
-      const pool = canvas.scene.getFlag(MODULE_ID, 'sceneSplatPool');
-      log(LogLevel.INFO, 'canvasReady sceneSplatPool loaded:', pool);
-      drawSceneSplats(pool);
-
-      const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
-      for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
+      log(LogLevel.DEBUG, 'canvasReady allFontsPresent');
+      allFontsLoaded = true;
+      setupScene();
     };
-  } else {
-    const pool = canvas.scene.getFlag(MODULE_ID, 'sceneSplatPool');
-    log(LogLevel.INFO, 'canvasReady sceneSplatPool loaded:', pool);
-    drawSceneSplats(pool);
-
-    const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
-    for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
-  }
+  else setupScene();
 });
 
 Hooks.on('createToken', (scene, tokenData) => {
@@ -163,8 +146,8 @@ Hooks.on('updateToken', async (scene, tokenData, changes, _options, uid) => {
   log(LogLevel.DEBUG, 'updateToken token:', token.name, token);
 
   await checkForMovement(token, changes);
-  checkForDamage(token, changes.actorData);
-  saveTokenState(token);
+  const severity = await checkForDamage(token, changes.actorData);
+  saveTokenState(token, severity);
 });
 
 Hooks.on('updateActor', async (actor, changes, diff) => {
@@ -175,8 +158,8 @@ Hooks.on('updateActor', async (actor, changes, diff) => {
   if (!token) log(LogLevel.ERROR, 'updateActor token not found!');
 
   await checkForMovement(token, changes);
-  checkForDamage(token, changes);
-  saveTokenState(token);
+  const severity = await checkForDamage(token, changes);
+  saveTokenState(token, severity);
 });
 
 /**
@@ -200,6 +183,7 @@ async function checkForMovement(token: Token, actorDataChanges: any): Promise<vo
         splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
         game.settings.get(MODULE_ID, 'trailSplatSize'),
         game.settings.get(MODULE_ID, 'trailSplatDensity'),
+        lastTokenState[token.id].severity,
       );
     }
   }
@@ -212,12 +196,13 @@ async function checkForMovement(token: Token, actorDataChanges: any): Promise<vo
  * @param {Token} token - the token to check.
  * @param {any} actorDataChanges - the token.actor changes object.
  */
-async function checkForDamage(token: Token, actorDataChanges: any): Promise<void> {
+async function checkForDamage(token: Token, actorDataChanges: any): Promise<number> {
   log(LogLevel.DEBUG, 'last saves:', lastTokenState);
   if (!actorDataChanges?.data?.attributes?.hp) return;
 
   const currentHP = actorDataChanges.data.attributes.hp.value;
   const lastHP = lastTokenState[token.id].hp;
+  let damageScale = 1;
 
   if (currentHP < lastHP) {
     log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - hp down');
@@ -226,21 +211,24 @@ async function checkForDamage(token: Token, actorDataChanges: any): Promise<void
     damageScale = (lastHP - currentHP) / token.actor.data.data.attributes.hp.max;
     damageScale += 1;
 
-    // death multiplier doubles the splats on death
-    const deathMult = actorDataChanges.data.attributes.hp.value === 0 ? 2 : 1;
-    if (deathMult === 2) log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
+    // increase damageScale on death
+    if (actorDataChanges.data.attributes.hp.value === 0)
+      log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
+    damageScale += actorDataChanges.data.attributes.hp.value === 0 ? 0.5 : 0;
 
     generateFloorSplats(
       token,
       splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
       game.settings.get(MODULE_ID, 'floorSplatSize'),
-      Math.round(game.settings.get(MODULE_ID, 'floorSplatDensity') * deathMult * damageScale),
+      Math.round(game.settings.get(MODULE_ID, 'floorSplatDensity')),
+      damageScale,
     );
     generateTokenSplats(
       token,
       splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
       game.settings.get(MODULE_ID, 'tokenSplatSize'),
-      Math.round(game.settings.get(MODULE_ID, 'tokenSplatDensity') * deathMult * damageScale),
+      Math.round(game.settings.get(MODULE_ID, 'tokenSplatDensity')),
+      damageScale,
     );
 
     await token.setFlag(MODULE_ID, 'bleeding', true);
@@ -249,7 +237,10 @@ async function checkForDamage(token: Token, actorDataChanges: any): Promise<void
     // token.actor has been healed so they are no longer bleeding.
     await token.unsetFlag(MODULE_ID, 'bleeding');
     log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:unset');
+    // need to also reset the token's severity state
+    damageScale = 0;
   }
+  return damageScale;
 }
 
 /**
@@ -260,15 +251,23 @@ async function checkForDamage(token: Token, actorDataChanges: any): Promise<void
  * @param {SplatFont} font - the font to use for splats.
  * @param {number} size - the size of splats.
  * @param {number} density - the amount of splats.
+ * @param {number} severity - more and bigger splats based on the severity of the wound.
  */
-const generateFloorSplats = (token: Token, font: SplatFont, size: number, density: number): Promise<void> => {
+const generateFloorSplats = (
+  token: Token,
+  font: SplatFont,
+  size: number,
+  density: number,
+  severity: number,
+): Promise<void> => {
   if (!density) return;
   log(LogLevel.INFO, 'generateFloorSplats');
 
   const splatSaveObj: Partial<SplatSaveObject> = {};
 
-  // scale the splats based on token size
-  const fontSize = size * Math.round((token.w + token.h) / canvas.grid.size / 2);
+  // scale the splats based on token size and severity
+  const fontSize = Math.round(size * ((token.w + token.h) / canvas.grid.size / 2) * severity);
+  log(LogLevel.DEBUG, 'generateFloorSplats fontSize', fontSize);
   splatSaveObj.styleData = {
     fontFamily: font.name,
     fontSize: fontSize,
@@ -277,12 +276,14 @@ const generateFloorSplats = (token: Token, font: SplatFont, size: number, densit
   };
   const style = new PIXI.TextStyle(splatSaveObj.styleData);
 
+  // amount of splats is based on density and severity
+  const amount = Math.round(density * severity);
   // get a random glyph and then get a random (x,y) spread away from the token.
-  const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
+  const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
   const pixelSpreadX = token.w * game.settings.get(MODULE_ID, 'splatSpread');
   const pixelSpreadY = token.h * game.settings.get(MODULE_ID, 'splatSpread');
-  log(LogLevel.DEBUG, 'splatTrail pixelSpread', pixelSpreadX, pixelSpreadY);
-  log(LogLevel.DEBUG, 'drawSplatPositions: floor ');
+  log(LogLevel.DEBUG, 'generateFloorSplats amount', amount);
+  log(LogLevel.DEBUG, 'generateFloorSplats pixelSpread', pixelSpreadX, pixelSpreadY);
 
   // create our splats for later drawing.
   splatSaveObj.splats = glyphArray.map((glyph) => {
@@ -328,15 +329,17 @@ const generateFloorSplats = (token: Token, font: SplatFont, size: number, densit
  * @param {SplatFont} font - the font to use for splats.
  * @param {number} size - the size of splats.
  * @param {number} density - the amount of splats.
+ * @param {number} severity - more and bigger splats based on the severity of the wound.
  */
-const generateTokenSplats = (token: Token, font: SplatFont, size: number, density: number) => {
+const generateTokenSplats = (token: Token, font: SplatFont, size: number, density: number, severity: number) => {
   if (!density) return;
   log(LogLevel.INFO, 'generateTokenSplats');
 
   const splatSaveObj: Partial<SplatSaveObject> = {};
 
-  // scale the splats based on token size
-  const fontSize = size * Math.round((token.w + token.h) / canvas.grid.size / 2);
+  // scale the splats based on token size and severity
+  const fontSize = Math.round(size * ((token.w + token.h) / canvas.grid.size / 2) * severity);
+  log(LogLevel.DEBUG, 'generateTokenSplats fontSize', fontSize);
   splatSaveObj.styleData = {
     fontFamily: font.name,
     fontSize: fontSize,
@@ -347,11 +350,13 @@ const generateTokenSplats = (token: Token, font: SplatFont, size: number, densit
 
   splatSaveObj.tokenId = token.id;
 
+  // amount of splats is based on density and severity
+  const amount = Math.round(density * severity);
   // get a random glyph and then get a random (x,y) spread away from the token.
-  const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
+  const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
   const pixelSpreadX = token.w * game.settings.get(MODULE_ID, 'splatSpread') * 2;
   const pixelSpreadY = token.h * game.settings.get(MODULE_ID, 'splatSpread') * 2;
-
+  log(LogLevel.DEBUG, 'generateTokenSplats amount', amount);
   log(LogLevel.DEBUG, 'generateTokenSplats pixelSpread', pixelSpreadX, pixelSpreadY);
 
   // create our splats for later drawing.
@@ -384,15 +389,18 @@ const generateTokenSplats = (token: Token, font: SplatFont, size: number, densit
  * @param {SplatFont} font - the font to use for splats.
  * @param {number} size - the size of splats.
  * @param {number} density - the amount of splats.
+ * @param {number} severity - more and bigger splats based on the severity of the wound.
  */
-const generateTrailSplats = (token: Token, font: SplatFont, size: number, density: number) => {
+const generateTrailSplats = (token: Token, font: SplatFont, size: number, density: number, severity: number) => {
   if (!density) return;
   log(LogLevel.INFO, 'generateTrailSplats');
+  log(LogLevel.DEBUG, 'generateTrailSplats severity', severity);
 
   const splatSaveObj: Partial<SplatSaveObject> = {};
 
-  // scale the splats based on token size
-  const fontSize = size * Math.round((token.w + token.h) / canvas.grid.size / 2);
+  // scale the splats based on token size and severity
+  const fontSize = Math.round(size * ((token.w + token.h) / canvas.grid.size / 2) * severity);
+  log(LogLevel.DEBUG, 'generateTokenSplats fontSize', fontSize);
   splatSaveObj.styleData = {
     fontFamily: font.name,
     fontSize: fontSize,
@@ -425,8 +433,13 @@ const generateTrailSplats = (token: Token, font: SplatFont, size: number, densit
   log(LogLevel.DEBUG, 'generateTrailSplats spread, ctrlPt', pixelSpread, controlPt);
 
   // get random glyphs and the interval between each splat
-  const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
+  // amount is based on density and severity
+  const amount = Math.round(density * severity);
+  const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
   const increment = 1 / game.settings.get(MODULE_ID, 'trailSplatDensity');
+  log(LogLevel.DEBUG, 'generateTrailSplats amount', amount);
+
+  // we skip 0 because that position already has a splat from the last trailSplat/floorSplat
   let dist = increment;
   // create our splats for later drawing.
   splatSaveObj.splats = glyphArray.map((glyph) => {
@@ -564,16 +577,23 @@ const drawSplat = (splatSaveObj: SplatSaveObject): void => {
  * @category core
  * @function
  * @param {Token} token - token to save.
+ * @param {number} [severity=1] - severity of wound, scales trail splats. If set to 0 severity will be reset to 1.
  */
-const saveTokenState = (token: Token): void => {
+const saveTokenState = (token: Token, severity = 1): void => {
   log(LogLevel.INFO, 'saveTokenState:', token.data.name, token.id);
 
+  // only save severity if it's higher. if severity is 0 reset to 1.
+  if (!severity || !lastTokenState[token.id]) severity = 1;
+  else severity = lastTokenState[token.id].severity > severity ? lastTokenState[token.id].severity : severity;
+
   let saveObj: TokenSaveObject = {
+    id: token.id,
     x: token.x,
     y: token.y,
     centerX: token.center.x,
     centerY: token.center.y,
     hp: token.actor.data.data.attributes.hp.value,
+    severity: severity,
   };
 
   saveObj = duplicate(saveObj);
@@ -625,14 +645,22 @@ const saveSceneSplats = async (): Promise<void> => {
 
 /**
  * Loads all `SaveObject`s from scene flag `sceneSplatPool` and draws them - this
- * will also add them back into the pool.
+ * will also add them back into the pool. Also adds scene tokens to `lastTokenState`
  * @category core
  * @function
  */
-const drawSceneSplats = async (splatSaveObjects): Promise<void> => {
-  if (!splatSaveObjects) return;
-  log(LogLevel.INFO, 'drawSceneSplats', canvas.scene.name);
-  splatSaveObjects.forEach((splatSaveObj: SplatSaveObject) => {
-    drawSplat(splatSaveObj);
-  });
+const setupScene = () => {
+  const pool = canvas.scene.getFlag(MODULE_ID, 'sceneSplatPool');
+  log(LogLevel.INFO, 'setupScene sceneSplatPool loaded:', pool);
+
+  if (pool) {
+    log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
+    pool.forEach((splatSaveObj: SplatSaveObject) => {
+      drawSplat(splatSaveObj);
+    });
+  }
+
+  // save tokens state
+  const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
+  for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
 };
