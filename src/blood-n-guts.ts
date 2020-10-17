@@ -27,7 +27,9 @@ globalThis.sceneSplatPool = [];
 CONFIG.logLevel = 2;
 
 /**
- * Main class wrapper for all of our features.
+ * Main class wrapper for all blood-n-guts features.
+ * @class
+ * @extends FormApplication
  */
 class BloodNGuts {
   public static allFontsLoaded: boolean;
@@ -549,9 +551,6 @@ class BloodNGuts {
   }
 }
 
-/* ------------------------------------ */
-/* Initialize module					*/
-/* ------------------------------------ */
 Hooks.once('init', async () => {
   log(LogLevel.INFO, 'Initializing blood-n-guts');
 
@@ -565,18 +564,12 @@ Hooks.once('init', async () => {
   // Register custom sheets (if any)
 });
 
-/* ------------------------------------ */
-/* Setup module							*/
-/* ------------------------------------   */
 Hooks.once('setup', () => {
   // Do anything after initialization but before
   // ready
   log(LogLevel.INFO, 'setup Hook');
 });
 
-/* ------------------------------------ */
-/* When ready							              */
-/* ------------------------------------ */
 Hooks.once('ready', () => {
   log(LogLevel.INFO, 'ready, inserting preload stub');
   // Insert a div that uses the font so that it preloads
