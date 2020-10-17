@@ -610,7 +610,7 @@ Hooks.on('canvasReady', (canvas) => {
     );
   }
 
-  // need to wait on fonts loading before we can drawSceneSplats
+  // need to wait on fonts loading before we can setupScene
   if (!BloodNGuts.allFontsLoaded)
     (document as any).fonts.onloadingdone = () => {
       const allFontsPresent =
