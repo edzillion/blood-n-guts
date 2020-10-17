@@ -25,7 +25,7 @@ import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 globalThis.sceneSplatPool = [];
-const lastTokenState: Array<TokenSaveObject> = [];
+let lastTokenState: Array<TokenSaveObject> = [];
 let fadingSplatPool: Array<SplatPoolObject> = [];
 
 let damageScale = 1;
@@ -84,6 +84,8 @@ Hooks.on('canvasReady', (canvas) => {
   // wipe pools to be refilled from scene flag data
   globalThis.sceneSplatPool = [];
   fadingSplatPool = [];
+  // wipe token state, to be refilled by saveTokenState below
+  lastTokenState = [];
 
   if (CONFIG.logLevel >= LogLevel.DEBUG) {
     document.addEventListener(
