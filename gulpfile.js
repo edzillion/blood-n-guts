@@ -1,4 +1,6 @@
+
 const gulp = require('gulp');
+const typedoc = require('gulp-typedoc');
 const fs = require('fs-extra');
 const path = require('path');
 const chalk = require('chalk');
@@ -504,3 +506,12 @@ exports.publish = gulp.series(
 	packageBuild,
 	execGit
 );
+exports.doc = gulp.task('typedoc', function() {
+	return gulp
+			.src(['src/**/*.ts', '!src/data{,/**}'])
+			.pipe(typedoc({
+					out: 'docs/',
+					name: "Blood 'n Guts"
+			}))
+	;
+});

@@ -2,11 +2,11 @@ export const fonts = {
   'WC Rhesus A Bta': {
     name: 'WC Rhesus A Bta',
     availableGlyphs: [
-      ...'!"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxzy{|}~¡¢£¥§ ̈©ª«¬® ̄°± ́¶· ̧º»¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜßàáâãäåæçèéêëìíîïñòóôõö÷øùúûüÿiŒœŸƒ',
+      ...'!"#$%&\'()*+,-./01234568:;<=>?@ABDEFGHIKMNOPQRSTUVWX[\\]^_`acdfhoquvx|}~¢£¥§ ̈©ª«¬® ̄°± ́¶· ̧º¿ÀÁÂÄÅÆÈÉÊËÌÏÑÒÓÔÖØÙÚÜßàáâåæçéêëìíîïñòõ÷øùûüÿiœŸƒπ',
     ],
   },
   splatter: {
     name: 'splatter',
-    availableGlyphs: [...'cABCDEFGHIJKLMNOPQRSTUVQ'],
+    availableGlyphs: [...'ABCDEFGHIJKLMNOPQRSTUVQ'],
   },
 };

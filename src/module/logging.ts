@@ -1,5 +1,10 @@
 import { MODULE_ID } from '../constants';
 
+/**
+ * Logging
+ * @module Logging
+ */
+
 export enum LogLevel {
   ERROR,
   INFO,
@@ -8,7 +13,14 @@ export enum LogLevel {
   ALL,
 }
 
-export function log(messageLevel: LogLevel, ...args): void {
+/**
+ * Simple wrapper around console.log to give us log level functionality.
+ * @function
+ * @param {LogLevel} messageLevel - ERROR,INFO,DEBUG,WARN,ALL
+ * @param {...any} args - console.log() arguments
+ */
+export function log(messageLevel: LogLevel, ...args: any): void {
   if (messageLevel > CONFIG.logLevel) return;
-  console.log(MODULE_ID + ' | ', ...args);
+  if (messageLevel === LogLevel.ERROR) console.error(MODULE_ID + ' | ', ...args);
+  else console.log(MODULE_ID + ' | ', ...args);
 }
