@@ -1,10 +1,16 @@
 'use strict';
 
-export function getRGBA(colorName: string, alpha?: number): string {
+/**
+ * Get an rbga color string given a color name
+ * @function
+ * @param {string} colorName - name of color (all CSS3 colors plus a few extra).
+ * @param {number} [alpha=0.7] - optional alpha setting.
+ * @returns {string} - color in rgba format, e.g. '[125, 125, 7, 0.7]'.
+ */
+export function getRGBA(colorName: string, alpha = 0.7): string {
   const rgbArray: Array<number> = colors[colorName];
   if (!rgbArray) return;
-  const opacity = alpha ? alpha : 0.7;
-  return `rgba(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]}, ${opacity})`;
+  return `rgba(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]}, ${alpha})`;
 }
 
 export const colors = {

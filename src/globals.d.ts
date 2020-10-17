@@ -7,6 +7,12 @@ interface SplatFont {
   availableGlyphs: Array<string>;
 }
 
+interface SplatAlignment {
+  offset: PIXI.Point;
+  width: number;
+  height: number;
+}
+
 interface ViolenceLevel {
   trailSplatDensity: number;
   floorSplatDensity: number;

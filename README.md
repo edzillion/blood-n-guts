@@ -32,6 +32,8 @@ This is a work in progress.
 1. use duplicate helper? 
 1. use position where approp
 1. ~~Scene change gracefully~~
+1. permissions?
+1. documentation
 
 ## Bugs
 1. No trail when moving to a grid coord y < grid.size
