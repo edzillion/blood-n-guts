@@ -42,3 +42,4 @@ This is a work in progress.
 1. ~~ux - enter on adv config just closes doesnot save~~
 1. ~~reloading splats deletes the latest splat? changing scenes also, change away and back~~
 1. ~~splat vs. mask alignment w tokensplats~~
+1. extra splat on first trail
