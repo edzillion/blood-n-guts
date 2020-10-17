@@ -4,6 +4,11 @@ import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import { log, LogLevel } from './logging';
 
 /**
+ * Registers settings.
+ * @module Settings
+ */
+
+/**
  * Register module settings.
  * @function
  */

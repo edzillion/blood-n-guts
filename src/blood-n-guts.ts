@@ -1,30 +1,31 @@
 /**
- * Author: edzillion
- * Software License: [CC0-1.0 License]
+ * Documentation for Blood 'n Guts, a Foundry VTT module that adds blood splatter to your games.
+ * All functionality is wrapped in it's main Class `BloodNGuts`.
+ * @license [CC0-1.0]{@link https://creativecommons.org/publicdomain/zero/1.0/deed.en}
  * @packageDocumentation
+ * @author [edzillion]{@link https://github.com/edzillion}
  */
 
 import { registerSettings } from './module/settings';
 import { preloadTemplates } from './module/preloadTemplates';
 import { log, LogLevel } from './module/logging';
-import { getPointAt } from './module/bezier';
 import {
   getRandomGlyph,
   lookupTokenBloodColor,
   computeSightFromPoint,
   drawDebugRect,
-  randomBoxMuller,
+  getRandomBoxMuller,
   getDirectionNrml,
   alignSplatsGetOffsetAndDimensions,
+  getPointOnCurve,
 } from './module/helpers';
-
 import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 globalThis.sceneSplatPool = [];
 
 //CONFIG.debug.hooks = false;
-CONFIG.logLevel = 2;
+//CONFIG.logLevel = 2;
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -171,8 +172,8 @@ class BloodNGuts {
     // create our splats for later drawing.
     splatSaveObj.splats = glyphArray.map((glyph) => {
       const tm = PIXI.TextMetrics.measureText(glyph, style);
-      const randX = randomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
-      const randY = randomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
+      const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
+      const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
       return {
         x: randX - tm.width / 2,
         y: randY - tm.height / 2,
@@ -245,8 +246,8 @@ class BloodNGuts {
     // create our splats for later drawing.
     splatSaveObj.splats = glyphArray.map((glyph) => {
       const tm = PIXI.TextMetrics.measureText(glyph, style);
-      const randX = randomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
-      const randY = randomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
+      const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
+      const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
       return {
         x: randX - tm.width / 2,
         y: randY - tm.height / 2,
@@ -304,7 +305,7 @@ class BloodNGuts {
       ? token.w * game.settings.get(MODULE_ID, 'splatSpread')
       : token.h * game.settings.get(MODULE_ID, 'splatSpread');
 
-    const rand = randomBoxMuller() * pixelSpread - pixelSpread / 2;
+    const rand = getRandomBoxMuller() * pixelSpread - pixelSpread / 2;
     log(LogLevel.DEBUG, 'generateTrailSplats rand', rand);
     // first go half the distance in the direction we are going
     const controlPt: PIXI.Point = new PIXI.Point(
@@ -327,7 +328,7 @@ class BloodNGuts {
     // create our splats for later drawing.
     splatSaveObj.splats = glyphArray.map((glyph) => {
       const tm = PIXI.TextMetrics.measureText(glyph, style);
-      const pt = getPointAt(lastPosOrigin, controlPt, currPosOrigin, dist);
+      const pt = getPointOnCurve(lastPosOrigin, controlPt, currPosOrigin, dist);
       dist += increment;
       return {
         x: pt.x - tm.width / 2,
@@ -550,6 +551,8 @@ class BloodNGuts {
     for (let i = 0; i < canvasTokens.length; i++) this.saveTokenState(canvasTokens[i]);
   }
 }
+
+// Hooks
 
 Hooks.once('init', async () => {
   log(LogLevel.INFO, 'Initializing blood-n-guts');

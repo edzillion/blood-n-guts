@@ -30,7 +30,7 @@ export class AdvancedConfig extends FormApplication {
     return options;
   }
 
-  async getData(options) {
+  async getData(): Promise<any> {
     // todo: sort out this permissions stuff
     // const canConfigure = game.user.can('SETTINGS_MODIFY');
 
@@ -47,15 +47,15 @@ export class AdvancedConfig extends FormApplication {
     return dataObject;
   }
 
-  render(force, context = {}) {
+  render(force: any, context = {}): any {
     return super.render(force, context);
   }
 
-  activateListeners(html) {
+  activateListeners(html: any): any {
     super.activateListeners(html);
 
     const wipeButton = html.find('.advanced-config-wipe-pool');
-    wipeButton.click((e) => {
+    wipeButton.click(() => {
       log(LogLevel.INFO, 'wipeButton: wiping sceneSplatPool');
       canvas.scene.active.setFlag(MODULE_ID, 'sceneSplatPool', null);
       globalThis.sceneSplatPool.forEach((poolObj) => {
@@ -66,10 +66,9 @@ export class AdvancedConfig extends FormApplication {
     });
   }
 
-  async _updateObject(event, formData) {
+  async _updateObject(event: Event, formData: any): Promise<void> {
     for (const setting in formData) {
       game.settings.set(MODULE_ID, setting, formData[setting]);
     }
-    return;
   }
 }
