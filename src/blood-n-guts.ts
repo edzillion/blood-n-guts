@@ -28,10 +28,8 @@ globalThis.sceneSplatPool = [];
 const lastTokenState: Array<TokenSaveObject> = [];
 let fadingSplatPool: Array<SplatPoolObject> = [];
 
-let activeScene;
 let damageScale = 1;
 let fontsLoaded = false;
-let active = false;
 
 /* ------------------------------------ */
 /* Initialize module					*/
@@ -76,13 +74,11 @@ Hooks.once('ready', () => {
 
 Hooks.on('canvasInit', (canvas) => {
   log(LogLevel.INFO, 'canvasInit', canvas.scene.name);
-  active = canvas.scene.active;
-  if (!active) log(LogLevel.INFO, 'canvasInit, skipping inactive scene');
-  else activeScene = canvas.scene;
+  if (!canvas.scene.active) log(LogLevel.INFO, 'canvasInit, skipping inactive scene');
 });
 
 Hooks.on('canvasReady', (canvas) => {
-  if (!active) return;
+  if (!canvas.scene.active) return;
   log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
 
   // wipe pools to be refilled from scene flag data
@@ -114,8 +110,8 @@ Hooks.on('canvasReady', (canvas) => {
       log(LogLevel.DEBUG, 'splatter loaded? ' + check);
       if (!check) return;
       fontsLoaded = true;
-      //activeScene.setFlag(MODULE_ID, 'sceneSplatPool', null);
-      const pool = activeScene.getFlag(MODULE_ID, 'sceneSplatPool');
+
+      const pool = canvas.scene.getFlag(MODULE_ID, 'sceneSplatPool');
       log(LogLevel.INFO, 'sceneSplatPool loaded:', pool);
       drawSceneSplats(pool);
 
@@ -123,7 +119,7 @@ Hooks.on('canvasReady', (canvas) => {
       for (let i = 0; i < canvasTokens.length; i++) saveTokenState(canvasTokens[i]);
     };
   } else {
-    const pool = activeScene.getFlag(MODULE_ID, 'sceneSplatPool');
+    const pool = canvas.scene.getFlag(MODULE_ID, 'sceneSplatPool');
     log(LogLevel.INFO, 'sceneSplatPool loaded:', pool);
     drawSceneSplats(pool);
 
@@ -132,14 +128,15 @@ Hooks.on('canvasReady', (canvas) => {
   }
 });
 
-Hooks.on('createToken', (_scene, tokenData) => {
+Hooks.on('createToken', (scene, tokenData) => {
+  if (!scene.active) return;
   log(LogLevel.INFO, 'createToken', tokenData);
   const token = new Token(tokenData);
   saveTokenState(token);
 });
 
-Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
-  if (!active) return;
+Hooks.on('updateToken', async (scene, tokenData, changes, _options, uid) => {
+  if (!scene.active) return;
   log(LogLevel.DEBUG, tokenData, changes, uid);
 
   const token = canvas.tokens.placeables.find((t) => t.data._id === tokenData._id);
@@ -169,7 +166,7 @@ Hooks.on('updateToken', async (_scene, tokenData, changes, _options, uid) => {
 });
 
 Hooks.on('updateActor', async (actor, changes, diff) => {
-  if (!active) return;
+  if (!canvas.scene.active) return;
   log(LogLevel.DEBUG, actor, changes, diff);
 
   const token = canvas.tokens.placeables.find((t) => t.actor.id === actor.id);
@@ -618,10 +615,10 @@ const addToSplatPool = (splatContainer, splatSaveObj): void => {
  * @function
  */
 const saveSceneSplats = async (): Promise<void> => {
-  log(LogLevel.INFO, 'saveSceneSplats', activeScene.name);
+  log(LogLevel.INFO, 'saveSceneSplats', canvas.scene.name);
   const pool = globalThis.sceneSplatPool.map((splat) => splat.save);
   log(LogLevel.DEBUG, 'saveSceneSplats: pool', pool);
-  await activeScene.setFlag(MODULE_ID, 'sceneSplatPool', pool);
+  await canvas.scene.setFlag(MODULE_ID, 'sceneSplatPool', pool);
 };
 
 /**
@@ -632,7 +629,7 @@ const saveSceneSplats = async (): Promise<void> => {
  */
 const drawSceneSplats = async (splatSaveObjects): Promise<void> => {
   if (!splatSaveObjects) return;
-  log(LogLevel.INFO, 'drawSceneSplats', activeScene.name);
+  log(LogLevel.INFO, 'drawSceneSplats', canvas.scene.name);
   splatSaveObjects.forEach((splatSaveObj: SplatSaveObject) => {
     drawSplat(splatSaveObj);
   });
