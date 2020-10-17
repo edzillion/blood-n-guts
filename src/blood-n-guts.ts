@@ -5,7 +5,7 @@
  */
 
 //CONFIG.debug.hooks = false;
-//CONFIG.logLevel = 0;
+CONFIG.logLevel = 2;
 
 import { registerSettings } from './module/settings';
 import { preloadTemplates } from './module/preloadTemplates';
@@ -101,18 +101,18 @@ Hooks.on('canvasReady', (canvas) => {
 
   // need to wait on fonts loading before we can drawSceneSplats
   if (!fontsLoaded) {
-    (document as any).fonts.ready.then(() => {
-      log(LogLevel.DEBUG, 'All fonts in use by visible text have loaded.');
-    });
-    (document as any).fonts.onloadingdone = (fontFaceSetEvent) => {
-      log(LogLevel.DEBUG, 'onloadingdone we have ' + fontFaceSetEvent.fontfaces.length + ' font faces loaded');
-      const check = (document as any).fonts.check('1em splatter');
-      log(LogLevel.DEBUG, 'splatter loaded? ' + check);
-      if (!check) return;
+    (document as any).fonts.onloadingdone = () => {
+      const allFontsPresent =
+        (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'floorSplatFont')) &&
+        (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'tokenSplatFont')) &&
+        (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'trailSplatFont'));
+
+      if (!allFontsPresent) return;
+      log(LogLevel.DEBUG, 'canvasReady allFontsPresent loaded:');
       fontsLoaded = true;
 
       const pool = canvas.scene.getFlag(MODULE_ID, 'sceneSplatPool');
-      log(LogLevel.INFO, 'sceneSplatPool loaded:', pool);
+      log(LogLevel.INFO, 'canvasReady sceneSplatPool loaded:', pool);
       drawSceneSplats(pool);
 
       const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
@@ -120,7 +120,7 @@ Hooks.on('canvasReady', (canvas) => {
     };
   } else {
     const pool = canvas.scene.getFlag(MODULE_ID, 'sceneSplatPool');
-    log(LogLevel.INFO, 'sceneSplatPool loaded:', pool);
+    log(LogLevel.INFO, 'canvasReady sceneSplatPool loaded:', pool);
     drawSceneSplats(pool);
 
     const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
