@@ -7,6 +7,12 @@ interface SplatFont {
   availableGlyphs: Array<string>;
 }
 
+interface SplatAlignment {
+  offset: PIXI.Point;
+  width: number;
+  height: number;
+}
+
 interface ViolenceLevel {
   trailSplatDensity: number;
   floorSplatDensity: number;
@@ -19,11 +25,13 @@ interface ViolenceLevel {
 }
 
 interface TokenSaveObject {
+  id: string;
   x: number;
   y: number;
   centerX: number;
   centerY: number;
   hp: number;
+  severity: number;
 }
 
 interface SplatPoolObject {

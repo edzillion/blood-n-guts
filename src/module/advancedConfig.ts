@@ -5,6 +5,10 @@ import * as splatFonts from '../data/splatFonts';
 
 let activeScene;
 
+/**
+ * FormApplication window for advanced configuration options.
+ * @class
+ */
 export class AdvancedConfig extends FormApplication {
   font: SplatFont;
   allAsciiCharacters: string;

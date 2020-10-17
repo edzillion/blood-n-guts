@@ -3,23 +3,27 @@ import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import { log, LogLevel } from './logging';
 
+/**
+ * Register module settings.
+ * @function
+ */
 export const registerSettings = (): void => {
   game.settings.register(MODULE_ID, 'violenceLevel', {
     name: game.i18n.localize('Violence Level'),
     hint: game.i18n.localize('Blood and gore level'),
 
-    scope: 'client', // This specifies a client-stored setting
-    config: true, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: true,
     type: Number,
     choices: {
-      // If choices are defined, the resulting setting will be a select menu
       0: 'Shrieker',
       1: 'Kobold',
       2: 'Ogre',
       3: 'Hecatoncheires',
     },
-    default: 0, // The default value for the setting
+    default: 0,
     onChange: (value) => {
+      // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
       const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.level[value]));
       for (const key in violenceLevel) {
         game.settings.set(MODULE_ID, key, violenceLevel[key]);
@@ -30,12 +34,11 @@ export const registerSettings = (): void => {
   game.settings.register(MODULE_ID, 'useBloodColor', {
     name: 'Blood Color',
     hint: 'If unchecked all blood will be red',
-    scope: 'client', // This specifies a client-stored setting
-    config: true, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: true,
     type: Boolean,
-    default: true, // The default value for the setting
+    default: true,
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: useBloodColor set to ' + value);
     },
   });
@@ -51,122 +54,111 @@ export const registerSettings = (): void => {
 
   // Settings in Advanced Configuration
   game.settings.register(MODULE_ID, 'floorSplatFont', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: String,
-    default: 'splatter', // The default value for the setting
+    default: 'splatter',
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: floorSplatFont set to ' + value);
     },
   });
 
   game.settings.register(MODULE_ID, 'tokenSplatFont', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: String,
-    default: 'splatter', // The default value for the setting
+    default: 'splatter',
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: tokenSplatFont set to ' + value);
     },
   });
 
   game.settings.register(MODULE_ID, 'trailSplatFont', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: String,
-    default: 'WC Rhesus A Bta', // The default value for the setting
+    default: 'WC Rhesus A Bta',
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: trailSplatFont set to ' + value);
     },
   });
 
   game.settings.register(MODULE_ID, 'floorSplatSize', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: Number,
-    default: '150', // The default value for the setting
+    default: '150',
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: floorSplatSize set to ' + value);
     },
   });
 
   game.settings.register(MODULE_ID, 'floorSplatDensity', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: Number,
-    default: '1', // The default value for the setting
+    default: '1',
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: floorSplatDensity set to ' + value);
     },
   });
 
   game.settings.register(MODULE_ID, 'tokenSplatSize', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: Number,
-    default: '40', // The default value for the setting
+    default: '40',
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: tokenSplatSize set to ' + value);
     },
   });
 
   game.settings.register(MODULE_ID, 'tokenSplatDensity', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: Number,
-    default: '1', // The default value for the setting
+    default: '1',
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: tokenSplatDensity set to ' + value);
     },
   });
 
   game.settings.register(MODULE_ID, 'trailSplatSize', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: Number,
-    default: '30', // The default value for the setting
+    default: '30',
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: trailSplatSize set to ' + value);
     },
   });
 
   game.settings.register(MODULE_ID, 'trailSplatDensity', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: Number,
-    default: '3', // The default value for the setting
+    default: '3',
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: trailSplatDensity set to ' + value);
     },
   });
 
   game.settings.register(MODULE_ID, 'splatSpread', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: Number,
-    default: 0.8, // The default value for the setting
+    default: 0.8,
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: splatSpread set to ' + value);
     },
   });
 
   game.settings.register(MODULE_ID, 'sceneSplatPoolSize', {
-    scope: 'client', // This specifies a client-stored setting
-    config: false, // This specifies that the setting appears in the configuration view
+    scope: 'client',
+    config: false,
     type: Number,
-    default: 100, // The default value for the setting
+    default: 100,
     onChange: (value) => {
-      // A callback function which triggers when the setting is changed
       log(LogLevel.DEBUG, 'Settings: sceneSplatPoolSize set to ' + value);
     },
   });
