@@ -54,16 +54,18 @@ export class AdvancedConfig extends FormApplication {
   activateListeners(html: any): any {
     super.activateListeners(html);
 
-    const wipeButton = html.find('.advanced-config-wipe-pool');
-    wipeButton.click(() => {
-      log(LogLevel.INFO, 'wipeButton: wiping sceneSplatPool');
-      canvas.scene.active.setFlag(MODULE_ID, 'sceneSplatPool', null);
-      globalThis.sceneSplatPool.forEach((poolObj) => {
-        poolObj.splatContainer.destroy();
+    const wipeButton = html.find('.advanced-config-wipe-scene-splats');
+    if (canvas.scene.active) {
+      wipeButton.click(() => {
+        log(LogLevel.INFO, 'wipeButton: wiping sceneSplatPool');
+        canvas.scene.setFlag(MODULE_ID, 'sceneSplatPool', null);
+        globalThis.sceneSplatPool.forEach((poolObj) => {
+          poolObj.splatContainer.destroy();
+        });
+        globalThis.sceneSplatPool = [];
+        this.close();
       });
-      globalThis.sceneSplatPool = [];
-      this.close();
-    });
+    } else wipeButton.attr('disabled', true);
   }
 
   async _updateObject(event: Event, formData: any): Promise<void> {
