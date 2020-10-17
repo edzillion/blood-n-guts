@@ -508,7 +508,7 @@ exports.publish = gulp.series(
 );
 exports.doc = gulp.task('typedoc', function() {
 	return gulp
-			.src(['src/**/*.ts'])
+			.src(['src/**/*.ts', '!src/data{,/**}'])
 			.pipe(typedoc({
 					out: 'docs/',
 					name: "Blood 'n Guts"

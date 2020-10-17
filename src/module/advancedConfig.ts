@@ -3,11 +3,10 @@ import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import * as splatFonts from '../data/splatFonts';
 
-let activeScene;
-
 /**
  * FormApplication window for advanced configuration options.
  * @class
+ * @extends FormApplication
  */
 export class AdvancedConfig extends FormApplication {
   font: SplatFont;
@@ -17,7 +16,6 @@ export class AdvancedConfig extends FormApplication {
     super(object, options);
     game.settings.sheet.close();
     game.users.apps.push(this);
-    if (canvas.scene.active) activeScene = canvas.scene;
   }
 
   static get defaultOptions(): FormApplicationOptions {
@@ -32,7 +30,7 @@ export class AdvancedConfig extends FormApplication {
     return options;
   }
 
-  async getData(options) {
+  async getData(): Promise<any> {
     // todo: sort out this permissions stuff
     // const canConfigure = game.user.can('SETTINGS_MODIFY');
 
@@ -49,29 +47,30 @@ export class AdvancedConfig extends FormApplication {
     return dataObject;
   }
 
-  render(force, context = {}) {
+  render(force: any, context = {}): any {
     return super.render(force, context);
   }
 
-  activateListeners(html) {
+  activateListeners(html: any): any {
     super.activateListeners(html);
 
-    const wipeButton = html.find('.advanced-config-wipe-pool');
-    wipeButton.click((e) => {
-      log(LogLevel.INFO, 'wipeButton: wiping sceneSplatPool');
-      activeScene.setFlag(MODULE_ID, 'sceneSplatPool', null);
-      globalThis.sceneSplatPool.forEach((poolObj) => {
-        poolObj.splatContainer.destroy();
+    const wipeButton = html.find('.advanced-config-wipe-scene-splats');
+    if (canvas.scene.active) {
+      wipeButton.click(() => {
+        log(LogLevel.INFO, 'wipeButton: wiping sceneSplatPool');
+        canvas.scene.setFlag(MODULE_ID, 'sceneSplatPool', null);
+        globalThis.sceneSplatPool.forEach((poolObj) => {
+          poolObj.splatContainer.destroy();
+        });
+        globalThis.sceneSplatPool = [];
+        this.close();
       });
-      globalThis.sceneSplatPool = [];
-      this.close();
-    });
+    } else wipeButton.attr('disabled', true);
   }
 
-  async _updateObject(event, formData) {
+  async _updateObject(event: Event, formData: any): Promise<void> {
     for (const setting in formData) {
       game.settings.set(MODULE_ID, setting, formData[setting]);
     }
-    return;
   }
 }

@@ -1,5 +1,10 @@
 import { MODULE_ID } from '../constants';
 
+/**
+ * Logging
+ * @module Logging
+ */
+
 export enum LogLevel {
   ERROR,
   INFO,
