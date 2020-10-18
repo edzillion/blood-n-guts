@@ -1,20 +1,16 @@
 {
-  "name": "blood-n-guts",
-  "title": "Blood 'n Guts",
-  "description": "Blood 'n Guts creates blood spray and splatter when tokens recieve damage, drawing to the floor and tokens, and drawing trails of blood after tokens who have taken damage. Many options are configurable.",
-  "author": "edzillion",
-  "systems": [
-    "dnd5e"
-  ],
-  "version": "0.4.1",
-  "minimumCoreVersion": "0.0.1",
-  "esmodules": [
-    "./blood-n-guts.js"
-  ],
-  "styles": [
-    "./blood-n-guts.css"
-  ],
-  "url": "https://github.com/edzillion/blood-n-guts/",
-  "manifest": "https://raw.githubusercontent.com/edzillion/blood-n-guts/master/src/module.json",
-  "download": "https://github.com/edzillion/blood-n-guts/releases/download/v0.4.1/blood-n-guts-v0.4.1.zip"
+	"name": "blood-n-guts",
+	"title": "Blood 'n Guts",
+	"description": "Blood 'n Guts creates blood spray and splatter when tokens recieve damage, drawing to the floor and tokens, and drawing trails of blood after tokens who have taken damage. Many options are configurable.",
+	"author": "edzillion",
+	"systems": ["dnd5e"],
+	"version": "0.4.2",
+	"minimumCoreVersion": "0.0.1",
+	"esmodules": [
+		"./blood-n-guts.js"
+	],
+	"styles": ["./blood-n-guts.css"],
+	"url": "https://github.com/edzillion/blood-n-guts/",
+	"manifest": "https://raw.githubusercontent.com/edzillion/blood-n-guts//master/src/module.json",
+	"download": "https://raw.githubusercontent.com/edzillion/blood-n-guts//v0.4.2/package/blood-n-guts-v0.4.2.zip"
 }
