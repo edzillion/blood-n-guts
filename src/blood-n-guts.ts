@@ -25,7 +25,7 @@ import { MODULE_ID } from './constants';
 globalThis.sceneSplatPool = [];
 
 //CONFIG.debug.hooks = false;
-//CONFIG.logLevel = 2;
+CONFIG.bngLogLevel = 0;
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -453,7 +453,7 @@ class BloodNGuts {
 
     this.addToSplatPool(splatsContainer, splatSaveObj);
 
-    if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
+    if (CONFIG.bngLogLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
   }
 
   /**
@@ -599,7 +599,7 @@ Hooks.on('canvasReady', (canvas) => {
   globalThis.sceneSplatPool = [];
   BloodNGuts.fadingSplatPool = [];
 
-  if (CONFIG.logLevel >= LogLevel.DEBUG) {
+  if (CONFIG.bngLogLevel >= LogLevel.DEBUG) {
     document.addEventListener(
       'click',
       (event) => {
