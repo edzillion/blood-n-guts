@@ -11,6 +11,6 @@
 	],
 	"styles": ["./blood-n-guts.css"],
 	"url": "https://github.com/edzillion/blood-n-guts/",
-	"manifest": "https://raw.githubusercontent.com/edzillion/blood-n-guts//master/src/module.json",
-	"download": "https://raw.githubusercontent.com/edzillion/blood-n-guts//v0.4.2/package/blood-n-guts-v0.4.2.zip"
+	"manifest": "https://raw.githubusercontent.com/edzillion/blood-n-guts/master/src/module.json",
+	"download": "https://raw.githubusercontent.com/edzillion/blood-n-guts/v0.4.2/package/blood-n-guts-v0.4.2.zip"
 }
