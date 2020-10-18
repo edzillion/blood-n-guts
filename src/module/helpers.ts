@@ -118,15 +118,15 @@ export const lookupTokenBloodColor = (token: Token): string => {
   const type: string = actorType === 'npc' ? actor.data.data.details.type : actor.data.data.details.race;
 
   log(LogLevel.DEBUG, 'lookupTokenBloodColor: ', token.name, actorType, type);
-  let bloodColor: string;
+
   const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
 
   // if useBloodColor is disabled then all blood is blood red
-  bloodColor = enabled ? bloodColorSettings.color[type] : 'blood';
+  const bloodColor = enabled ? bloodColorSettings.color[type] : 'blood';
 
   // bloodSettings can return either an rbga string, a color string or 'name' which looks up the
   // color based on it's name. e.g. 'Purple Ooze'
-  let rgba;
+  let rgba: string;
   if (bloodColor === 'name') {
     rgba = getActorColorByName(actor);
     log(LogLevel.DEBUG, 'lookupTokenBloodColor name:', bloodColor, rgba);
@@ -138,12 +138,11 @@ export const lookupTokenBloodColor = (token: Token): string => {
     log(LogLevel.DEBUG, 'lookupTokenBloodColor rgbaOnlyRegex:', bloodColor, rgba);
   } else {
     log(LogLevel.ERROR, 'lookupTokenBloodColor color not recognized!', bloodColor, rgba);
+    rgba = getRGBA('blood');
   }
 
-  bloodColor = rgba;
-
-  log(LogLevel.INFO, 'lookupTokenBloodColor: ' + bloodColor);
-  return bloodColor;
+  log(LogLevel.INFO, 'lookupTokenBloodColor: ' + rgba);
+  return rgba;
 };
 
 /**
