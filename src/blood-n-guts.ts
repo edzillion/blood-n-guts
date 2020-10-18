@@ -1,7 +1,7 @@
 /**
  * Documentation for Blood 'n Guts, a Foundry VTT module that adds blood splatter to your games.
  * All functionality is wrapped in it's main Class `BloodNGuts`.
- * @license [CC0-1.0]{@link https://creativecommons.org/publicdomain/zero/1.0/deed.en}
+ * @license [GNU GPLv3.0 & 'Commons Clause' License Condition v1.0]{@link https://github.com/edzillion/blood-n-guts/blob/master/LICENSE.md}
  * @packageDocumentation
  * @author [edzillion]{@link https://github.com/edzillion}
  */
@@ -25,7 +25,7 @@ import { MODULE_ID } from './constants';
 globalThis.sceneSplatPool = [];
 
 //CONFIG.debug.hooks = false;
-//CONFIG.logLevel = 2;
+CONFIG.bngLogLevel = 0;
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -453,7 +453,7 @@ class BloodNGuts {
 
     this.addToSplatPool(splatsContainer, splatSaveObj);
 
-    if (CONFIG.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
+    if (CONFIG.bngLogLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
   }
 
   /**
@@ -599,7 +599,7 @@ Hooks.on('canvasReady', (canvas) => {
   globalThis.sceneSplatPool = [];
   BloodNGuts.fadingSplatPool = [];
 
-  if (CONFIG.logLevel >= LogLevel.DEBUG) {
+  if (CONFIG.bngLogLevel >= LogLevel.DEBUG) {
     document.addEventListener(
       'click',
       (event) => {

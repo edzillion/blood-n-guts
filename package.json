@@ -4,7 +4,7 @@
   "version": "0.4.0",
   "description": "Spray your dungeons with blood! A module for FoundryVTT",
   "author": "edzillion",
-  "license": "CC0-1.0",
+  "license": "GNU GPLv3.0 & 'Commons Clause' License Condition v1.0",
   "devDependencies": {
     "@types/async": "^3.2.3",
     "@types/node": "^14.11.2",
