@@ -1,7 +1,7 @@
 /**
  * Documentation for Blood 'n Guts, a Foundry VTT module that adds blood splatter to your games.
  * All functionality is wrapped in it's main Class `BloodNGuts`.
- * @license [CC0-1.0]{@link https://creativecommons.org/publicdomain/zero/1.0/deed.en}
+ * @license [GNU GPLv3.0 & 'Commons Clause' License Condition v1.0]{@link https://github.com/edzillion/blood-n-guts/blob/master/LICENSE.md}
  * @packageDocumentation
  * @author [edzillion]{@link https://github.com/edzillion}
  */
