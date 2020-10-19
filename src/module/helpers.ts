@@ -172,6 +172,19 @@ export const getActorColorByName = (actor: Actor): string => {
 };
 
 /**
+ * Creates and returns a unique identifier.
+ * @category helpers
+ * @function
+ */
+export const getUID = (typeCode?: string): string => {
+  const d = Date.now().toString(16);
+  const r = Math.random().toString(16);
+  const prefix = 'bng';
+
+  return [prefix, typeCode, d, r].join('_');
+};
+
+/**
  * Debug helper to draw a rectangle border around a container.
  * @category helpers
  * @function

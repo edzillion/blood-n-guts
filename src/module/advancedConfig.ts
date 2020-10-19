@@ -60,7 +60,7 @@ export class AdvancedConfig extends FormApplication {
         log(LogLevel.INFO, 'wipeButton: wiping sceneSplatPool');
         canvas.scene.setFlag(MODULE_ID, 'sceneSplatPool', null);
         globalThis.sceneSplatPool.forEach((poolObj) => {
-          poolObj.splatContainer.destroy();
+          poolObj.splatsContainer.destroy();
         });
         globalThis.sceneSplatPool = [];
         this.close();
