@@ -34,6 +34,7 @@ This is a work in progress.
 1. ~~Scene change gracefully~~
 1. permissions?
 1. documentation
+1. feature: enemy is bloodied at half health
 
 ## Bugs
 1. No trail when moving to a grid coord y < grid.size
