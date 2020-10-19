@@ -121,6 +121,33 @@ class BloodNGuts {
       log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:unset');
       // need to also reset the token's severity state
       damageScale = 0;
+      //remove all tokensplats on full health
+      if (currentHP === token.actor.data.data.attributes.hp.max) {
+        log(LogLevel.DEBUG, 'checkForDamage full health: remove all tokenSplats');
+        globalThis.sceneSplatPool
+          .filter((s) => s.save.tokenId === token.id)
+          .forEach((s) => {
+            console.log('this repeats fine');
+            globalThis.sceneSplatPool.splice(s);
+            s.splatContainer.destroy();
+          });
+    }
+      // otherwise we just remove one tokensplat
+      else {
+        log(LogLevel.DEBUG, 'checkForDamage: remove one tokenSplat');
+        // const tSplat = globalThis.sceneSplatPool.find((s) => s.save.tokenId === token.id);
+        // globalThis.sceneSplatPool.splice(tSplat);
+        const index = globalThis.sceneSplatPool.findIndex((s) => s.save.tokenId === token.id);
+        console.log(index);
+        const tSplat = globalThis.sceneSplatPool.splice(index, 1);
+        console.log(tSplat);
+        tSplat[0].splatContainer.destroy();
+      }
+      console.log(
+        'splats by token after:',
+        globalThis.sceneSplatPool.filter((s) => s.save.tokenId === token.id).length,
+      );
+      this.saveSceneSplats();
     }
     return damageScale;
   }
