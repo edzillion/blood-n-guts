@@ -113,12 +113,11 @@ class BloodNGuts {
         Math.round(game.settings.get(MODULE_ID, 'tokenSplatDensity')),
         damageScale,
       );
-
-      await token.setFlag(MODULE_ID, 'bleeding', true);
+      if (game.user.isGM) await token.setFlag(MODULE_ID, 'bleeding', true);
       log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:true');
     } else if (currentHP > lastHP) {
       // token.actor has been healed so they are no longer bleeding.
-      await token.unsetFlag(MODULE_ID, 'bleeding');
+      if (game.user.isGM) await token.unsetFlag(MODULE_ID, 'bleeding');
       log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:unset');
       // need to also reset the token's severity state
       damageScale = 0;
