@@ -517,12 +517,13 @@ class BloodNGuts {
   }
 
   /**
-   * Saves all `SaveObject`s in `globalThis.sceneSplatPool` and saves them to scene flag `sceneSplatPool`
+   * GM Only. Saves all `SaveObject`s in `globalThis.sceneSplatPool` and saves them to scene flag `sceneSplatPool`
    * @async
    * @category core
    * @function
    */
   static async saveSceneSplats() {
+    if (!game.user.isGM) return;
     log(LogLevel.INFO, 'saveSceneSplats', canvas.scene.name);
     const pool = globalThis.sceneSplatPool.map((splat) => splat.save);
     log(LogLevel.DEBUG, 'saveSceneSplats: pool', pool);
