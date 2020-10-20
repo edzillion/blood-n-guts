@@ -18,21 +18,23 @@ import {
   getDirectionNrml,
   alignSplatsGetOffsetAndDimensions,
   getPointOnCurve,
+  getUID,
 } from './module/helpers';
 import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 globalThis.sceneSplatPool = [];
+let splatState = [];
 
 //CONFIG.debug.hooks = false;
-CONFIG.bngLogLevel = 0;
+CONFIG.bngLogLevel = 2;
 
 /**
  * Main class wrapper for all blood-n-guts features.
  * @class
  * @extends FormApplication
  */
-class BloodNGuts {
+export class BloodNGuts {
   public static allFontsLoaded: boolean;
   public static fadingSplatPool: Array<SplatPoolObject>;
   public static lastTokenState: Array<TokenSaveObject> = [];
@@ -45,90 +47,43 @@ class BloodNGuts {
 
   /**
    * Check if a token has moved since it's last update and generate trail tiles if bleeding.
-   * @category core
-   * @async
+   * @category GMOnly
    * @function
    * @param {Token} token - the token to check.
    * @param {any} actorDataChanges - the token.actor changes object.
    */
-  static async checkForMovement(token: Token, actorDataChanges: any): Promise<void> {
-    if (actorDataChanges.x || actorDataChanges.y) {
-      log(LogLevel.DEBUG, 'checkForMovement id:' + token.id);
+  private static getMovementOnGrid(token: Token, actorDataChanges: any): PIXI.Point {
+    if (!actorDataChanges.x && !actorDataChanges.y) return;
+    log(LogLevel.INFO, 'checkForMovement id:' + token.id);
+    log(LogLevel.DEBUG, 'checkForMovement actorDataChanges:', actorDataChanges);
 
-      // is this token bleeding?
-      if (await token.getFlag(MODULE_ID, 'bleeding')) {
-        log(LogLevel.DEBUG, 'checkForMovement lastTokenState', this.lastTokenState, actorDataChanges);
-        log(LogLevel.DEBUG, 'checkForMovement id:' + token.id + ' - bleeding');
-
-        this.generateTrailSplats(
-          token,
-          splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
-          game.settings.get(MODULE_ID, 'trailSplatSize'),
-          game.settings.get(MODULE_ID, 'trailSplatDensity'),
-          this.lastTokenState[token.id].severity,
-        );
-      }
-    }
+    const lastPos = new PIXI.Point(this.lastTokenState[token.id].x, this.lastTokenState[token.id].y);
+    const currPos = new PIXI.Point(actorDataChanges.x, actorDataChanges.y);
+    return getDirectionNrml(lastPos, currPos);
   }
 
   /**
-   * Check if a token has taken damage since it's last update and generate splats if so.
-   * @category core
-   * @async
+   * Check if a token has taken damage since it's last update and generate splats if so. If token has been healed remove splats.
+   * @category GMOnly
    * @function
    * @param {Token} token - the token to check.
    * @param {any} actorDataChanges - the token.actor changes object.
    */
-  static async checkForDamage(token: Token, actorDataChanges: any): Promise<number> {
-    log(LogLevel.DEBUG, 'last saves:', this.lastTokenState);
-    if (!actorDataChanges?.data?.attributes?.hp) return;
+  private static getDamageScale(token: Token, changes: any): number {
+    if (!changes.actorData || !changes.actorData.data.attributes?.hp) return;
+    log(LogLevel.INFO, 'checkForDamage', changes.actorData);
 
-    const currentHP = actorDataChanges.data.attributes.hp.value;
+    const currentHP = changes.actorData.data.attributes.hp.value;
     const lastHP = this.lastTokenState[token.id].hp;
-    let damageScale = 1;
+    const scale = (lastHP - currentHP) / token.actor.data.data.attributes.hp.max;
 
-    if (currentHP < lastHP) {
-      log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - hp down');
-
-      // damageScale is a scale based on the fraction of overall HP lost.
-      damageScale = (lastHP - currentHP) / token.actor.data.data.attributes.hp.max;
-      damageScale += 1;
-
-      // increase damageScale on death
-      if (actorDataChanges.data.attributes.hp.value === 0)
-        log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - death');
-      damageScale += actorDataChanges.data.attributes.hp.value === 0 ? 0.5 : 0;
-
-      this.generateFloorSplats(
-        token,
-        splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
-        game.settings.get(MODULE_ID, 'floorSplatSize'),
-        Math.round(game.settings.get(MODULE_ID, 'floorSplatDensity')),
-        damageScale,
-      );
-      this.generateTokenSplats(
-        token,
-        splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
-        game.settings.get(MODULE_ID, 'tokenSplatSize'),
-        Math.round(game.settings.get(MODULE_ID, 'tokenSplatDensity')),
-        damageScale,
-      );
-
-      await token.setFlag(MODULE_ID, 'bleeding', true);
-      log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:true');
-    } else if (currentHP > lastHP) {
-      // token.actor has been healed so they are no longer bleeding.
-      await token.unsetFlag(MODULE_ID, 'bleeding');
-      log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:unset');
-      // need to also reset the token's severity state
-      damageScale = 0;
-    }
-    return damageScale;
+    log(LogLevel.DEBUG, 'checkForDamage scale', scale);
+    return scale;
   }
 
   /**
    * Generate splats on the floor beneath a token.
-   * @category core
+   * @category GMOnly
    * @function
    * @param {Token} token - the token to generate splats for.
    * @param {SplatFont} font - the font to use for splats.
@@ -136,18 +91,18 @@ class BloodNGuts {
    * @param {number} density - the amount of splats.
    * @param {number} severity - more and bigger splats based on the severity of the wound.
    */
-
-  static generateFloorSplats(
+  private static generateFloorSplats(
     token: Token,
     font: SplatFont,
     size: number,
     density: number,
     severity: number,
-  ): Promise<void> {
+  ): SplatSaveObject {
     if (!density) return;
     log(LogLevel.INFO, 'generateFloorSplats');
 
     const splatSaveObj: Partial<SplatSaveObject> = {};
+    severity += 1;
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(size * ((token.w + token.h) / canvas.grid.size / 2) * severity);
@@ -191,7 +146,7 @@ class BloodNGuts {
     const maxDistance = Math.max(width, height);
     const sight = computeSightFromPoint(token.center, maxDistance);
 
-    // since we don't want to add the mask to the splatContainer yet (as that will
+    // since we don't want to add the mask to the splatsContainer yet (as that will
     // screw up our alignment) we need to move it by editing the x,y points directly
     for (let i = 0; i < sight.length; i += 2) {
       sight[i] -= splatSaveObj.offset.x;
@@ -202,12 +157,12 @@ class BloodNGuts {
     splatSaveObj.y += token.center.y;
 
     splatSaveObj.maskPolygon = sight;
-    this.drawSplats(<SplatSaveObject>splatSaveObj);
+    return <SplatSaveObject>splatSaveObj;
   }
 
   /**
    * Generate splats on the token itself.
-   * @category core
+   * @category GMOnly
    * @function
    * @param {Token} token - the token to generate splats for.
    * @param {SplatFont} font - the font to use for splats.
@@ -215,11 +170,18 @@ class BloodNGuts {
    * @param {number} density - the amount of splats.
    * @param {number} severity - more and bigger splats based on the severity of the wound.
    */
-  static generateTokenSplats(token: Token, font: SplatFont, size: number, density: number, severity: number) {
+  private static generateTokenSplats(
+    token: Token,
+    font: SplatFont,
+    size: number,
+    density: number,
+    severity: number,
+  ): SplatSaveObject {
     if (!density) return;
     log(LogLevel.INFO, 'generateTokenSplats');
 
     const splatSaveObj: Partial<SplatSaveObject> = {};
+    severity += 1;
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(size * ((token.w + token.h) / canvas.grid.size / 2) * severity);
@@ -236,6 +198,7 @@ class BloodNGuts {
 
     // amount of splats is based on density and severity
     const amount = Math.round(density * severity);
+    if (amount === 0) return;
     // get a random glyph and then get a random (x,y) spread away from the token.
     const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
     const pixelSpreadX = token.w * game.settings.get(MODULE_ID, 'splatSpread') * 2;
@@ -262,25 +225,33 @@ class BloodNGuts {
     splatSaveObj.x = offset.x + token.w / 2;
     splatSaveObj.y = offset.y + token.h / 2;
 
-    this.drawSplats(<SplatSaveObject>splatSaveObj);
+    return <SplatSaveObject>splatSaveObj;
   }
 
   /**
    * Generate splats in a trail on the floor behind a moving token.
+   * @category GMOnly
    * @function
-   * @category core
    * @param {Token} token - the token to generate splats for.
    * @param {SplatFont} font - the font to use for splats.
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
    * @param {number} severity - more and bigger splats based on the severity of the wound.
    */
-  static generateTrailSplats(token: Token, font: SplatFont, size: number, density: number, severity: number) {
+  private static generateTrailSplats(
+    token: Token,
+    font: SplatFont,
+    size: number,
+    density: number,
+    severity: number,
+  ): SplatSaveObject {
     if (!density) return;
     log(LogLevel.INFO, 'generateTrailSplats');
     log(LogLevel.DEBUG, 'generateTrailSplats severity', severity);
 
     const splatSaveObj: Partial<SplatSaveObject> = {};
+
+    severity += 1;
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(size * ((token.w + token.h) / canvas.grid.size / 2) * severity);
@@ -350,7 +321,7 @@ class BloodNGuts {
     const sight = computeSightFromPoint(token.center, maxDistance);
     splatSaveObj.maskPolygon = sight;
 
-    // since we don't want to add the mask to the splatContainer yet (as that will
+    // since we don't want to add the mask to the splatsContainer yet (as that will
     // screw up our alignment) we need to move it by editing the x,y points directly
     for (let i = 0; i < sight.length; i += 2) {
       sight[i] -= splatSaveObj.offset.x;
@@ -359,25 +330,25 @@ class BloodNGuts {
 
     splatSaveObj.x += token.center.x;
     splatSaveObj.y += token.center.y;
-
-    this.drawSplats(<SplatSaveObject>splatSaveObj);
+    return <SplatSaveObject>splatSaveObj;
   }
 
   /**
-   * Draw splats to the canvas from it's save object.
-   * @category core
+   * Draw splats to the canvas from it's save object and return a reference to the `PIXI.Container` that holds them.
+   * @category GMOnly
    * @function
-   * @param {SplatSaveObject} splatSaveObj - the splats data.
+   * @param {SplatSaveObject} splatSaveObject - the splats data.
+   * @returns {PIXI.Container} - the canvas reference.
    */
-  static drawSplats(splatSaveObj: SplatSaveObject) {
+  private static drawSplatsGetContainer(splatSaveObject: SplatSaveObject): PIXI.Container {
     log(LogLevel.INFO, 'drawSplats');
-    log(LogLevel.DEBUG, 'drawSplats: splatSaveObj', splatSaveObj);
+    log(LogLevel.DEBUG, 'drawSplats: splatSaveObject', splatSaveObject);
     const splatsContainer = new PIXI.Container();
-    const style = new PIXI.TextStyle(splatSaveObj.styleData);
+    const style = new PIXI.TextStyle(splatSaveObject.styleData);
 
     // if it's maskPolygon type we can create a sightMask directly.
-    if (splatSaveObj.maskPolygon) {
-      splatSaveObj.splats.forEach((splat) => {
+    if (splatSaveObject.maskPolygon) {
+      splatSaveObject.splats.forEach((splat) => {
         const text = new PIXI.Text(splat.glyph, style);
         text.x = splat.x;
         text.y = splat.y;
@@ -388,29 +359,30 @@ class BloodNGuts {
       log(LogLevel.DEBUG, 'drawSplats: splatSaveObj.maskPolygon');
       const sightMask = new PIXI.Graphics();
       sightMask.beginFill(1, 1);
-      sightMask.drawPolygon(splatSaveObj.maskPolygon);
+      sightMask.drawPolygon(splatSaveObject.maskPolygon);
       sightMask.endFill();
 
       splatsContainer.addChild(sightMask);
       splatsContainer.mask = sightMask;
 
-      splatsContainer.x = splatSaveObj.x;
-      splatsContainer.y = splatSaveObj.y;
+      splatsContainer.x = splatSaveObject.x;
+      splatsContainer.y = splatSaveObject.y;
+
       canvas.tiles.addChild(splatsContainer);
     }
     // if it's tokenId type we must create renderSprite to use as a mask.
-    else if (splatSaveObj.tokenId) {
+    else if (splatSaveObject.tokenId) {
       log(LogLevel.DEBUG, 'drawSplats: splatSaveObj.tokenId');
 
-      const token = canvas.tokens.placeables.find((t) => t.data._id === splatSaveObj.tokenId);
-      if (!token) log(LogLevel.ERROR, 'drawSplats token not found!', splatSaveObj);
+      const token = canvas.tokens.placeables.find((t) => t.data._id === splatSaveObject.tokenId);
+      if (!token) log(LogLevel.ERROR, 'drawSplats token not found!', splatSaveObject);
       const tokenSpriteWidth = token.data.width * canvas.grid.size * token.data.scale;
       const tokenSpriteHeight = token.data.height * canvas.grid.size * token.data.scale;
 
-      splatSaveObj.splats.forEach((splat) => {
+      splatSaveObject.splats.forEach((splat) => {
         const text = new PIXI.Text(splat.glyph, style);
-        text.x = splat.x + splatSaveObj.offset.x + tokenSpriteWidth / 2;
-        text.y = splat.y + splatSaveObj.offset.y + tokenSpriteHeight / 2;
+        text.x = splat.x + splatSaveObject.offset.x + tokenSpriteWidth / 2;
+        text.y = splat.y + splatSaveObject.offset.y + tokenSpriteHeight / 2;
         splatsContainer.addChild(text);
         return text;
       });
@@ -448,22 +420,23 @@ class BloodNGuts {
       splatsContainer.position.set(token.w / 2, token.h / 2);
 
       splatsContainer.angle = token.data.rotation;
+
       token.addChildAt(splatsContainer, 2);
     } else log(LogLevel.ERROR, 'drawSplats: splatSaveObj should have either .imgPath or .maskPolygon!');
 
-    this.addToSplatPool(splatsContainer, splatSaveObj);
-
     if (CONFIG.bngLogLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
+
+    return splatsContainer;
   }
 
   /**
    * Saves the state of the token for later comparison.
-   * @category core
+   * @category GMOnly
    * @function
    * @param {Token} token - token to save.
    * @param {number} [severity=1] - severity of wound, scales trail splats. If set to 0 severity will be reset to 1.
    */
-  static saveTokenState(token: Token, severity = 1) {
+  private static saveTokenState(token: Token, severity = 1): void {
     log(LogLevel.INFO, 'saveTokenState:', token.data.name, token.id);
 
     // only save severity if it's higher. if severity is 0 reset to 1.
@@ -487,23 +460,52 @@ class BloodNGuts {
   }
 
   /**
+   * Saves the given `SplatSaveObject` to our scene flag, add it's `.id` property if not already set.
+   * @category GMOnly
+   * @function
+   * @param {Array<SplatSaveObject>} [splatSaveObj] - token data to save. if ommitted will just save the current
+   * splatState (useful for removing saveObjs).
+   */
+  private static saveToSceneFlag(newSaveObjs?: Array<SplatSaveObject>): Promise<Entity> {
+    if (!game.user.isGM) return;
+    log(LogLevel.INFO, 'saveToSceneFlag', newSaveObjs);
+
+    const poolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
+
+    // add new save objs to the list and give them uids
+    if (newSaveObjs) {
+      newSaveObjs.forEach((s) => {
+        if (!s.id) s.id = getUID();
+        splatState.unshift(s);
+      });
+      if (splatState.length > poolSize) splatState.length = poolSize;
+      log(LogLevel.DEBUG, `saveToSceneFlag splatState.length:${splatState.length}`);
+    }
+
+    log(LogLevel.DEBUG, 'saveToSceneFlag: saveObjects', splatState);
+    return canvas.scene.setFlag(MODULE_ID, 'splatState', splatState);
+  }
+
+  /**
    * Adds the token data and a reference to the token on the canvas to our pool. The pool is a FIFO
    * stack with maximum size `blood-n-guts.sceneSplatPoolSize`. When size is exceeded the oldest entries
    * are moved to `fadingSplatPool` and their alpha is changed to 0.3. When this pool is exceeded (which is hard-coded
    * to be 20% of the size of the main pool) then those entries are destroyed.
-   * @category core
+   * @category GMOnly
    * @function
-   * @param {PIXI.Container} splatContainer - reference to splatContainer on canvas.
    * @param {SplatSaveObject} splatSaveObj - token data to save.
    */
-  static addToSplatPool(splatContainer, splatSaveObj) {
-    const poolObj = { save: splatSaveObj, splatContainer: splatContainer };
+  private static addToSplatPool(splatSaveObj: SplatSaveObject, splatsContainer: PIXI.Container = null): void {
+    // we set splatsContainer to null, it will be added on sceneUpdate when it is drawn to canvas.
+    const poolObj = { save: splatSaveObj, splatsContainer: splatsContainer };
     if (globalThis.sceneSplatPool.length >= game.settings.get(MODULE_ID, 'sceneSplatPoolSize')) {
       const fadingSplatPoolObj = globalThis.sceneSplatPool.shift();
-      fadingSplatPoolObj.splatContainer.alpha = 0.3;
+      if (!fadingSplatPoolObj.splatsContainer)
+        log(LogLevel.ERROR, 'fadingSplatPoolObj.splatsContainer is null', fadingSplatPoolObj);
+      fadingSplatPoolObj.splatsContainer.alpha = 0.3;
       if (this.fadingSplatPool.length >= game.settings.get(MODULE_ID, 'sceneSplatPoolSize') / 5) {
         const destroy = this.fadingSplatPool.shift();
-        destroy.splatContainer.destroy({ children: true });
+        destroy.splatsContainer.destroy({ children: true });
       }
       this.fadingSplatPool.push(fadingSplatPoolObj);
     }
@@ -513,47 +515,270 @@ class BloodNGuts {
       LogLevel.DEBUG,
       `addToSplatPool sceneSplatPool:${globalThis.sceneSplatPool.length}, fadingSplatPool:${this.fadingSplatPool.length}`,
     );
-    this.saveSceneSplats();
-  }
-
-  /**
-   * Saves all `SaveObject`s in `globalThis.sceneSplatPool` and saves them to scene flag `sceneSplatPool`
-   * @async
-   * @category core
-   * @function
-   */
-  static async saveSceneSplats() {
-    log(LogLevel.INFO, 'saveSceneSplats', canvas.scene.name);
-    const pool = globalThis.sceneSplatPool.map((splat) => splat.save);
-    log(LogLevel.DEBUG, 'saveSceneSplats: pool', pool);
-    await canvas.scene.setFlag(MODULE_ID, 'sceneSplatPool', pool);
   }
 
   /**
    * Loads all `SaveObject`s from scene flag `sceneSplatPool` and draws them - this
    * will also add them back into the pool. Also adds scene tokens to `lastTokenState`
-   * @category core
+   * @category GMOnly
    * @function
    */
-  static setupScene() {
-    const pool = canvas.scene.getFlag(MODULE_ID, 'sceneSplatPool');
-    log(LogLevel.INFO, 'setupScene sceneSplatPool loaded:', pool);
+  private static setupScene(): void {
+    const saveObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
+    log(LogLevel.INFO, 'setupScene saveObjects loaded:', saveObjects);
 
-    if (pool) {
+    if (saveObjects) {
       log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
-      pool.forEach((splatSaveObj: SplatSaveObject) => {
-        this.drawSplats(splatSaveObj);
-      });
+
+      // draw each missing splatsContainer and save a reference to it in the pool.
+      // if the splatPoolSize has changed then we want to add only the latest
+      const maxPoolSize = Math.min(game.settings.get(MODULE_ID, 'sceneSplatPoolSize'), saveObjects.length);
+      for (let i = 0; i < maxPoolSize; i++) {
+        this.addToSplatPool(saveObjects[i], this.drawSplatsGetContainer(saveObjects[i]));
+        splatState.push(saveObjects[i]);
+      }
     }
 
-    // save tokens state
+    //save tokens state
     const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
     for (let i = 0; i < canvasTokens.length; i++) this.saveTokenState(canvasTokens[i]);
+  }
+
+  /**
+   * Wipes all splats from the current scene and empties all pools.
+   * @category GMOnly
+   * @function
+   */
+  public static wipeSceneSplats(): void {
+    log(LogLevel.INFO, 'wipeButton: BloodNGuts.wipeSceneSplats()');
+    canvas.scene.setFlag(MODULE_ID, 'splatState', null);
+    globalThis.sceneSplatPool.forEach((poolObj) => {
+      poolObj.splatsContainer.destroy();
+    });
+    this.fadingSplatPool.forEach((poolObj) => {
+      poolObj.splatsContainer.destroy();
+    });
+    globalThis.sceneSplatPool = [];
+    this.fadingSplatPool = [];
+    splatState = [];
+  }
+
+  /**
+   * Handler called on all updateToken and updateActor events. Checks for movement and damage and
+   * calls splat generate methods.
+   * @category GMOnly
+   * @function
+   * @async
+   * @param {scene} - reference to the current scene
+   * @param {tokenData} - tokenData of updated Token/Actor
+   * @param {changes} - changes
+   */
+  public static async updateTokenOrActorHandler(scene, tokenData, changes): Promise<void> {
+    if (!scene.active || !game.user.isGM) return;
+    log(LogLevel.INFO, 'updateTokenHandler', changes);
+
+    const tokenId = tokenData._id || tokenData.data._id;
+    const token = canvas.tokens.placeables.find((t) => t.data._id === tokenId);
+    if (!token) {
+      log(LogLevel.ERROR, 'updateTokenHandler token not found!');
+      return;
+    }
+    if (!token.actor) {
+      log(LogLevel.DEBUG, 'updateTokenHandler has no actor, skipping');
+      return;
+    }
+
+    // update rotation of tokenSplats
+    if (changes.rotation != undefined) {
+      log(LogLevel.DEBUG, 'updateTokenHandler updating rotation', changes.rotation);
+      if (globalThis.sc)
+        globalThis.sceneSplatPool
+          .filter((s) => s.save.tokenId === token.id)
+          .map((s) => {
+            s.splatsContainer.angle = changes.rotation;
+          });
+    }
+
+    // at this point we're only interested in these changes.
+    if (!changes.x && !changes.y && !changes.actorData?.data?.attributes?.hp) return;
+
+    log(LogLevel.INFO, 'updateTokenHandler', token.name, token);
+    let saveObjects: Array<SplatSaveObject> = [];
+    const promises: Array<Promise<PlaceableObject | Entity>> = [];
+    let severity = BloodNGuts.lastTokenState[token.id].severity;
+
+    // check for damage and generate splats
+    const damageScale = BloodNGuts.getDamageScale(token, changes);
+    if (damageScale) {
+      switch (true) {
+        // damage dealt
+        case damageScale > 0: {
+          severity = damageScale;
+
+          promises.push(token.setFlag(MODULE_ID, 'bleeding', true));
+          log(LogLevel.DEBUG, 'updateToken damageScale > 0:' + token.id + ' - bleeding:true');
+
+          saveObjects.push(
+            BloodNGuts.generateFloorSplats(
+              token,
+              splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
+              game.settings.get(MODULE_ID, 'floorSplatSize'),
+              Math.round(game.settings.get(MODULE_ID, 'floorSplatDensity')),
+              damageScale,
+            ),
+          );
+          saveObjects.push(
+            BloodNGuts.generateTokenSplats(
+              token,
+              splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
+              game.settings.get(MODULE_ID, 'tokenSplatSize'),
+              Math.round(game.settings.get(MODULE_ID, 'tokenSplatDensity')),
+              damageScale,
+            ),
+          );
+          log(LogLevel.DEBUG, 'updateToken damageScale > 0: saveObjects', saveObjects);
+
+          break;
+        }
+        // healing
+        case damageScale < 0: {
+          severity = 0;
+
+          promises.push(token.unsetFlag(MODULE_ID, 'bleeding'));
+          log(LogLevel.DEBUG, 'updateToken damageScale < 0:' + token.id + ' - bleeding:unset');
+          const allTokensSplats = splatState.filter((save) => save.tokenId === token.id);
+          if (!allTokensSplats) break;
+          log(LogLevel.DEBUG, 'updateToken allTokensSplats:', allTokensSplats.length);
+          let keepThisMany = allTokensSplats.length - Math.ceil(allTokensSplats.length * -damageScale);
+          log(LogLevel.DEBUG, 'updateToken keepThisMany:', keepThisMany);
+
+          splatState = splatState.filter((save) => {
+            if (save.tokenId !== token.id) return true;
+            else if (keepThisMany-- > 0) return true;
+          });
+          break;
+        }
+        default: {
+          log(LogLevel.ERROR, 'updateToken damageScale === 0!');
+          break;
+        }
+      }
+    }
+
+    // check for movement and if bleeding draw trail
+    const direction = BloodNGuts.getMovementOnGrid(token, changes);
+    if (direction && (await token.getFlag(MODULE_ID, 'bleeding'))) {
+      saveObjects.push(
+        BloodNGuts.generateTrailSplats(
+          token,
+          splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
+          game.settings.get(MODULE_ID, 'trailSplatSize'),
+          game.settings.get(MODULE_ID, 'trailSplatDensity'),
+          severity,
+        ),
+      );
+    }
+
+    BloodNGuts.saveTokenState(token, severity);
+    // filter out null entries returned when density = 0
+    saveObjects = saveObjects.filter((s) => s);
+    promises.push(BloodNGuts.saveToSceneFlag(saveObjects));
+    //await Promise.all(promises);
+  }
+
+  /**
+   * Handler called when canvas has been fully loaded. Wipes state data and reloads from flags.
+   * @category GMOnly
+   * @function
+   * @param {scene} - reference to the current scene
+   * @param {tokenData} - tokenData of updated Token/Actor
+   * @param {changes} - changes
+   */
+  public static canvasReadyHandler(canvas): void {
+    if (!canvas.scene.active) return;
+    log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
+
+    //canvas.scene.setFlag(MODULE_ID, 'sceneSplatPool', null);
+
+    // wipe pools to be refilled from scene flag data
+    globalThis.sceneSplatPool = [];
+    BloodNGuts.fadingSplatPool = [];
+
+    // need to wait on fonts loading before we can setupScene
+    if (!BloodNGuts.allFontsLoaded)
+      (document as any).fonts.onloadingdone = () => {
+        const allFontsPresent =
+          (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'floorSplatFont')) &&
+          (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'tokenSplatFont')) &&
+          (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'trailSplatFont'));
+
+        if (!allFontsPresent) return;
+        log(LogLevel.DEBUG, 'canvasReady allFontsPresent');
+        BloodNGuts.allFontsLoaded = true;
+        BloodNGuts.setupScene();
+      };
+    else BloodNGuts.setupScene();
+  }
+
+  /**
+   * Handler called when scene data updated. Draws splats from scene data flags.
+   * @category GMandPC
+   * @function
+   * @param {scene} - reference to the current scene
+   * @param {changes} - changes
+   */
+  public static updateSceneHandler(scene, changes): void {
+    if (!scene.active || !globalThis.sceneSplatPool || !changes.flags[MODULE_ID]?.splatState) return;
+
+    const updatedSaveIds = changes.flags[MODULE_ID].splatState.map((s) => s.id);
+    log(LogLevel.DEBUG, 'updateScene updatedSaveIds', updatedSaveIds);
+
+    const oldSaveIds = globalThis.sceneSplatPool.map((poolObj) => poolObj.save.id);
+    log(LogLevel.DEBUG, 'updateScene oldSaveIds', oldSaveIds);
+
+    const removeIds = oldSaveIds.filter((id) => !updatedSaveIds.includes(id));
+    const addIds = updatedSaveIds.filter((id) => !oldSaveIds.includes(id));
+    log(LogLevel.DEBUG, 'updateScene removeIds', removeIds);
+    log(LogLevel.DEBUG, 'updateScene addIds', addIds);
+
+    globalThis.sceneSplatPool = globalThis.sceneSplatPool.filter((poolObj) => {
+      if (removeIds.includes(poolObj.save.id)) {
+        poolObj.splatsContainer.destroy();
+        return false;
+      }
+      return true;
+    });
+    log(LogLevel.DEBUG, 'updateScene sceneSplatPool', globalThis.sceneSplatPool);
+
+    // addSaveObjects are saves that are not yet in the splat pool
+    const addSaveObjects = changes.flags[MODULE_ID].splatState.filter((saveObj) => {
+      if (addIds.includes(saveObj.id)) return saveObj;
+    });
+    log(LogLevel.DEBUG, 'updateScene addSaveObjects', addSaveObjects);
+    // I suppose redrawing all splats per update would be inefficient?
+
+    // draw each missing splatsContainer and save a reference to it in the pool.
+    addSaveObjects.forEach((saveObj) => {
+      BloodNGuts.addToSplatPool(saveObj, BloodNGuts.drawSplatsGetContainer(saveObj));
+    });
+  }
+
+  /**
+   * Handler called when token added to scene. Saves new tokens via `saveTokenState()`
+   * @category GMOnly
+   * @function
+   * @param {scene} - reference to the current scene
+   * @param {tokenData} - new Token data
+   */
+  public static createTokenHandler(scene, tokenData): void {
+    if (!scene.active || !game.user.isGM) return;
+    log(LogLevel.INFO, 'createToken', tokenData);
+    const token = new Token(tokenData);
+    BloodNGuts.saveTokenState(token);
   }
 }
 
 // Hooks
-
 Hooks.once('init', async () => {
   log(LogLevel.INFO, 'Initializing blood-n-guts');
 
@@ -591,89 +816,18 @@ Hooks.on('canvasInit', (canvas) => {
   if (!canvas.scene.active) log(LogLevel.INFO, 'canvasInit, skipping inactive scene');
 });
 
-Hooks.on('canvasReady', (canvas) => {
-  if (!canvas.scene.active) return;
-  log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
+Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 
-  // wipe pools to be refilled from scene flag data
-  globalThis.sceneSplatPool = [];
-  BloodNGuts.fadingSplatPool = [];
+Hooks.on('createToken', BloodNGuts.createTokenHandler);
 
-  if (CONFIG.bngLogLevel >= LogLevel.DEBUG) {
-    document.addEventListener(
-      'click',
-      (event) => {
-        const [x, y] = [event.clientX, event.clientY];
-        const t = canvas.stage.worldTransform;
-        const xx = (x - t.tx) / canvas.stage.scale.x;
-        const yy = (y - t.ty) / canvas.stage.scale.y;
-        log(LogLevel.DEBUG, xx, yy);
-      },
-      false,
-    );
-  }
-
-  // need to wait on fonts loading before we can setupScene
-  if (!BloodNGuts.allFontsLoaded)
-    (document as any).fonts.onloadingdone = () => {
-      const allFontsPresent =
-        (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'floorSplatFont')) &&
-        (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'tokenSplatFont')) &&
-        (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'trailSplatFont'));
-
-      if (!allFontsPresent) return;
-      log(LogLevel.DEBUG, 'canvasReady allFontsPresent');
-      BloodNGuts.allFontsLoaded = true;
-      BloodNGuts.setupScene();
-    };
-  else BloodNGuts.setupScene();
-});
-
-Hooks.on('createToken', (scene, tokenData) => {
-  if (!scene.active) return;
-  log(LogLevel.INFO, 'createToken', tokenData);
-  const token = new Token(tokenData);
-  BloodNGuts.saveTokenState(token);
-});
-
-Hooks.on('updateToken', async (scene, tokenData, changes, _options, uid) => {
-  if (!scene.active) return;
-  log(LogLevel.DEBUG, tokenData, changes, uid);
-
-  const token = canvas.tokens.placeables.find((t) => t.data._id === tokenData._id);
-  if (!token) {
-    log(LogLevel.ERROR, 'updateToken token not found!');
-    return;
-  }
-  if (!token.actor) {
-    log(LogLevel.DEBUG, 'token has no actor, skipping');
-    return;
-  }
-
-  // update rotation of tokenSplats
-  if (changes.rotation != undefined) {
-    globalThis.sceneSplatPool
-      .filter((s) => s.save.tokenId === token.id)
-      .map((s) => {
-        s.splatContainer.angle = changes.rotation;
-      });
-  }
-
-  log(LogLevel.DEBUG, 'updateToken token:', token.name, token);
-
-  await BloodNGuts.checkForMovement(token, changes);
-  const severity = await BloodNGuts.checkForDamage(token, changes.actorData);
-  BloodNGuts.saveTokenState(token, severity);
-});
-
-Hooks.on('updateActor', async (actor, changes, diff) => {
-  if (!canvas.scene.active) return;
-  log(LogLevel.DEBUG, actor, changes, diff);
-
-  const token = canvas.tokens.placeables.find((t) => t.actor.id === actor.id);
+Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
+Hooks.on('updateActor', (actor, changes) => {
+  if (!canvas.scene.active || !game.user.isGM) return;
+  // convert into same structure as token changes.
+  if (changes.data) changes.actorData = { data: changes.data };
+  const token = canvas.tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === actor.id);
   if (!token) log(LogLevel.ERROR, 'updateActor token not found!');
-
-  await BloodNGuts.checkForMovement(token, changes);
-  const severity = await BloodNGuts.checkForDamage(token, changes);
-  BloodNGuts.saveTokenState(token, severity);
+  else BloodNGuts.updateTokenOrActorHandler(canvas.scene, token.data, changes);
 });
+
+Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
