@@ -270,6 +270,7 @@ export class BloodNGuts {
     );
     const currPosOrigin = new PIXI.Point(0, 0);
     const direction = getDirectionNrml(lastPosOrigin, currPosOrigin);
+    log(LogLevel.DEBUG, 'generateTrailSplats pos l,c,d', lastPosOrigin, currPosOrigin, direction);
 
     //horiz or vert movement
     const pixelSpread = direction.x
@@ -285,13 +286,13 @@ export class BloodNGuts {
     );
     // then swap direction y,x to give us an position to the side
     controlPt.set(controlPt.x + direction.y * rand, controlPt.y + direction.x * rand);
-    log(LogLevel.DEBUG, 'generateTrailSplats spread, ctrlPt', pixelSpread, controlPt);
+    log(LogLevel.DEBUG, 'generateTrailSplats spread, ctrlPt', rand, controlPt);
 
     // get random glyphs and the interval between each splat
     // amount is based on density and severity
     const amount = Math.round(density * severity);
     const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
-    const increment = 1 / game.settings.get(MODULE_ID, 'trailSplatDensity');
+    const increment = 1 / amount;
     log(LogLevel.DEBUG, 'generateTrailSplats amount', amount);
 
     // we skip 0 because that position already has a splat from the last trailSplat/floorSplat
