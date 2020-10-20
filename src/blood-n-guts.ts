@@ -24,7 +24,7 @@ import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 globalThis.sceneSplatPool = [];
-let sceneSplatSaveObjects = [];
+let splatState = [];
 
 //CONFIG.debug.hooks = false;
 CONFIG.bngLogLevel = 2;
@@ -464,7 +464,7 @@ export class BloodNGuts {
    * @category GMOnly
    * @function
    * @param {Array<SplatSaveObject>} [splatSaveObj] - token data to save. if ommitted will just save the current
-   * sceneSplatSaveObjects (useful for removing saveObjs).
+   * splatState (useful for removing saveObjs).
    */
   private static saveToSceneFlag(newSaveObjs?: Array<SplatSaveObject>): Promise<Entity> {
     if (!game.user.isGM) return;
@@ -476,14 +476,14 @@ export class BloodNGuts {
     if (newSaveObjs) {
       newSaveObjs.forEach((s) => {
         if (!s.id) s.id = getUID();
-        sceneSplatSaveObjects.unshift(s);
+        splatState.unshift(s);
       });
-      if (sceneSplatSaveObjects.length > poolSize) sceneSplatSaveObjects.length = poolSize;
-      log(LogLevel.DEBUG, `saveToSceneFlag sceneSplatSaveObjects.length:${sceneSplatSaveObjects.length}`);
+      if (splatState.length > poolSize) splatState.length = poolSize;
+      log(LogLevel.DEBUG, `saveToSceneFlag splatState.length:${splatState.length}`);
     }
 
-    log(LogLevel.DEBUG, 'saveToSceneFlag: saveObjects', sceneSplatSaveObjects);
-    return canvas.scene.setFlag(MODULE_ID, 'sceneSplatSaveObjects', sceneSplatSaveObjects);
+    log(LogLevel.DEBUG, 'saveToSceneFlag: saveObjects', splatState);
+    return canvas.scene.setFlag(MODULE_ID, 'splatState', splatState);
   }
 
   /**
@@ -524,7 +524,7 @@ export class BloodNGuts {
    * @function
    */
   private static setupScene(): void {
-    const saveObjects = canvas.scene.getFlag(MODULE_ID, 'sceneSplatSaveObjects');
+    const saveObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
     log(LogLevel.INFO, 'setupScene saveObjects loaded:', saveObjects);
 
     if (saveObjects) {
@@ -535,7 +535,7 @@ export class BloodNGuts {
       const maxPoolSize = Math.min(game.settings.get(MODULE_ID, 'sceneSplatPoolSize'), saveObjects.length);
       for (let i = 0; i < maxPoolSize; i++) {
         this.addToSplatPool(saveObjects[i], this.drawSplatsGetContainer(saveObjects[i]));
-        sceneSplatSaveObjects.push(saveObjects[i]);
+        splatState.push(saveObjects[i]);
       }
     }
 
@@ -551,7 +551,7 @@ export class BloodNGuts {
    */
   public static wipeSceneSplats(): void {
     log(LogLevel.INFO, 'wipeButton: BloodNGuts.wipeSceneSplats()');
-    canvas.scene.setFlag(MODULE_ID, 'sceneSplatSaveObjects', null);
+    canvas.scene.setFlag(MODULE_ID, 'splatState', null);
     globalThis.sceneSplatPool.forEach((poolObj) => {
       poolObj.splatsContainer.destroy();
     });
@@ -560,7 +560,7 @@ export class BloodNGuts {
     });
     globalThis.sceneSplatPool = [];
     this.fadingSplatPool = [];
-    sceneSplatSaveObjects = [];
+    splatState = [];
   }
 
   /**
@@ -646,13 +646,13 @@ export class BloodNGuts {
 
           promises.push(token.unsetFlag(MODULE_ID, 'bleeding'));
           log(LogLevel.DEBUG, 'updateToken damageScale < 0:' + token.id + ' - bleeding:unset');
-          const allTokensSplats = sceneSplatSaveObjects.filter((save) => save.tokenId === token.id);
+          const allTokensSplats = splatState.filter((save) => save.tokenId === token.id);
           if (!allTokensSplats) break;
           log(LogLevel.DEBUG, 'updateToken allTokensSplats:', allTokensSplats.length);
           let keepThisMany = allTokensSplats.length - Math.ceil(allTokensSplats.length * -damageScale);
           log(LogLevel.DEBUG, 'updateToken keepThisMany:', keepThisMany);
 
-          sceneSplatSaveObjects = sceneSplatSaveObjects.filter((save) => {
+          splatState = splatState.filter((save) => {
             if (save.tokenId !== token.id) return true;
             else if (keepThisMany-- > 0) return true;
           });
@@ -728,9 +728,9 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static updateSceneHandler(scene, changes): void {
-    if (!scene.active || !globalThis.sceneSplatPool || !changes.flags[MODULE_ID]?.sceneSplatSaveObjects) return;
+    if (!scene.active || !globalThis.sceneSplatPool || !changes.flags[MODULE_ID]?.splatState) return;
 
-    const updatedSaveIds = changes.flags[MODULE_ID].sceneSplatSaveObjects.map((s) => s.id);
+    const updatedSaveIds = changes.flags[MODULE_ID].splatState.map((s) => s.id);
     log(LogLevel.DEBUG, 'updateScene updatedSaveIds', updatedSaveIds);
 
     const oldSaveIds = globalThis.sceneSplatPool.map((poolObj) => poolObj.save.id);
@@ -751,7 +751,7 @@ export class BloodNGuts {
     log(LogLevel.DEBUG, 'updateScene sceneSplatPool', globalThis.sceneSplatPool);
 
     // addSaveObjects are saves that are not yet in the splat pool
-    const addSaveObjects = changes.flags[MODULE_ID].sceneSplatSaveObjects.filter((saveObj) => {
+    const addSaveObjects = changes.flags[MODULE_ID].splatState.filter((saveObj) => {
       if (addIds.includes(saveObj.id)) return saveObj;
     });
     log(LogLevel.DEBUG, 'updateScene addSaveObjects', addSaveObjects);
