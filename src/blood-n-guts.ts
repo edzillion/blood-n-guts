@@ -89,6 +89,7 @@ class BloodNGuts {
     const lastHP = this.lastTokenState[token.id].hp;
     let damageScale = 1;
 
+    // damage
     if (currentHP < lastHP) {
       log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - hp down');
 
@@ -115,44 +116,38 @@ class BloodNGuts {
         Math.round(game.settings.get(MODULE_ID, 'tokenSplatDensity')),
         damageScale,
       );
+
       if (game.user.isGM) await token.setFlag(MODULE_ID, 'bleeding', true);
       log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:true');
-    } else if (currentHP > lastHP) {
+    }
+    // healing
+    else if (currentHP > lastHP) {
       // token.actor has been healed so they are no longer bleeding.
       if (game.user.isGM) await token.unsetFlag(MODULE_ID, 'bleeding');
       log(LogLevel.DEBUG, 'checkForDamage id:' + token.id + ' - bleeding:unset');
+
       // need to also reset the token's severity state
       damageScale = 0;
-      console.log('splats by token:', globalThis.sceneSplatPool.filter((s) => s.save.tokenId === token.id).length);
+
       //remove all tokensplats on full health
       if (currentHP === token.actor.data.data.attributes.hp.max) {
         log(LogLevel.DEBUG, 'checkForDamage full health: remove all tokenSplats');
 
+        // filter out all this token's splats
         sceneSplatSaveObjects = sceneSplatSaveObjects.filter((save) => save.tokenId !== token.id);
-
-        globalThis.sceneSplatPool = globalThis.sceneSplatPool.map((poolObj) => {
-          if (poolObj.save.tokenId === token.id) poolObj.save.splatsContainer.destroy();
-          else return poolObj;
-        });
       }
       // otherwise we just remove one tokensplat
       else {
         log(LogLevel.DEBUG, 'checkForDamage: remove one tokenSplat');
 
+        // remove one tokensplat. the first we find.
         sceneSplatSaveObjects.splice(
           sceneSplatSaveObjects.find((save) => save.tokenId == token.id),
           1,
         );
-        const index = globalThis.sceneSplatPool.findIndex((s) => s.save.tokenId === token.id);
-        const tSplat = globalThis.sceneSplatPool.splice(index, 1);
-
-        tSplat[0].splatsContainer.destroy();
       }
-      console.log(
-        'splats by token after:',
-        globalThis.sceneSplatPool.filter((s) => s.save.tokenId === token.id).length,
-      );
-      this.saveSceneSplats();
+      // save removed sceneSplatSaveObjects
+      this.saveToSceneFlag();
     }
     return damageScale;
   }
@@ -233,7 +228,7 @@ class BloodNGuts {
     splatSaveObj.y += token.center.y;
 
     splatSaveObj.maskPolygon = sight;
-    this.saveToSplatPool(<SplatSaveObject>splatSaveObj);
+    this.saveToSceneFlag(<SplatSaveObject>splatSaveObj);
   }
 
   /**
@@ -390,14 +385,15 @@ class BloodNGuts {
 
     splatSaveObj.x += token.center.x;
     splatSaveObj.y += token.center.y;
-    this.saveToSplatPool(<SplatSaveObject>splatSaveObj);
+    this.saveToSceneFlag(<SplatSaveObject>splatSaveObj);
   }
 
   /**
-   * Draw splats to the canvas from it's save object.
+   * Draw splats to the canvas from it's save object and return a reference to the `PIXI.Container` that holds them.
    * @category core
    * @function
    * @param {SplatSaveObject} splatSaveObject - the splats data.
+   * @returns {PIXI.Container} - the canvas reference.
    */
   static drawSplatsGetContainer(splatSaveObject: SplatSaveObject): PIXI.Container {
     log(LogLevel.INFO, 'drawSplats');
@@ -519,30 +515,29 @@ class BloodNGuts {
   }
 
   /**
-   * Adds the token data and a reference to the token on the canvas to our pool. The pool is a FIFO
-   * stack with maximum size `blood-n-guts.sceneSplatPoolSize`. When size is exceeded the oldest entries
-   * are moved to `fadingSplatPool` and their alpha is changed to 0.3. When this pool is exceeded (which is hard-coded
-   * to be 20% of the size of the main pool) then those entries are destroyed.
+   * GM Only. Saves the given `SplatSaveObject` to our scene flag, add it's `.id` property if not already set.
    * @category core
    * @function
-   * @param {SplatSaveObject} splatSaveObj - token data to save.
+   * @param {SplatSaveObject} [splatSaveObj] - token data to save. if ommitted will just save the current
+   * sceneSplatSaveObjects (useful for removing saveObjs).
    */
-  static async saveToSplatPool(splatSaveObj: SplatSaveObject) {
+  static async saveToSceneFlag(splatSaveObj?: SplatSaveObject) {
     if (!game.user.isGM) return;
+    log(LogLevel.INFO, 'saveToSceneFlag');
 
-    sceneSplatSaveObjects.unshift(splatSaveObj);
-    if (sceneSplatSaveObjects.length > game.settings.get(MODULE_ID, 'sceneSplatPoolSize'))
-      sceneSplatSaveObjects.length = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
+    if (splatSaveObj) {
+      sceneSplatSaveObjects.unshift(splatSaveObj);
+      if (sceneSplatSaveObjects.length > game.settings.get(MODULE_ID, 'sceneSplatPoolSize'))
+        sceneSplatSaveObjects.length = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
+      log(LogLevel.DEBUG, `saveToSceneFlag add splatSaveObj:${sceneSplatSaveObjects.length}`);
+    }
 
-    log(LogLevel.DEBUG, `saveToSplatPool sceneSplatSaveObjects:${sceneSplatSaveObjects.length}`);
-
-    log(LogLevel.INFO, 'saveSceneSplats', canvas.scene.name);
     // we only want to save the saveObject, if it hasn't got a uid generate one.
     const saveObjects = sceneSplatSaveObjects.map((save) => {
       if (!save.id) save.id = getUID();
       return save;
     });
-    log(LogLevel.DEBUG, 'saveSceneSplats: saveObjects', saveObjects);
+    log(LogLevel.DEBUG, 'saveToSceneFlag: saveObjects', saveObjects);
     await canvas.scene.setFlag(MODULE_ID, 'sceneSplatSaveObjects', saveObjects);
   }
 
@@ -721,7 +716,7 @@ Hooks.on('updateToken', async (scene, tokenData, changes, _options, uid) => {
   }
 
   // update rotation of tokenSplats
-  if (changes.rotation != undefined) {
+  if (changes.rotation != undefined && globalThis.sceneSplatPool.length) {
     globalThis.sceneSplatPool
       .filter((s) => s.save.tokenId === token.id)
       .map((s) => {
@@ -752,17 +747,35 @@ Hooks.on('updateActor', async (actor, changes, diff) => {
 Hooks.on('updateScene', async (scene, changes, diff) => {
   if (!scene.active || !globalThis.sceneSplatPool) return;
 
-  const updatedSaveObjects = changes.flags[MODULE_ID].sceneSplatSaveObjects;
-  console.log(updatedSaveObjects);
-  //const missing = globalThis.sceneSplatPool.map((poolObj) => poolObj.save.id);
-  const existingIDs = globalThis.sceneSplatPool.map((poolObj) => poolObj.save.id);
-  console.log(existingIDs);
-  const difference = updatedSaveObjects.filter((save) => !existingIDs.includes(save.id));
-  console.log('pool diff', difference);
+  const updatedSaveIds = changes.flags[MODULE_ID].sceneSplatSaveObjects.map((s) => s.id);
+  log(LogLevel.DEBUG, 'updateScene updatedSaveIds', updatedSaveIds);
+
+  const oldSaveIds = globalThis.sceneSplatPool.map((poolObj) => poolObj.save.id);
+  log(LogLevel.DEBUG, 'updateScene oldSaveIds', oldSaveIds);
+
+  const removeIds = oldSaveIds.filter((id) => !updatedSaveIds.includes(id));
+  const addIds = updatedSaveIds.filter((id) => !oldSaveIds.includes(id));
+  log(LogLevel.DEBUG, 'updateScene removeIds', removeIds);
+  log(LogLevel.DEBUG, 'updateScene addIds', addIds);
+
+  globalThis.sceneSplatPool = globalThis.sceneSplatPool.filter((poolObj) => {
+    if (removeIds.includes(poolObj.save.id)) {
+      poolObj.splatsContainer.destroy();
+      return false;
+    }
+    return true;
+  });
+  log(LogLevel.DEBUG, 'updateScene sceneSplatPool', globalThis.sceneSplatPool);
+
+  // addSaveObjects are saves that are not yet in the splat pool
+  const addSaveObjects = changes.flags[MODULE_ID].sceneSplatSaveObjects.filter((saveObj) => {
+    if (addIds.includes(saveObj.id)) return saveObj;
+  });
+  log(LogLevel.DEBUG, 'updateScene addSaveObjects', addSaveObjects);
   // I suppose redrawing all splats per update would be inefficient?
-  //BloodNGuts.addToSplatPool(difference[0], BloodNGuts.drawSplatsGetContainer(difference[0]));
-  //draw each missing splatsContainer and save a reference to it in the pool.
-  difference.forEach((saveObj) => {
+
+  // draw each missing splatsContainer and save a reference to it in the pool.
+  addSaveObjects.forEach((saveObj) => {
     BloodNGuts.addToSplatPool(saveObj, BloodNGuts.drawSplatsGetContainer(saveObj));
   });
 });
