@@ -575,7 +575,7 @@ export class BloodNGuts {
    */
   public static async updateTokenOrActorHandler(scene, tokenData, changes): Promise<void> {
     if (!scene.active || !game.user.isGM) return;
-    console.log('scene, tokenData, changes', scene, tokenData, changes);
+    log(LogLevel.INFO, 'updateTokenHandler', changes);
 
     const tokenId = tokenData._id || tokenData.data._id;
     const token = canvas.tokens.placeables.find((t) => t.data._id === tokenId);
@@ -646,7 +646,6 @@ export class BloodNGuts {
 
           promises.push(token.unsetFlag(MODULE_ID, 'bleeding'));
           log(LogLevel.DEBUG, 'updateToken damageScale < 0:' + token.id + ' - bleeding:unset');
-          console.log(sceneSplatSaveObjects);
           const allTokensSplats = sceneSplatSaveObjects.filter((save) => save.tokenId === token.id);
           if (!allTokensSplats) break;
           log(LogLevel.DEBUG, 'updateToken allTokensSplats:', allTokensSplats.length);
