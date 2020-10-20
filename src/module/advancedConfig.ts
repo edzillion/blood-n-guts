@@ -2,6 +2,7 @@ import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import * as splatFonts from '../data/splatFonts';
+import { BloodNGuts } from '../blood-n-guts';
 
 /**
  * FormApplication window for advanced configuration options.
@@ -57,12 +58,8 @@ export class AdvancedConfig extends FormApplication {
     const wipeButton = html.find('.advanced-config-wipe-scene-splats');
     if (canvas.scene.active) {
       wipeButton.click(() => {
-        log(LogLevel.INFO, 'wipeButton: wiping sceneSplatPool');
-        canvas.scene.setFlag(MODULE_ID, 'sceneSplatPool', null);
-        globalThis.sceneSplatPool.forEach((poolObj) => {
-          poolObj.splatsContainer.destroy();
-        });
-        globalThis.sceneSplatPool = [];
+        log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeSceneSplats()');
+        BloodNGuts.wipeSceneSplats();
         this.close();
       });
     } else wipeButton.attr('disabled', true);

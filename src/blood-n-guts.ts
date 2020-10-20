@@ -617,6 +617,21 @@ class BloodNGuts {
     const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
     for (let i = 0; i < canvasTokens.length; i++) this.saveTokenState(canvasTokens[i]);
   }
+
+  // GM only
+  public static wipeSceneSplats(): void {
+    log(LogLevel.INFO, 'wipeButton: BloodNGuts.wipeSceneSplats()');
+    canvas.scene.setFlag(MODULE_ID, 'sceneSplatSaveObjects', null);
+    globalThis.sceneSplatPool.forEach((poolObj) => {
+      poolObj.splatsContainer.destroy();
+    });
+    this.fadingSplatPool.forEach((poolObj) => {
+      poolObj.splatsContainer.destroy();
+    });
+    globalThis.sceneSplatPool = [];
+    this.fadingSplatPool = [];
+    sceneSplatSaveObjects = [];
+}
 }
 
 // Hooks
