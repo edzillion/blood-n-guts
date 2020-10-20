@@ -440,7 +440,7 @@ function updateManifest(cb) {
 		manifest.file.version = targetVersion;
 
 		/* Update URLs */
-		const result = `${rawURL}/releases/download/v${manifest.file.version}/${manifest.file.name}-v${manifest.file.version}.zip`;
+		const result = `${repoURL}/releases/download/v${manifest.file.version}/${manifest.file.name}-v${manifest.file.version}.zip`;
 
 		manifest.file.url = repoURL;
 		manifest.file.manifest = `${rawURL}/master/${manifestRoot}/${manifest.name}`;
@@ -503,7 +503,7 @@ exports.publish = gulp.series(
 	updateManifest,
 	execBuild,
 	packageBuild,
-	execGit
+	//execGit
 );
 exports.doc = gulp.task('typedoc', function() {
 	return gulp
