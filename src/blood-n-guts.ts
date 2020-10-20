@@ -201,8 +201,8 @@ export class BloodNGuts {
     if (amount === 0) return;
     // get a random glyph and then get a random (x,y) spread away from the token.
     const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
-    const pixelSpreadX = token.w * game.settings.get(MODULE_ID, 'splatSpread') * 2;
-    const pixelSpreadY = token.h * game.settings.get(MODULE_ID, 'splatSpread') * 2;
+    const pixelSpreadX = token.w * game.settings.get(MODULE_ID, 'splatSpread');
+    const pixelSpreadY = token.h * game.settings.get(MODULE_ID, 'splatSpread');
     log(LogLevel.DEBUG, 'generateTokenSplats amount', amount);
     log(LogLevel.DEBUG, 'generateTokenSplats pixelSpread', pixelSpreadX, pixelSpreadY);
 
