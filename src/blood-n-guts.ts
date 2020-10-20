@@ -497,14 +497,20 @@ export class BloodNGuts {
    * @param {SplatSaveObject} splatSaveObj - token data to save.
    */
   private static addToSplatPool(splatSaveObj: SplatSaveObject, splatsContainer: PIXI.Container = null): void {
+    log(LogLevel.INFO, 'addToSplatPool', splatSaveObj);
     // we set splatsContainer to null, it will be added on sceneUpdate when it is drawn to canvas.
     const poolObj = { save: splatSaveObj, splatsContainer: splatsContainer };
-    if (globalThis.sceneSplatPool.length >= game.settings.get(MODULE_ID, 'sceneSplatPoolSize')) {
+    const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
+    log(LogLevel.DEBUG, 'addToSplatPool sizes curr, max', globalThis.sceneSplatPool.length, maxPoolSize);
+    // 15% of splats will be set to fade
+    const maxSceneSplatPool = Math.round(maxPoolSize * 0.85);
+    if (globalThis.sceneSplatPool.length >= maxSceneSplatPool) {
       const fadingSplatPoolObj = globalThis.sceneSplatPool.shift();
+      log(LogLevel.DEBUG, 'addToSplatPool fadingSplatPoolObj', fadingSplatPoolObj);
       if (!fadingSplatPoolObj.splatsContainer)
-        log(LogLevel.ERROR, 'fadingSplatPoolObj.splatsContainer is null', fadingSplatPoolObj);
+        log(LogLevel.ERROR, 'addToSplatPool fadingSplatPoolObj.splatsContainer is null', fadingSplatPoolObj);
       fadingSplatPoolObj.splatsContainer.alpha = 0.3;
-      if (this.fadingSplatPool.length >= game.settings.get(MODULE_ID, 'sceneSplatPoolSize') / 5) {
+      if (this.fadingSplatPool.length >= maxPoolSize) {
         const destroy = this.fadingSplatPool.shift();
         destroy.splatsContainer.destroy({ children: true });
       }
