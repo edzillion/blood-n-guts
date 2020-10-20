@@ -598,15 +598,20 @@ class BloodNGuts {
    * @function
    */
   static setupScene() {
-    // const pool = canvas.scene.getFlag(MODULE_ID, 'sceneSplatPool');
-    // log(LogLevel.INFO, 'setupScene sceneSplatPool loaded:', pool);
+    const saveObjects = canvas.scene.getFlag(MODULE_ID, 'sceneSplatSaveObjects');
+    log(LogLevel.INFO, 'setupScene saveObjects loaded:', saveObjects);
 
-    // if (pool) {
-    //   log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
-    //   pool.forEach((splatSaveObj: SplatSaveObject) => {
-    //     this.drawSplatsGetContainer(splatSaveObj);
-    //   });
-    // }
+    if (saveObjects) {
+      log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
+
+      // draw each missing splatsContainer and save a reference to it in the pool.
+      // if the splatPoolSize has changed then we want to add only the latest
+      const maxPoolSize = Math.min(game.settings.get(MODULE_ID, 'splatPoolSize'), saveObjects.length);
+      for (let i = 0; i < maxPoolSize; i++) {
+        const saveObj = saveObjects.pop();
+        this.addToSplatPool(saveObj, this.drawSplatsGetContainer(saveObj));
+      }
+    }
 
     //save tokens state
     const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
