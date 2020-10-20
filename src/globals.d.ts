@@ -36,10 +36,11 @@ interface TokenSaveObject {
 
 interface SplatPoolObject {
   save: SplatSaveObject;
-  splatContainer: PIXI.Container;
+  splatsContainer: PIXI.Container;
 }
 
 interface SplatSaveObject {
+  id: string;
   x: number;
   y: number;
   styleData: any;
