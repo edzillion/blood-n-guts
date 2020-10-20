@@ -288,7 +288,7 @@ class BloodNGuts {
     splatSaveObj.x = offset.x + token.w / 2;
     splatSaveObj.y = offset.y + token.h / 2;
 
-    this.saveToSplatPool(<SplatSaveObject>splatSaveObj);
+    this.saveToSceneFlag(<SplatSaveObject>splatSaveObj);
   }
 
   /**
