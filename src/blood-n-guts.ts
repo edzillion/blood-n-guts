@@ -738,9 +738,8 @@ export class BloodNGuts {
   public static updateSceneHandler(scene, changes): void {
     if (!scene.active || !globalThis.sceneSplatPool) return;
 
-    //todo: USER_ROLES.PLAYER)
     if (changes.flags[MODULE_ID]?.splatState === null) {
-      if (game.user.isRole(1)) BloodNGuts.wipeSceneSplats();
+      if (game.user.isRole(CONST.USER_ROLES.PLAYER)) BloodNGuts.wipeSceneSplats();
       return;
     }
     log(LogLevel.INFO, 'updateSceneHandler');
