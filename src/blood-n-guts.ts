@@ -26,8 +26,8 @@ import { MODULE_ID } from './constants';
 globalThis.sceneSplatPool = [];
 let splatState = [];
 
-//CONFIG.debug.hooks = false;
-CONFIG.bngLogLevel = 0;
+//CONFIG.debug.hooks = true;
+CONFIG.bngLogLevel = 2;
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -557,16 +557,16 @@ export class BloodNGuts {
    * @function
    */
   public static wipeSceneSplats(): void {
-    log(LogLevel.INFO, 'wipeButton: BloodNGuts.wipeSceneSplats()');
+    log(LogLevel.INFO, 'wipeSceneSplats');
     canvas.scene.setFlag(MODULE_ID, 'splatState', null);
     globalThis.sceneSplatPool.forEach((poolObj) => {
       poolObj.splatsContainer.destroy();
     });
-    this.fadingSplatPool.forEach((poolObj) => {
+    BloodNGuts.fadingSplatPool.forEach((poolObj) => {
       poolObj.splatsContainer.destroy();
     });
     globalThis.sceneSplatPool = [];
-    this.fadingSplatPool = [];
+    BloodNGuts.fadingSplatPool = [];
     splatState = [];
   }
 
@@ -736,7 +736,13 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static updateSceneHandler(scene, changes): void {
-    if (!scene.active || !globalThis.sceneSplatPool || !changes.flags[MODULE_ID]?.splatState) return;
+    if (!scene.active || !globalThis.sceneSplatPool) return;
+
+    if (changes.flags[MODULE_ID]?.splatState === null) {
+      if (game.user.isRole(CONST.USER_ROLES.PLAYER)) BloodNGuts.wipeSceneSplats();
+      return;
+    }
+    log(LogLevel.INFO, 'updateSceneHandler');
 
     const updatedSaveIds = changes.flags[MODULE_ID].splatState.map((s) => s.id);
     log(LogLevel.DEBUG, 'updateScene updatedSaveIds', updatedSaveIds);
@@ -783,6 +789,28 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'createToken', tokenData);
     const token = new Token(tokenData);
     BloodNGuts.saveTokenState(token);
+  }
+
+  /**
+   * Handler called when left button bar is drawn
+   * @category GMOnly
+   * @function
+   * @param {buttons} - reference to the buttons controller
+   */
+  public static getSceneControlButtonsHandler(buttons) {
+    log(LogLevel.INFO, 'getSceneControlButtonsHandler');
+    const tileButtons = buttons.find((b) => b.name == 'tiles');
+
+    if (tileButtons) {
+      tileButtons.tools.push({
+        name: 'wipe',
+        title: 'Wipe all blood splats from this scene.',
+        icon: 'fas fa-tint-slash',
+        active: true,
+        visible: true,
+        onClick: BloodNGuts.wipeSceneSplats,
+      });
+    }
   }
 }
 
@@ -839,3 +867,4 @@ Hooks.on('updateActor', (actor, changes) => {
 });
 
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
+Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
