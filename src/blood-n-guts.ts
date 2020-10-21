@@ -27,7 +27,7 @@ globalThis.sceneSplatPool = [];
 let splatState = [];
 
 //CONFIG.debug.hooks = false;
-CONFIG.bngLogLevel = 2;
+CONFIG.bngLogLevel = 0;
 
 /**
  * Main class wrapper for all blood-n-guts features.
