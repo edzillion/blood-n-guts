@@ -26,7 +26,7 @@ import { MODULE_ID } from './constants';
 globalThis.sceneSplatPool = [];
 let splatState = [];
 
-//CONFIG.debug.hooks = false;
+//CONFIG.debug.hooks = true;
 CONFIG.bngLogLevel = 2;
 
 /**
@@ -736,7 +736,14 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static updateSceneHandler(scene, changes): void {
-    if (!scene.active || !globalThis.sceneSplatPool || !changes.flags[MODULE_ID]?.splatState) return;
+    if (!scene.active || !globalThis.sceneSplatPool) return;
+
+    //todo: USER_ROLES.PLAYER)
+    if (changes.flags[MODULE_ID]?.splatState === null) {
+      if (game.user.isRole(1)) BloodNGuts.wipeSceneSplats();
+      return;
+    }
+    log(LogLevel.INFO, 'updateSceneHandler');
 
     const updatedSaveIds = changes.flags[MODULE_ID].splatState.map((s) => s.id);
     log(LogLevel.DEBUG, 'updateScene updatedSaveIds', updatedSaveIds);
