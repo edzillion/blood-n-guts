@@ -64,13 +64,14 @@ export class BloodNGuts {
 
   /**
    * Get severity, a number between -1 and 1.5:
-   * * -1 (full health or fully healed) to 0 (minimal heal)
-   * * 1 (minimal damage) and 1.5 (all HP in one hit) or 0 if not hit at all.
+   * * > -1(full health or fully healed) to < 0(minimal heal)
+   * * > 1(minimal damage) and < 1.5(all HP in one hit)
+   * * or 0 if not hit at all.
    * @category GMOnly
    * @function
    * @param {Token} token - the token to check.
    * @param {any} changes - the token.actor changes object.
-   * @returns {number} - the damage severity multiplier (1 -> 1.5) or 0 if no damage.
+   * @returns {number} - the damage severity.
    */
   private static getDamageSeverity(token: Token, changes: any): number {
     if (!changes.actorData || !changes.actorData.data.attributes?.hp) return;
