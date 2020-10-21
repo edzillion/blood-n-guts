@@ -60,7 +60,6 @@ export class AdvancedConfig extends FormApplication {
       wipeButton.click(() => {
         log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeSceneSplats()');
         BloodNGuts.wipeSceneSplats();
-        this.close();
       });
     } else wipeButton.attr('disabled', true);
   }
