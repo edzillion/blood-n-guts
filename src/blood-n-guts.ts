@@ -27,7 +27,7 @@ globalThis.sceneSplatPool = [];
 let splatState = [];
 
 //CONFIG.debug.hooks = false;
-CONFIG.bngLogLevel = 0;
+CONFIG.bngLogLevel = 2;
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -784,6 +784,28 @@ export class BloodNGuts {
     const token = new Token(tokenData);
     BloodNGuts.saveTokenState(token);
   }
+
+  /**
+   * Handler called when left button bar is drawn
+   * @category GMandPC
+   * @function
+   * @param {buttons} - reference to the buttons controller
+   */
+  public static getSceneControlButtonsHandler(buttons) {
+    log(LogLevel.INFO, 'getSceneControlButtonsHandler');
+    const tileButtons = buttons.find((b) => b.name == 'tiles');
+
+    if (tileButtons) {
+      tileButtons.tools.push({
+        name: 'wipe',
+        title: 'Wipe all blood splats from this scene.',
+        icon: 'fas fa-tint-slash',
+        active: true,
+        visible: true,
+        onClick: BloodNGuts.wipeSceneSplats,
+      });
+    }
+  }
 }
 
 // Hooks
@@ -839,3 +861,4 @@ Hooks.on('updateActor', (actor, changes) => {
 });
 
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
+Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
