@@ -553,7 +553,7 @@ export class BloodNGuts {
 
   /**
    * Wipes all splats from the current scene and empties all pools.
-   * @category GMandPC
+   * @category GMOnly
    * @function
    */
   public static wipeSceneSplats(): void {
@@ -787,7 +787,7 @@ export class BloodNGuts {
 
   /**
    * Handler called when left button bar is drawn
-   * @category GMandPC
+   * @category GMOnly
    * @function
    * @param {buttons} - reference to the buttons controller
    */
