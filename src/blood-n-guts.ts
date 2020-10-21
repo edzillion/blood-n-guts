@@ -553,20 +553,20 @@ export class BloodNGuts {
 
   /**
    * Wipes all splats from the current scene and empties all pools.
-   * @category GMOnly
+   * @category GMandPC
    * @function
    */
   public static wipeSceneSplats(): void {
-    log(LogLevel.INFO, 'wipeButton: BloodNGuts.wipeSceneSplats()');
+    log(LogLevel.INFO, 'wipeSceneSplats');
     canvas.scene.setFlag(MODULE_ID, 'splatState', null);
     globalThis.sceneSplatPool.forEach((poolObj) => {
       poolObj.splatsContainer.destroy();
     });
-    this.fadingSplatPool.forEach((poolObj) => {
+    BloodNGuts.fadingSplatPool.forEach((poolObj) => {
       poolObj.splatsContainer.destroy();
     });
     globalThis.sceneSplatPool = [];
-    this.fadingSplatPool = [];
+    BloodNGuts.fadingSplatPool = [];
     splatState = [];
   }
 
