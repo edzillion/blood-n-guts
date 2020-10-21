@@ -598,12 +598,13 @@ export class BloodNGuts {
     // update rotation of tokenSplats
     if (changes.rotation != undefined) {
       log(LogLevel.DEBUG, 'updateTokenHandler updating rotation', changes.rotation);
-      if (globalThis.sc)
+      if (globalThis.sceneSplatPool) {
         globalThis.sceneSplatPool
           .filter((s) => s.save.tokenId === token.id)
-          .map((s) => {
+          .forEach((s) => {
             s.splatsContainer.angle = changes.rotation;
           });
+      }
     }
 
     // at this point we're only interested in these changes.
