@@ -63,7 +63,9 @@ export class BloodNGuts {
   }
 
   /**
-   * Get severity multiplier, a number between 1 (minimal damage) and 1.5 (all HP in one hit) or 0 if not hit at all.
+   * Get severity, a number between -1 and 1.5:
+   * * -1 (full health or fully healed) to 0 (minimal heal)
+   * * 1 (minimal damage) and 1.5 (all HP in one hit) or 0 if not hit at all.
    * @category GMOnly
    * @function
    * @param {Token} token - the token to check.
@@ -75,8 +77,14 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'getDamageSeverity', changes.actorData);
 
     const currentHP = changes.actorData.data.attributes.hp.value;
+    const maxHP = token.actor.data.data.attributes.hp.max;
+
+    // fully healed, return -1
+    if (currentHP === maxHP) return -1;
+
     const lastHP = this.lastTokenState[token.id].hp;
-    const scale = (lastHP - currentHP) / token.actor.data.data.attributes.hp.max;
+    const scale = (lastHP - currentHP) / maxHP;
+    if (scale < 0) return scale; // healing
     const severity = 1 + scale / 2;
 
     log(LogLevel.DEBUG, 'getDamageSeverity severity', severity);
@@ -619,6 +627,7 @@ export class BloodNGuts {
 
     // check for damage and generate splats
     const tempSeverity = BloodNGuts.getDamageSeverity(token, changes);
+    log(LogLevel.DEBUG, 'updateTokenHandler tempSeverity', tempSeverity);
     if (tempSeverity) {
       switch (true) {
         // damage dealt
@@ -659,7 +668,8 @@ export class BloodNGuts {
           const allTokensSplats = splatState.filter((save) => save.tokenId === token.id);
           if (!allTokensSplats) break;
           log(LogLevel.DEBUG, 'updateToken allTokensSplats:', allTokensSplats.length);
-          let keepThisMany = allTokensSplats.length - Math.ceil(allTokensSplats.length * -severity);
+
+          let keepThisMany = allTokensSplats.length - Math.ceil(allTokensSplats.length * -tempSeverity);
           log(LogLevel.DEBUG, 'updateToken keepThisMany:', keepThisMany);
 
           splatState = splatState.filter((save) => {
