@@ -26,8 +26,8 @@ import { MODULE_ID } from './constants';
 globalThis.sceneSplatPool = [];
 let splatState = [];
 
-//CONFIG.debug.hooks = false;
-CONFIG.bngLogLevel = 0;
+//CONFIG.debug.hooks = true;
+CONFIG.bngLogLevel = 2;
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -63,22 +63,33 @@ export class BloodNGuts {
   }
 
   /**
-   * Check if a token has taken damage since it's last update and generate splats if so. If token has been healed remove splats.
+   * Get severity, a number between -1 and 1.5:
+   * * > -1(full health or fully healed) to < 0(minimal heal)
+   * * > 1(minimal damage) and < 1.5(all HP in one hit)
+   * * or 0 if not hit at all.
    * @category GMOnly
    * @function
    * @param {Token} token - the token to check.
-   * @param {any} actorDataChanges - the token.actor changes object.
+   * @param {any} changes - the token.actor changes object.
+   * @returns {number} - the damage severity.
    */
-  private static getDamageScale(token: Token, changes: any): number {
+  private static getDamageSeverity(token: Token, changes: any): number {
     if (!changes.actorData || !changes.actorData.data.attributes?.hp) return;
-    log(LogLevel.INFO, 'checkForDamage', changes.actorData);
+    log(LogLevel.INFO, 'getDamageSeverity', changes.actorData);
 
     const currentHP = changes.actorData.data.attributes.hp.value;
-    const lastHP = this.lastTokenState[token.id].hp;
-    const scale = (lastHP - currentHP) / token.actor.data.data.attributes.hp.max;
+    const maxHP = token.actor.data.data.attributes.hp.max;
 
-    log(LogLevel.DEBUG, 'checkForDamage scale', scale);
-    return scale;
+    // fully healed, return -1
+    if (currentHP === maxHP) return -1;
+
+    const lastHP = this.lastTokenState[token.id].hp;
+    const scale = (lastHP - currentHP) / maxHP;
+    if (scale < 0) return scale; // healing
+    const severity = 1 + scale / 2;
+
+    log(LogLevel.DEBUG, 'getDamageSeverity severity', severity);
+    return severity;
   }
 
   /**
@@ -557,16 +568,16 @@ export class BloodNGuts {
    * @function
    */
   public static wipeSceneSplats(): void {
-    log(LogLevel.INFO, 'wipeButton: BloodNGuts.wipeSceneSplats()');
+    log(LogLevel.INFO, 'wipeSceneSplats');
     canvas.scene.setFlag(MODULE_ID, 'splatState', null);
     globalThis.sceneSplatPool.forEach((poolObj) => {
       poolObj.splatsContainer.destroy();
     });
-    this.fadingSplatPool.forEach((poolObj) => {
+    BloodNGuts.fadingSplatPool.forEach((poolObj) => {
       poolObj.splatsContainer.destroy();
     });
     globalThis.sceneSplatPool = [];
-    this.fadingSplatPool = [];
+    BloodNGuts.fadingSplatPool = [];
     splatState = [];
   }
 
@@ -616,12 +627,13 @@ export class BloodNGuts {
     let severity = BloodNGuts.lastTokenState[token.id].severity;
 
     // check for damage and generate splats
-    const damageScale = BloodNGuts.getDamageScale(token, changes);
-    if (damageScale) {
+    const tempSeverity = BloodNGuts.getDamageSeverity(token, changes);
+    log(LogLevel.DEBUG, 'updateTokenHandler tempSeverity', tempSeverity);
+    if (tempSeverity) {
       switch (true) {
         // damage dealt
-        case damageScale > 0: {
-          severity = damageScale;
+        case tempSeverity > 0: {
+          severity = tempSeverity;
 
           promises.push(token.setFlag(MODULE_ID, 'bleeding', true));
           log(LogLevel.DEBUG, 'updateToken damageScale > 0:' + token.id + ' - bleeding:true');
@@ -632,7 +644,7 @@ export class BloodNGuts {
               splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
               game.settings.get(MODULE_ID, 'floorSplatSize'),
               Math.round(game.settings.get(MODULE_ID, 'floorSplatDensity')),
-              damageScale,
+              severity,
             ),
           );
           saveObjects.push(
@@ -641,7 +653,7 @@ export class BloodNGuts {
               splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
               game.settings.get(MODULE_ID, 'tokenSplatSize'),
               Math.round(game.settings.get(MODULE_ID, 'tokenSplatDensity')),
-              damageScale,
+              severity,
             ),
           );
           log(LogLevel.DEBUG, 'updateToken damageScale > 0: saveObjects', saveObjects);
@@ -649,15 +661,16 @@ export class BloodNGuts {
           break;
         }
         // healing
-        case damageScale < 0: {
+        case tempSeverity < 0: {
           severity = 0;
 
-          promises.push(token.unsetFlag(MODULE_ID, 'bleeding'));
+          promises.push(token.unsetFlag(MODULE_ID, 'bleeding'), token.unsetFlag(MODULE_ID, 'bleedingCount'));
           log(LogLevel.DEBUG, 'updateToken damageScale < 0:' + token.id + ' - bleeding:unset');
           const allTokensSplats = splatState.filter((save) => save.tokenId === token.id);
           if (!allTokensSplats) break;
           log(LogLevel.DEBUG, 'updateToken allTokensSplats:', allTokensSplats.length);
-          let keepThisMany = allTokensSplats.length - Math.ceil(allTokensSplats.length * -damageScale);
+
+          let keepThisMany = allTokensSplats.length - Math.ceil(allTokensSplats.length * -tempSeverity);
           log(LogLevel.DEBUG, 'updateToken keepThisMany:', keepThisMany);
 
           splatState = splatState.filter((save) => {
@@ -675,16 +688,36 @@ export class BloodNGuts {
 
     // check for movement and if bleeding draw trail
     const direction = BloodNGuts.getMovementOnGrid(token, changes);
-    if (direction && (await token.getFlag(MODULE_ID, 'bleeding'))) {
-      saveObjects.push(
-        BloodNGuts.generateTrailSplats(
-          token,
-          splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
-          game.settings.get(MODULE_ID, 'trailSplatSize'),
-          game.settings.get(MODULE_ID, 'trailSplatDensity'),
-          severity,
-        ),
-      );
+    if (direction && token.getFlag(MODULE_ID, 'bleeding')) {
+      const density = game.settings.get(MODULE_ID, 'trailSplatDensity');
+
+      if (density > 0 && density < 1) {
+        let count = token.getFlag(MODULE_ID, 'bleedingCount');
+        if (!count) {
+          saveObjects.push(
+            BloodNGuts.generateFloorSplats(
+              token,
+              splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
+              game.settings.get(MODULE_ID, 'trailSplatSize'),
+              1, //one splat per 1/density grid squares
+              severity,
+            ),
+          );
+          count = Math.round(1 / density);
+        } else count--;
+
+        promises.push(token.setFlag(MODULE_ID, 'bleedingCount', count));
+      } else {
+        saveObjects.push(
+          BloodNGuts.generateTrailSplats(
+            token,
+            splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
+            game.settings.get(MODULE_ID, 'trailSplatSize'),
+            density,
+            severity,
+          ),
+        );
+      }
     }
 
     BloodNGuts.saveTokenState(token, severity);
@@ -736,7 +769,13 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static updateSceneHandler(scene, changes): void {
-    if (!scene.active || !globalThis.sceneSplatPool || !changes.flags[MODULE_ID]?.splatState) return;
+    if (!scene.active || !globalThis.sceneSplatPool) return;
+
+    if (changes.flags[MODULE_ID]?.splatState === null) {
+      if (game.user.isRole(CONST.USER_ROLES.PLAYER)) BloodNGuts.wipeSceneSplats();
+      return;
+    }
+    log(LogLevel.INFO, 'updateSceneHandler');
 
     const updatedSaveIds = changes.flags[MODULE_ID].splatState.map((s) => s.id);
     log(LogLevel.DEBUG, 'updateScene updatedSaveIds', updatedSaveIds);
@@ -783,6 +822,28 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'createToken', tokenData);
     const token = new Token(tokenData);
     BloodNGuts.saveTokenState(token);
+  }
+
+  /**
+   * Handler called when left button bar is drawn
+   * @category GMOnly
+   * @function
+   * @param {buttons} - reference to the buttons controller
+   */
+  public static getSceneControlButtonsHandler(buttons) {
+    log(LogLevel.INFO, 'getSceneControlButtonsHandler');
+    const tileButtons = buttons.find((b) => b.name == 'tiles');
+
+    if (tileButtons) {
+      tileButtons.tools.push({
+        name: 'wipe',
+        title: 'Wipe all blood splats from this scene.',
+        icon: 'fas fa-tint-slash',
+        active: true,
+        visible: true,
+        onClick: BloodNGuts.wipeSceneSplats,
+      });
+    }
   }
 }
 
@@ -839,3 +900,4 @@ Hooks.on('updateActor', (actor, changes) => {
 });
 
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
+Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
