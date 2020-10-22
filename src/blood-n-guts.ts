@@ -53,7 +53,7 @@ export class BloodNGuts {
    * @param {any} actorDataChanges - the token.actor changes object.
    */
   private static getMovementOnGrid(token: Token, actorDataChanges: any): PIXI.Point {
-    if (!actorDataChanges.x && !actorDataChanges.y) return;
+    if (actorDataChanges.x === undefined && actorDataChanges.y === undefined) return;
     log(LogLevel.INFO, 'checkForMovement id:' + token.id);
     log(LogLevel.DEBUG, 'checkForMovement actorDataChanges:', actorDataChanges);
 
@@ -628,7 +628,8 @@ export class BloodNGuts {
     }
 
     // at this point we're only interested in these changes.
-    if (!changes.x && !changes.y && !changes.actorData?.data?.attributes?.hp) return;
+    if (changes.x === undefined && changes.y === undefined && changes.actorData?.data?.attributes?.hp === undefined)
+      return;
 
     log(LogLevel.INFO, 'updateTokenHandler', token.name, token);
     let saveObjects: Array<SplatSaveObject> = [];
