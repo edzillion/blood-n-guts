@@ -119,7 +119,6 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'generateFloorSplats');
 
     const splatSaveObj: Partial<SplatSaveObject> = {};
-    severity += 1;
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(size * ((token.w + token.h) / canvas.grid.size / 2) * severity);
@@ -198,7 +197,6 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'generateTokenSplats');
 
     const splatSaveObj: Partial<SplatSaveObject> = {};
-    severity += 1;
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(size * ((token.w + token.h) / canvas.grid.size / 2) * severity);
@@ -267,8 +265,6 @@ export class BloodNGuts {
     log(LogLevel.DEBUG, 'generateTrailSplats severity', severity);
 
     const splatSaveObj: Partial<SplatSaveObject> = {};
-
-    severity += 1;
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(size * ((token.w + token.h) / canvas.grid.size / 2) * severity);
