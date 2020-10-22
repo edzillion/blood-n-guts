@@ -89,13 +89,13 @@ export class BloodNGuts {
     //fully healed, return -1
     if (currentHP === maxHP) return -1;
     const healthThreshold = game.settings.get(MODULE_ID, 'healthThreshold');
+    const lastHP = this.lastTokenState[token.id].hp;
     const fractionOfMax = currentHP / maxHP;
-    if (fractionOfMax < healthThreshold) {
+    if (currentHP < lastHP && fractionOfMax > healthThreshold) {
       log(LogLevel.DEBUG, 'getDamageSeverity below healthThreshold', fractionOfMax);
       return 0;
     }
 
-    const lastHP = this.lastTokenState[token.id].hp;
     const scale = (lastHP - currentHP) / maxHP;
     // healing
     if (scale < 0) {
@@ -874,7 +874,7 @@ export class BloodNGuts {
 
 // Hooks
 Hooks.once('init', async () => {
-  log(LogLevel.INFO, 'Initializing blood-n-guts');
+  log(LogLevel.INFO, `Initializing module ${MODULE_ID}`);
 
   // Assign custom classes and constants here
 
