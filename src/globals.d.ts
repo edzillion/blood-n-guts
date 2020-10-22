@@ -21,6 +21,7 @@ interface ViolenceLevel {
   floorSplatSize: number;
   tokenSplatSize: number;
   splatSpread: number;
+  damageThreshold: number;
   sceneSplatPoolSize: number;
 }
 
@@ -28,8 +29,6 @@ interface TokenSaveObject {
   id: string;
   x: number;
   y: number;
-  centerX: number;
-  centerY: number;
   hp: number;
   severity: number;
 }

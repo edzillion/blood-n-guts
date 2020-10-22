@@ -32,13 +32,13 @@ This is a work in progress.
 1. use duplicate helper? 
 1. use position where approp
 1. ~~Scene change gracefully~~
-1. permissions?
+1. ~~permissions~~
 1. documentation
 1. feature: enemy is bloodied at half health
 1. UX. going to scene then activating it
 
 ## Bugs
-1. No trail when moving to a grid coord y < grid.size
+1. ~~No trail when moving to a grid coord y < grid.size~~
 1. ~~tokensplat mask alignment is slightly off~~
 1. sometimes tokensplats don't appear on damage (also on death?)
 1. ~~ux - enter on adv config just closes doesnot save~~
@@ -46,5 +46,5 @@ This is a work in progress.
 1. ~~splat vs. mask alignment w tokensplats~~
 1. extra splat on first trail
 1. why am I not getting rounded x and y positions
-1. Order of splats reloading (faded should be last)
-1. Oldest splats don't always fade first
+1. ~~Order of splats reloading (faded should be last)~~
+1. ~~Oldest splats don't always fade first~~
