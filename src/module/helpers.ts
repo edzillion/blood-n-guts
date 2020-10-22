@@ -2,7 +2,7 @@ import { log, LogLevel } from './logging';
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import { MODULE_ID } from '../constants';
 
-let counter = 0;
+const counter = 0;
 
 /**
  * Helper functions.
@@ -184,15 +184,6 @@ export const getUID = (typeCode?: string): string => {
   const prefix = 'bng';
 
   return [prefix, typeCode, d, r].join('_');
-};
-
-/**
- * Creates and returns a unique identifier.
- * @category helpers
- * @function
- */
-export const getOrder = (typeCode?: string): string => {
-  return ' ' + counter++;
 };
 
 /**
