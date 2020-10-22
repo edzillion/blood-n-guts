@@ -86,12 +86,22 @@ export class BloodNGuts {
     const currentHP = changes.actorData.data.attributes.hp.value;
     const maxHP = token.actor.data.data.attributes.hp.max;
 
-    // fully healed, return -1
+    //fully healed, return -1
     if (currentHP === maxHP) return -1;
+    const healthThreshold = game.settings.get(MODULE_ID, 'healthThreshold');
+    const fractionOfMax = currentHP / maxHP;
+    if (fractionOfMax < healthThreshold) {
+      log(LogLevel.DEBUG, 'getDamageSeverity below healthThreshold', fractionOfMax);
+      return 0;
+    }
 
     const lastHP = this.lastTokenState[token.id].hp;
     const scale = (lastHP - currentHP) / maxHP;
-    if (scale < 0) return scale; // healing
+    // healing
+    if (scale < 0) {
+      //renormalise scale based on threshold.
+      return scale / healthThreshold;
+    }
     const severity = 1 + scale / 2;
 
     log(LogLevel.DEBUG, 'getDamageSeverity severity', severity);
@@ -638,7 +648,7 @@ export class BloodNGuts {
     let severity = BloodNGuts.lastTokenState[token.id].severity;
 
     // check for damage and generate splats
-    const tempSeverity = BloodNGuts.getDamageSeverity(token, changes);
+    let tempSeverity = BloodNGuts.getDamageSeverity(token, changes);
     log(LogLevel.DEBUG, 'updateTokenHandler tempSeverity', tempSeverity);
     if (tempSeverity) {
       switch (true) {
@@ -674,14 +684,17 @@ export class BloodNGuts {
         // healing
         case tempSeverity < 0: {
           severity = 0;
-
+          // make positive for sanity purposes
+          tempSeverity *= -1;
+          // deal with scale/healthThreshold > 1. We can only heal potentially 100%
+          if (tempSeverity > 1) tempSeverity = 1;
           promises.push(token.unsetFlag(MODULE_ID, 'bleeding'), token.unsetFlag(MODULE_ID, 'bleedingCount'));
           log(LogLevel.DEBUG, 'updateToken damageScale < 0:' + token.id + ' - bleeding:unset');
           const allTokensSplats = splatState.filter((save) => save.tokenId === token.id);
           if (!allTokensSplats) break;
-          log(LogLevel.DEBUG, 'updateToken allTokensSplats:', allTokensSplats.length);
 
-          let keepThisMany = allTokensSplats.length - Math.ceil(allTokensSplats.length * -tempSeverity);
+          log(LogLevel.DEBUG, 'updateToken allTokensSplats:');
+          let keepThisMany = allTokensSplats.length - Math.ceil(allTokensSplats.length * tempSeverity);
           log(LogLevel.DEBUG, 'updateToken keepThisMany:', keepThisMany);
 
           splatState = splatState.filter((save) => {
