@@ -21,6 +21,7 @@ interface ViolenceLevel {
   floorSplatSize: number;
   tokenSplatSize: number;
   splatSpread: number;
+  damageThreshold: number;
   sceneSplatPoolSize: number;
 }
 

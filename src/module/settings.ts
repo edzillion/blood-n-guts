@@ -158,6 +158,16 @@ export const registerSettings = (): void => {
     },
   });
 
+  game.settings.register(MODULE_ID, 'healthThreshold', {
+    scope: 'client',
+    config: false,
+    type: Number,
+    default: 1.0,
+    onChange: (value) => {
+      log(LogLevel.DEBUG, 'Settings: healthThreshold set to ' + value);
+    },
+  });
+
   game.settings.register(MODULE_ID, 'sceneSplatPoolSize', {
     scope: 'client',
     config: false,
