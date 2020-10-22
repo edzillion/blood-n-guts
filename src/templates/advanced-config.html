@@ -86,6 +86,14 @@
       <p class="notes">This will determine the random spread of splats</p>
     </div>
     <div class="form-group">
+      <label>Health Threshold</label>
+      <div class="form-fields">
+        <input type="number" value="{{ healthThreshold }}" class="advanced-config-font-details" name="healthThreshold"  data-dtype="Number" step="any">
+      </div>
+      <p class="notes">The % of max health to start showing splats e.g. 1.0 will show splats all the time, 0.25 will show splats when HP is 25% or less.</p>
+    </div>   
+  </div>
+    <div class="form-group">
       <label>Splat Pool Size</label>
       <div class="form-fields">
         <input type="number" value="{{ sceneSplatPoolSize }}" class="advanced-config-font-details" name="sceneSplatPoolSize"  data-dtype="Number">

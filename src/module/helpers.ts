@@ -179,8 +179,8 @@ export const getActorColorByName = (actor: Actor): string => {
  * @function
  */
 export const getUID = (typeCode?: string): string => {
-  const d = Date.now().toString(8);
-  const r = Math.random().toString(8);
+  const d = Date.now().toString(16);
+  const r = Math.random().toString(16);
   const prefix = 'bng';
 
   return [prefix, typeCode, d, r].join('_');
