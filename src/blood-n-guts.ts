@@ -18,7 +18,7 @@ import {
   getDirectionNrml,
   alignSplatsGetOffsetAndDimensions,
   getPointOnCurve,
-  getOrder,
+  getUID,
 } from './module/helpers';
 import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
@@ -27,7 +27,7 @@ globalThis.sceneSplatPool = [];
 let splatState = [];
 
 //CONFIG.debug.hooks = true;
-CONFIG.bngLogLevel = 2;
+CONFIG.bngLogLevel = 1;
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -430,7 +430,6 @@ export class BloodNGuts {
 
       splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
       splatsContainer.position.set(token.w / 2, token.h / 2);
-
       splatsContainer.angle = token.data.rotation;
 
       token.addChildAt(splatsContainer, 2);
@@ -487,10 +486,13 @@ export class BloodNGuts {
     // add new save objs to the list and give them uids
     if (newSaveObjs) {
       newSaveObjs.forEach((s) => {
-        if (!s.id) s.id = getOrder();
-        splatState.unshift(s);
+        if (!s.id) s.id = getUID();
+        splatState.push(s);
       });
-      if (splatState.length > poolSize) splatState.length = poolSize;
+
+      if (splatState.length > poolSize) {
+        splatState.splice(0, splatState.length - poolSize);
+      }
       log(LogLevel.DEBUG, `saveToSceneFlag splatState.length:${splatState.length}`);
     }
 
@@ -532,10 +534,6 @@ export class BloodNGuts {
         destroy.splatsContainer.destroy({ children: true });
       }
       this.fadingSplatPool.push(fadingSplatPoolObj);
-
-      console.log('fadingSplatPool splatState', splatState);
-      console.log('fadingSplatPool', BloodNGuts.fadingSplatPool);
-      console.log('fadingSplatPool sceneSplatPool', globalThis.sceneSplatPool);
     }
     globalThis.sceneSplatPool.push(poolObj);
 
@@ -562,12 +560,7 @@ export class BloodNGuts {
       // if the splatPoolSize has changed then we want to add only the latest
       const maxPoolSize = Math.min(game.settings.get(MODULE_ID, 'sceneSplatPoolSize'), saveObjects.length);
 
-      // for (let i = 0; i < maxPoolSize; i++) {
-      //   this.addToSplatPool(saveObjects[i], this.drawSplatsGetContainer(saveObjects[i]));
-      //   splatState.push(saveObjects[i]);
-      // }
-
-      for (let i = maxPoolSize - 1; i >= 0; i--) {
+      for (let i = 0; i < maxPoolSize; i++) {
         this.addToSplatPool(saveObjects[i], this.drawSplatsGetContainer(saveObjects[i]));
         splatState.push(saveObjects[i]);
       }
