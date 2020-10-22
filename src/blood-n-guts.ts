@@ -54,11 +54,17 @@ export class BloodNGuts {
    */
   private static getMovementOnGrid(token: Token, actorDataChanges: any): PIXI.Point {
     if (actorDataChanges.x === undefined && actorDataChanges.y === undefined) return;
+
     log(LogLevel.INFO, 'checkForMovement id:' + token.id);
     log(LogLevel.DEBUG, 'checkForMovement actorDataChanges:', actorDataChanges);
+    log(LogLevel.INFO, 'checkForMovement id:', this.lastTokenState[token.id]);
 
+    const posX = actorDataChanges.x === undefined ? this.lastTokenState[token.id].x : actorDataChanges.x;
+    const posY = actorDataChanges.y === undefined ? this.lastTokenState[token.id].y : actorDataChanges.y;
+    const currPos = new PIXI.Point(posX, posY);
     const lastPos = new PIXI.Point(this.lastTokenState[token.id].x, this.lastTokenState[token.id].y);
-    const currPos = new PIXI.Point(actorDataChanges.x, actorDataChanges.y);
+    log(LogLevel.DEBUG, 'checkForMovement pos: l,c:', lastPos, currPos);
+
     return getDirectionNrml(lastPos, currPos);
   }
 
@@ -74,7 +80,7 @@ export class BloodNGuts {
    * @returns {number} - the damage severity.
    */
   private static getDamageSeverity(token: Token, changes: any): number {
-    if (!changes.actorData || !changes.actorData.data.attributes?.hp) return;
+    if (changes.actorData === undefined || changes.actorData.data.attributes?.hp === undefined) return;
     log(LogLevel.INFO, 'getDamageSeverity', changes.actorData);
 
     const currentHP = changes.actorData.data.attributes.hp.value;
@@ -457,10 +463,8 @@ export class BloodNGuts {
 
     let saveObj: TokenSaveObject = {
       id: token.id,
-      x: token.x,
-      y: token.y,
-      centerX: token.center.x,
-      centerY: token.center.y,
+      x: token.data.x,
+      y: token.data.y,
       hp: token.actor.data.data.attributes.hp.value,
       severity: severity,
     };
@@ -698,6 +702,7 @@ export class BloodNGuts {
 
     // check for movement and if bleeding draw trail
     const direction = BloodNGuts.getMovementOnGrid(token, changes);
+    log(LogLevel.INFO, 'updateTokenOrActorHandler direction', direction);
     if (direction && token.getFlag(MODULE_ID, 'bleeding')) {
       const density = game.settings.get(MODULE_ID, 'trailSplatDensity');
 
@@ -729,7 +734,6 @@ export class BloodNGuts {
         );
       }
     }
-
     BloodNGuts.saveTokenState(token, severity);
     // filter out null entries returned when density = 0
     saveObjects = saveObjects.filter((s) => s);
