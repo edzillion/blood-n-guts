@@ -281,9 +281,10 @@ export class BloodNGuts {
     };
     const style = new PIXI.TextStyle(splatSaveObj.styleData);
 
+    log(LogLevel.DEBUG, 'generateTokenSplats lastPosOrigin', this.lastTokenState[token.id], token);
     const lastPosOrigin = new PIXI.Point(
-      this.lastTokenState[token.id].centerX - token.center.x,
-      this.lastTokenState[token.id].centerY - token.center.y,
+      this.lastTokenState[token.id].x - token.data.x,
+      this.lastTokenState[token.id].y - token.data.y,
     );
     const currPosOrigin = new PIXI.Point(0, 0);
     const direction = getDirectionNrml(lastPosOrigin, currPosOrigin);
