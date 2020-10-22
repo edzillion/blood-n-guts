@@ -2,6 +2,8 @@ import { log, LogLevel } from './logging';
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import { MODULE_ID } from '../constants';
 
+const counter = 0;
+
 /**
  * Helper functions.
  * @module Helpers
@@ -177,8 +179,8 @@ export const getActorColorByName = (actor: Actor): string => {
  * @function
  */
 export const getUID = (typeCode?: string): string => {
-  const d = Date.now().toString(16);
-  const r = Math.random().toString(16);
+  const d = Date.now().toString(8);
+  const r = Math.random().toString(8);
   const prefix = 'bng';
 
   return [prefix, typeCode, d, r].join('_');
