@@ -24,7 +24,8 @@ export const registerSettings = (): void => {
       0: 'Shrieker',
       1: 'Kobold',
       2: 'Ogre',
-      3: 'Hecatoncheires',
+      3: 'Dracolich',
+      4: 'Hecatoncheires',
     },
     default: 0,
     onChange: (value) => {
