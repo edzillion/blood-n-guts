@@ -69,9 +69,9 @@ export class BloodNGuts {
   }
 
   /**
-   * Get severity, a number between -1 and 1.5:
-   * * > -1(full health or fully healed) to < 0(minimal heal)
-   * * > 1(minimal damage) and < 1.5(all HP in one hit)
+   * Get severity, a number between -1 and 2:
+   * * > -1[full health or fully healed] to  0[minimal heal]
+   * * > 1 + (0[minimal damage] and 0.5[all HP in one hit])* 2 [if dead]
    * * or 0 if not hit at all.
    * @category GMOnly
    * @function
@@ -82,10 +82,8 @@ export class BloodNGuts {
   private static getDamageSeverity(token: Token, changes: any): number {
     if (changes.actorData === undefined || changes.actorData.data.attributes?.hp === undefined) return;
     log(LogLevel.INFO, 'getDamageSeverity', changes.actorData);
-
     const currentHP = changes.actorData.data.attributes.hp.value;
-    // dead, return 2
-    if (currentHP === 0) return 2;
+
     const maxHP = token.actor.data.data.attributes.hp.max;
     //fully healed, return -1
     if (currentHP === maxHP) return -1;
@@ -96,7 +94,7 @@ export class BloodNGuts {
     const fractionOfMax = currentHP / maxHP;
     const changeFractionOfMax = (lastHP - currentHP) / maxHP;
 
-    if (currentHP < lastHP) {
+    if (currentHP && currentHP < lastHP) {
       if (fractionOfMax > healthThreshold) {
         log(LogLevel.DEBUG, 'getDamageSeverity below healthThreshold', fractionOfMax);
         return 0;
@@ -112,7 +110,9 @@ export class BloodNGuts {
       //renormalise scale based on threshold.
       return changeFractionOfMax / healthThreshold;
     }
-    const severity = 1 + changeFractionOfMax / 2;
+    // dead, multiply by 2.
+    const deathMultiplier = currentHP === 0 ? 2 : 1;
+    const severity = 1 + (changeFractionOfMax / 2) * deathMultiplier;
 
     log(LogLevel.DEBUG, 'getDamageSeverity severity', severity);
     return severity;
