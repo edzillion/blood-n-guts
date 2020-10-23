@@ -27,7 +27,7 @@ globalThis.sceneSplatPool = [];
 let splatState = [];
 
 //CONFIG.debug.hooks = true;
-CONFIG.bngLogLevel = 1;
+CONFIG.bng = { logLevel: 1 };
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -308,8 +308,8 @@ export class BloodNGuts {
 
     //horiz or vert movement
     const pixelSpread = direction.x
-      ? token.w * game.settings.get(MODULE_ID, 'splatSpread')
-      : token.h * game.settings.get(MODULE_ID, 'splatSpread');
+      ? token.w * game.settings.get(MODULE_ID, 'splatSpread') * 2
+      : token.h * game.settings.get(MODULE_ID, 'splatSpread') * 2;
 
     const rand = getRandomBoxMuller() * pixelSpread - pixelSpread / 2;
     log(LogLevel.DEBUG, 'generateTrailSplats rand', rand);
@@ -458,7 +458,7 @@ export class BloodNGuts {
       token.addChildAt(splatsContainer, 2);
     } else log(LogLevel.ERROR, 'drawSplats: splatSaveObj should have either .imgPath or .maskPolygon!');
 
-    if (CONFIG.bngLogLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
+    if (CONFIG.bng.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
 
     return splatsContainer;
   }
@@ -728,7 +728,8 @@ export class BloodNGuts {
 
       if (density > 0 && density < 1) {
         let count = token.getFlag(MODULE_ID, 'bleedingCount');
-        if (!count) {
+        log(LogLevel.DEBUG, 'updateTokenOrActorHandler density < 1', count);
+        if (!--count) {
           saveObjects.push(
             BloodNGuts.generateFloorSplats(
               token,
@@ -739,8 +740,7 @@ export class BloodNGuts {
             ),
           );
           count = Math.round(1 / density);
-        } else count--;
-
+        }
         promises.push(token.setFlag(MODULE_ID, 'bleedingCount', count));
       } else {
         saveObjects.push(

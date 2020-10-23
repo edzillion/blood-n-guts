@@ -2,8 +2,6 @@ import { log, LogLevel } from './logging';
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import { MODULE_ID } from '../constants';
 
-const counter = 0;
-
 /**
  * Helper functions.
  * @module Helpers
