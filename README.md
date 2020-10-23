@@ -25,7 +25,7 @@ This is a work in progress.
 1. order of settings in config window
 1. ~~clearly separate token from tokenData objects~~
 1. ~~implement Tile pool to reuse tiles instead of creating new.~~
-1. thank vance and skimble on release, sky, Monkeyy
+1. thank vance and skimble on release, sky, Monkeyy, Erceron
 1. use token velocity for direction? it's private
 1. i18n
 1. ~~Are both filters needed to get a sprite mask~~  YES
