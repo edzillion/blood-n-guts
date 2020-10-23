@@ -91,7 +91,13 @@
         <input type="number" value="{{ healthThreshold }}" class="advanced-config-font-details" name="healthThreshold"  data-dtype="Number" step="any">
       </div>
       <p class="notes">The % of max health to start showing splats e.g. 1.0 will show splats all the time, 0.25 will show splats when HP is 25% or less.</p>
-    </div>     
+    </div>    
+    <label>Damage Threshold</label>
+    <div class="form-fields">
+      <input type="number" value="{{ healthThreshold }}" class="advanced-config-font-details" name="healthThreshold"  data-dtype="Number" step="any">
+    </div>
+    <p class="notes">The % of max damage to show splats. e.g. 0 will never show splats, 0.25 will show them on a hit that reduces health by 25%. </p>
+  </div>   
     <div class="form-group">
       <label>Splat Pool Size</label>
       <div class="form-fields">

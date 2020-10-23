@@ -84,25 +84,35 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'getDamageSeverity', changes.actorData);
 
     const currentHP = changes.actorData.data.attributes.hp.value;
+    // dead, return 2
+    if (currentHP === 0) return 2;
     const maxHP = token.actor.data.data.attributes.hp.max;
-
     //fully healed, return -1
     if (currentHP === maxHP) return -1;
+
     const healthThreshold = game.settings.get(MODULE_ID, 'healthThreshold');
+    const damageThreshold = game.settings.get(MODULE_ID, 'damageThreshold');
     const lastHP = this.lastTokenState[token.id].hp;
     const fractionOfMax = currentHP / maxHP;
-    if (currentHP < lastHP && fractionOfMax > healthThreshold) {
-      log(LogLevel.DEBUG, 'getDamageSeverity below healthThreshold', fractionOfMax);
-      return 0;
+    const changeFractionOfMax = (lastHP - currentHP) / maxHP;
+
+    if (currentHP < lastHP) {
+      if (fractionOfMax > healthThreshold) {
+        log(LogLevel.DEBUG, 'getDamageSeverity below healthThreshold', fractionOfMax);
+        return 0;
+      }
+      if (changeFractionOfMax < damageThreshold) {
+        log(LogLevel.DEBUG, 'getDamageSeverity below damageThreshold', fractionOfMax);
+        return 0;
+      }
     }
 
-    const scale = (lastHP - currentHP) / maxHP;
     // healing
-    if (scale < 0) {
+    if (changeFractionOfMax < 0) {
       //renormalise scale based on threshold.
-      return scale / healthThreshold;
+      return changeFractionOfMax / healthThreshold;
     }
-    const severity = 1 + scale / 2;
+    const severity = 1 + changeFractionOfMax / 2;
 
     log(LogLevel.DEBUG, 'getDamageSeverity severity', severity);
     return severity;

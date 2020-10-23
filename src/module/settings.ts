@@ -168,6 +168,16 @@ export const registerSettings = (): void => {
     },
   });
 
+  game.settings.register(MODULE_ID, 'damageThreshold', {
+    scope: 'client',
+    config: false,
+    type: Number,
+    default: 0.0,
+    onChange: (value) => {
+      log(LogLevel.DEBUG, 'Settings: damageThreshold set to ' + value);
+    },
+  });
+
   game.settings.register(MODULE_ID, 'sceneSplatPoolSize', {
     scope: 'client',
     config: false,
