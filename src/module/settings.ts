@@ -24,7 +24,8 @@ export const registerSettings = (): void => {
       0: 'Shrieker',
       1: 'Kobold',
       2: 'Ogre',
-      3: 'Hecatoncheires',
+      3: 'Dracolich',
+      4: 'Hecatoncheires',
     },
     default: 0,
     onChange: (value) => {
@@ -165,6 +166,16 @@ export const registerSettings = (): void => {
     default: 1.0,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: healthThreshold set to ' + value);
+    },
+  });
+
+  game.settings.register(MODULE_ID, 'damageThreshold', {
+    scope: 'client',
+    config: false,
+    type: Number,
+    default: 0.0,
+    onChange: (value) => {
+      log(LogLevel.DEBUG, 'Settings: damageThreshold set to ' + value);
     },
   });
 

@@ -27,7 +27,7 @@ globalThis.sceneSplatPool = [];
 let splatState = [];
 
 //CONFIG.debug.hooks = true;
-CONFIG.bngLogLevel = 1;
+CONFIG.bng = { logLevel: 1 };
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -69,9 +69,9 @@ export class BloodNGuts {
   }
 
   /**
-   * Get severity, a number between -1 and 1.5:
-   * * > -1(full health or fully healed) to < 0(minimal heal)
-   * * > 1(minimal damage) and < 1.5(all HP in one hit)
+   * Get severity, a number between -1 and 2:
+   * * > -1[full health or fully healed] to  0[minimal heal]
+   * * > 1 + (0[minimal damage] and 0.5[all HP in one hit])* 2 [if dead]
    * * or 0 if not hit at all.
    * @category GMOnly
    * @function
@@ -82,27 +82,37 @@ export class BloodNGuts {
   private static getDamageSeverity(token: Token, changes: any): number {
     if (changes.actorData === undefined || changes.actorData.data.attributes?.hp === undefined) return;
     log(LogLevel.INFO, 'getDamageSeverity', changes.actorData);
-
     const currentHP = changes.actorData.data.attributes.hp.value;
-    const maxHP = token.actor.data.data.attributes.hp.max;
 
+    const maxHP = token.actor.data.data.attributes.hp.max;
     //fully healed, return -1
     if (currentHP === maxHP) return -1;
+
     const healthThreshold = game.settings.get(MODULE_ID, 'healthThreshold');
+    const damageThreshold = game.settings.get(MODULE_ID, 'damageThreshold');
     const lastHP = this.lastTokenState[token.id].hp;
     const fractionOfMax = currentHP / maxHP;
-    if (currentHP < lastHP && fractionOfMax > healthThreshold) {
-      log(LogLevel.DEBUG, 'getDamageSeverity below healthThreshold', fractionOfMax);
-      return 0;
+    const changeFractionOfMax = (lastHP - currentHP) / maxHP;
+
+    if (currentHP && currentHP < lastHP) {
+      if (fractionOfMax > healthThreshold) {
+        log(LogLevel.DEBUG, 'getDamageSeverity below healthThreshold', fractionOfMax);
+        return 0;
+      }
+      if (changeFractionOfMax < damageThreshold) {
+        log(LogLevel.DEBUG, 'getDamageSeverity below damageThreshold', fractionOfMax);
+        return 0;
+      }
     }
 
-    const scale = (lastHP - currentHP) / maxHP;
     // healing
-    if (scale < 0) {
+    if (changeFractionOfMax < 0) {
       //renormalise scale based on threshold.
-      return scale / healthThreshold;
+      return changeFractionOfMax / healthThreshold;
     }
-    const severity = 1 + scale / 2;
+    // dead, multiply by 2.
+    const deathMultiplier = currentHP === 0 ? 2 : 1;
+    const severity = 1 + (changeFractionOfMax / 2) * deathMultiplier;
 
     log(LogLevel.DEBUG, 'getDamageSeverity severity', severity);
     return severity;
@@ -298,8 +308,8 @@ export class BloodNGuts {
 
     //horiz or vert movement
     const pixelSpread = direction.x
-      ? token.w * game.settings.get(MODULE_ID, 'splatSpread')
-      : token.h * game.settings.get(MODULE_ID, 'splatSpread');
+      ? token.w * game.settings.get(MODULE_ID, 'splatSpread') * 2
+      : token.h * game.settings.get(MODULE_ID, 'splatSpread') * 2;
 
     const rand = getRandomBoxMuller() * pixelSpread - pixelSpread / 2;
     log(LogLevel.DEBUG, 'generateTrailSplats rand', rand);
@@ -448,7 +458,7 @@ export class BloodNGuts {
       token.addChildAt(splatsContainer, 2);
     } else log(LogLevel.ERROR, 'drawSplats: splatSaveObj should have either .imgPath or .maskPolygon!');
 
-    if (CONFIG.bngLogLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
+    if (CONFIG.bng.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
 
     return splatsContainer;
   }
@@ -718,7 +728,8 @@ export class BloodNGuts {
 
       if (density > 0 && density < 1) {
         let count = token.getFlag(MODULE_ID, 'bleedingCount');
-        if (!count) {
+        log(LogLevel.DEBUG, 'updateTokenOrActorHandler density < 1', count);
+        if (!--count) {
           saveObjects.push(
             BloodNGuts.generateFloorSplats(
               token,
@@ -729,8 +740,7 @@ export class BloodNGuts {
             ),
           );
           count = Math.round(1 / density);
-        } else count--;
-
+        }
         promises.push(token.setFlag(MODULE_ID, 'bleedingCount', count));
       } else {
         saveObjects.push(
