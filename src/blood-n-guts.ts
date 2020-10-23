@@ -793,7 +793,7 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static updateSceneHandler(scene, changes): void {
-    if (!scene.active || !globalThis.sceneSplatPool || !changes.flags) return;
+    if (!scene.active || !globalThis.sceneSplatPool) return;
 
     // if (BloodNGuts.fadingSplatPool.length) debugger;
     if (changes.flags[MODULE_ID]?.splatState === null) {
@@ -926,9 +926,3 @@ Hooks.on('updateActor', (actor, changes) => {
 
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
-
-// for dealing with the situation where the GM views a scene, and then activates it. This is called on activation.
-Hooks.on('renderSceneNavigation', (nav, _html, _data) => {
-  log(LogLevel.INFO, 'renderSceneNavigation', nav);
-  if (canvas?.scene?.active) BloodNGuts.canvasReadyHandler(canvas);
-});
