@@ -893,12 +893,7 @@ export class BloodNGuts {
     // perhaps this is not scene agnostic
     if (!game.user.isGM) return;
     log(LogLevel.INFO, 'deleteTokenHandler', token);
-    // let state = canvas.scene.getFlag(MODULE_ID, 'splatState');
-    // if (state) state = state.filter((s) => s.tokenId !== token._id);
-    //log(LogLevel.INFO, 'deleteTokenHandler state', state);
     if (BloodNGuts.lastTokenState) delete BloodNGuts.lastTokenState[token._id];
-
-    //return canvas.scene.setFlag(MODULE_ID, 'splatState', state);
   }
 }
 
