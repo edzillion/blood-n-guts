@@ -534,8 +534,8 @@ export class BloodNGuts {
     // if we set splatsContainer to null, it will be added on sceneUpdate when it is drawn to canvas.
     const poolObj = { save: splatSaveObj, splatsContainer: splatsContainer };
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
-    const fadedPoolSize = Math.ceil(globalThis.sceneSplatPool.length * 0.15);
-    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.25);
+    const fadedPoolSize = Math.floor(globalThis.sceneSplatPool.length * 0.15);
+    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
     log(LogLevel.DEBUG, 'addToSplatPool sizes curr, max', globalThis.sceneSplatPool.length, maxPoolSize);
 
     if (globalThis.sceneSplatPool.length >= maxPoolSize) {
