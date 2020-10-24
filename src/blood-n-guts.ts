@@ -24,7 +24,6 @@ import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 globalThis.sceneSplatPool = [];
-let splatState = [];
 
 //CONFIG.debug.hooks = true;
 CONFIG.bng = { logLevel: 1 };
@@ -35,11 +34,13 @@ CONFIG.bng = { logLevel: 1 };
  * @extends FormApplication
  */
 export class BloodNGuts {
-  public static allFontsLoaded: boolean;
-  public static lastTokenState: Array<TokenSaveObject> = [];
+  private static allFontsLoaded: boolean;
+  private static splatState: Array<SplatSaveObject> = [];
+  private static lastTokenState: Array<TokenSaveObject> = [];
 
   constructor() {
     BloodNGuts.allFontsLoaded = false;
+    BloodNGuts.splatState = [];
     BloodNGuts.lastTokenState = [];
   }
 
@@ -55,12 +56,12 @@ export class BloodNGuts {
 
     log(LogLevel.INFO, 'checkForMovement id:' + token.id);
     log(LogLevel.DEBUG, 'checkForMovement actorDataChanges:', actorDataChanges);
-    log(LogLevel.INFO, 'checkForMovement id:', this.lastTokenState[token.id]);
+    log(LogLevel.INFO, 'checkForMovement id:', BloodNGuts.lastTokenState[token.id]);
 
-    const posX = actorDataChanges.x === undefined ? this.lastTokenState[token.id].x : actorDataChanges.x;
-    const posY = actorDataChanges.y === undefined ? this.lastTokenState[token.id].y : actorDataChanges.y;
+    const posX = actorDataChanges.x === undefined ? BloodNGuts.lastTokenState[token.id].x : actorDataChanges.x;
+    const posY = actorDataChanges.y === undefined ? BloodNGuts.lastTokenState[token.id].y : actorDataChanges.y;
     const currPos = new PIXI.Point(posX, posY);
-    const lastPos = new PIXI.Point(this.lastTokenState[token.id].x, this.lastTokenState[token.id].y);
+    const lastPos = new PIXI.Point(BloodNGuts.lastTokenState[token.id].x, BloodNGuts.lastTokenState[token.id].y);
     log(LogLevel.DEBUG, 'checkForMovement pos: l,c:', lastPos, currPos);
 
     return getDirectionNrml(lastPos, currPos);
@@ -88,7 +89,7 @@ export class BloodNGuts {
 
     const healthThreshold = game.settings.get(MODULE_ID, 'healthThreshold');
     const damageThreshold = game.settings.get(MODULE_ID, 'damageThreshold');
-    const lastHP = this.lastTokenState[token.id].hp;
+    const lastHP = BloodNGuts.lastTokenState[token.id].hp;
     const fractionOfMax = currentHP / maxHP;
     const changeFractionOfMax = (lastHP - currentHP) / maxHP;
 
@@ -295,10 +296,10 @@ export class BloodNGuts {
     };
     const style = new PIXI.TextStyle(splatSaveObj.styleData);
 
-    log(LogLevel.DEBUG, 'generateTokenSplats lastPosOrigin', this.lastTokenState[token.id], token);
+    log(LogLevel.DEBUG, 'generateTokenSplats lastPosOrigin', BloodNGuts.lastTokenState[token.id], token);
     const lastPosOrigin = new PIXI.Point(
-      this.lastTokenState[token.id].x - token.data.x,
-      this.lastTokenState[token.id].y - token.data.y,
+      BloodNGuts.lastTokenState[token.id].x - token.data.x,
+      BloodNGuts.lastTokenState[token.id].y - token.data.y,
     );
     const currPosOrigin = new PIXI.Point(0, 0);
     const direction = getDirectionNrml(lastPosOrigin, currPosOrigin);
@@ -472,9 +473,12 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'saveTokenState:', token.data.name, token.id);
 
     // only save severity if it's higher. if severity is 0 reset to 1.
-    if (!severity || !this.lastTokenState[token.id]) severity = 1;
+    if (!severity || !BloodNGuts.lastTokenState[token.id]) severity = 1;
     else
-      severity = this.lastTokenState[token.id].severity > severity ? this.lastTokenState[token.id].severity : severity;
+      severity =
+        BloodNGuts.lastTokenState[token.id].severity > severity
+          ? BloodNGuts.lastTokenState[token.id].severity
+          : severity;
 
     let saveObj: TokenSaveObject = {
       id: token.id,
@@ -486,7 +490,7 @@ export class BloodNGuts {
 
     saveObj = duplicate(saveObj);
     log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
-    this.lastTokenState[token.id] = Object.assign(saveObj);
+    BloodNGuts.lastTokenState[token.id] = Object.assign(saveObj);
   }
 
   /**
@@ -506,17 +510,17 @@ export class BloodNGuts {
     if (newSaveObjs) {
       newSaveObjs.forEach((s) => {
         if (!s.id) s.id = getUID();
-        splatState.push(s);
+        BloodNGuts.splatState.push(s);
       });
 
-      if (splatState.length > poolSize) {
-        splatState.splice(0, splatState.length - poolSize);
+      if (BloodNGuts.splatState.length > poolSize) {
+        BloodNGuts.splatState.splice(0, BloodNGuts.splatState.length - poolSize);
       }
-      log(LogLevel.DEBUG, `saveToSceneFlag splatState.length:${splatState.length}`);
+      log(LogLevel.DEBUG, `saveToSceneFlag splatState.length:${BloodNGuts.splatState.length}`);
     }
 
-    log(LogLevel.DEBUG, 'saveToSceneFlag: saveObjects', splatState);
-    return canvas.scene.setFlag(MODULE_ID, 'splatState', splatState);
+    log(LogLevel.DEBUG, 'saveToSceneFlag: saveObjects', BloodNGuts.splatState);
+    return canvas.scene.setFlag(MODULE_ID, 'splatState', BloodNGuts.splatState);
   }
 
   /**
@@ -534,8 +538,8 @@ export class BloodNGuts {
     // if we set splatsContainer to null, it will be added on sceneUpdate when it is drawn to canvas.
     const poolObj = { save: splatSaveObj, splatsContainer: splatsContainer };
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
-    const fadedPoolSize = Math.ceil(globalThis.sceneSplatPool.length * 0.15);
-    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.25);
+    const fadedPoolSize = Math.floor(globalThis.sceneSplatPool.length * 0.15);
+    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
     log(LogLevel.DEBUG, 'addToSplatPool sizes curr, max', globalThis.sceneSplatPool.length, maxPoolSize);
 
     if (globalThis.sceneSplatPool.length >= maxPoolSize) {
@@ -567,25 +571,26 @@ export class BloodNGuts {
    * @function
    */
   private static setupScene(): void {
-    const saveObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
+    let saveObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
     log(LogLevel.INFO, 'setupScene saveObjects loaded:', saveObjects);
-
-    if (saveObjects) {
-      log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
-
-      // draw each missing splatsContainer and save a reference to it in the pool.
-      // if the splatPoolSize has changed then we want to add only the latest
-      const maxPoolSize = Math.min(game.settings.get(MODULE_ID, 'sceneSplatPoolSize'), saveObjects.length);
-
-      for (let i = 0; i < maxPoolSize; i++) {
-        this.addToSplatPool(saveObjects[i], this.drawSplatsGetContainer(saveObjects[i]));
-        splatState.push(saveObjects[i]);
-      }
-    }
 
     //save tokens state
     const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
     for (let i = 0; i < canvasTokens.length; i++) this.saveTokenState(canvasTokens[i]);
+
+    if (saveObjects) {
+      log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
+      const extantTokens = Object.keys(BloodNGuts.lastTokenState);
+      saveObjects = saveObjects.filter((so) => !so.tokenId || extantTokens.includes(so.tokenId));
+    }
+    // draw each missing splatsContainer and save a reference to it in the pool.
+    // if the splatPoolSize has changed then we want to add only the latest
+    const maxPoolSize = Math.min(game.settings.get(MODULE_ID, 'sceneSplatPoolSize'), saveObjects.length);
+
+    for (let i = 0; i < maxPoolSize; i++) {
+      this.addToSplatPool(saveObjects[i], this.drawSplatsGetContainer(saveObjects[i]));
+      BloodNGuts.splatState.push(saveObjects[i]);
+    }
   }
 
   /**
@@ -600,7 +605,7 @@ export class BloodNGuts {
       poolObj.splatsContainer.destroy();
     });
     globalThis.sceneSplatPool = [];
-    splatState = [];
+    BloodNGuts.splatState = [];
   }
 
   /**
@@ -615,22 +620,22 @@ export class BloodNGuts {
    */
   public static async updateTokenOrActorHandler(scene, tokenData, changes): Promise<void> {
     if (!scene.active || !game.user.isGM) return;
-    log(LogLevel.INFO, 'updateTokenHandler', changes);
+    log(LogLevel.INFO, 'updateTokenOrActorHandler', changes);
 
     const tokenId = tokenData._id || tokenData.data._id;
     const token = canvas.tokens.placeables.find((t) => t.data._id === tokenId);
     if (!token) {
-      log(LogLevel.ERROR, 'updateTokenHandler token not found!');
+      log(LogLevel.ERROR, 'updateTokenOrActorHandler token not found!');
       return;
     }
     if (!token.actor) {
-      log(LogLevel.DEBUG, 'updateTokenHandler has no actor, skipping');
+      log(LogLevel.DEBUG, 'updateTokenOrActorHandler has no actor, skipping');
       return;
     }
 
     // update rotation of tokenSplats
     if (changes.rotation != undefined) {
-      log(LogLevel.DEBUG, 'updateTokenHandler updating rotation', changes.rotation);
+      log(LogLevel.DEBUG, 'updateTokenOrActorHandler updating rotation', changes.rotation);
       if (globalThis.sceneSplatPool) {
         globalThis.sceneSplatPool
           .filter((s) => s.save.tokenId === token.id)
@@ -644,14 +649,14 @@ export class BloodNGuts {
     if (changes.x === undefined && changes.y === undefined && changes.actorData?.data?.attributes?.hp === undefined)
       return;
 
-    log(LogLevel.INFO, 'updateTokenHandler', token.name, token);
+    log(LogLevel.INFO, 'updateTokenOrActorHandler', token.name, token);
     let saveObjects: Array<SplatSaveObject> = [];
     const promises: Array<Promise<PlaceableObject | Entity>> = [];
     let severity = BloodNGuts.lastTokenState[token.id].severity;
 
     // check for damage and generate splats
     let tempSeverity = BloodNGuts.getDamageSeverity(token, changes);
-    log(LogLevel.DEBUG, 'updateTokenHandler tempSeverity', tempSeverity);
+    log(LogLevel.DEBUG, 'updateTokenOrActorHandler tempSeverity', tempSeverity);
     if (tempSeverity) {
       switch (true) {
         // damage dealt
@@ -659,7 +664,7 @@ export class BloodNGuts {
           severity = tempSeverity;
 
           promises.push(token.setFlag(MODULE_ID, 'bleeding', true));
-          log(LogLevel.DEBUG, 'updateToken damageScale > 0:' + token.id + ' - bleeding:true');
+          log(LogLevel.DEBUG, 'updateTokenOrActorHandler damageScale > 0:' + token.id + ' - bleeding:true');
 
           saveObjects.push(
             BloodNGuts.generateFloorSplats(
@@ -679,7 +684,7 @@ export class BloodNGuts {
               severity,
             ),
           );
-          log(LogLevel.DEBUG, 'updateToken damageScale > 0: saveObjects', saveObjects);
+          log(LogLevel.DEBUG, 'updateTokenOrActorHandler damageScale > 0: saveObjects', saveObjects);
 
           break;
         }
@@ -691,22 +696,22 @@ export class BloodNGuts {
           // deal with scale/healthThreshold > 1. We can only heal potentially 100%
           if (tempSeverity > 1) tempSeverity = 1;
           promises.push(token.unsetFlag(MODULE_ID, 'bleeding'), token.unsetFlag(MODULE_ID, 'bleedingCount'));
-          log(LogLevel.DEBUG, 'updateToken damageScale < 0:' + token.id + ' - bleeding:unset');
-          const allTokensSplats = splatState.filter((save) => save.tokenId === token.id);
+          log(LogLevel.DEBUG, 'updateTokenOrActorHandler damageScale < 0:' + token.id + ' - bleeding:unset');
+          const allTokensSplats = BloodNGuts.splatState.filter((save) => save.tokenId === token.id);
           if (!allTokensSplats) break;
 
-          log(LogLevel.DEBUG, 'updateToken allTokensSplats:');
+          log(LogLevel.DEBUG, 'updateTokenOrActorHandler allTokensSplats:');
           let keepThisMany = allTokensSplats.length - Math.ceil(allTokensSplats.length * tempSeverity);
-          log(LogLevel.DEBUG, 'updateToken keepThisMany:', keepThisMany);
+          log(LogLevel.DEBUG, 'updateTokenOrActorHandler keepThisMany:', keepThisMany);
 
-          splatState = splatState.filter((save) => {
+          BloodNGuts.splatState = BloodNGuts.splatState.filter((save) => {
             if (save.tokenId !== token.id) return true;
             else if (keepThisMany-- > 0) return true;
           });
           break;
         }
         default: {
-          log(LogLevel.ERROR, 'updateToken damageScale === 0!');
+          log(LogLevel.ERROR, 'updateTokenOrActorHandler damageScale === 0!');
           break;
         }
       }
@@ -802,8 +807,14 @@ export class BloodNGuts {
       return;
     } else if (!changes.flags[MODULE_ID]?.splatState) return;
     log(LogLevel.INFO, 'updateSceneHandler');
+
+    const extantTokens = Object.keys(BloodNGuts.lastTokenState);
+    const splatState = changes.flags[MODULE_ID].splatState.filter(
+      (so) => !so.tokenId || extantTokens.includes(so.tokenId),
+    );
+
     //todo: bug TypeError: Cannot read property 'splatState' of undefined
-    const updatedSaveIds = changes.flags[MODULE_ID].splatState.map((s) => s.id);
+    const updatedSaveIds = splatState.map((s) => s.id);
     log(LogLevel.DEBUG, 'updateScene updatedSaveIds', updatedSaveIds);
 
     const oldSaveIds = globalThis.sceneSplatPool.map((poolObj) => poolObj.save.id);
@@ -824,7 +835,7 @@ export class BloodNGuts {
     log(LogLevel.DEBUG, 'updateScene sceneSplatPool', globalThis.sceneSplatPool);
 
     // addSaveObjects are saves that are not yet in the splat pool
-    const addSaveObjects = changes.flags[MODULE_ID].splatState.filter((saveObj) => {
+    const addSaveObjects = splatState.filter((saveObj) => {
       if (addIds.includes(saveObj.id)) return saveObj;
     });
     log(LogLevel.DEBUG, 'updateScene addSaveObjects', addSaveObjects);
@@ -870,6 +881,19 @@ export class BloodNGuts {
         onClick: BloodNGuts.wipeSceneSplats,
       });
     }
+  }
+
+  /**
+   * Handler called when token is deleted. Removed tokenSplats and state for this token.
+   * @category GMOnly
+   * @function
+   * @param {buttons} - reference to the buttons controller
+   */
+  public static async deleteTokenHandler(scene, token) {
+    // perhaps this is not scene agnostic
+    if (!game.user.isGM) return;
+    log(LogLevel.INFO, 'deleteTokenHandler', token);
+    if (BloodNGuts.lastTokenState) delete BloodNGuts.lastTokenState[token._id];
   }
 }
 
@@ -924,6 +948,8 @@ Hooks.on('updateActor', (actor, changes) => {
   if (!token) log(LogLevel.ERROR, 'updateActor token not found!');
   else BloodNGuts.updateTokenOrActorHandler(canvas.scene, token.data, changes);
 });
+
+Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
