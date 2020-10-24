@@ -36,12 +36,10 @@ CONFIG.bng = { logLevel: 1 };
  */
 export class BloodNGuts {
   public static allFontsLoaded: boolean;
-  public static fadingSplatPool: Array<SplatPoolObject>;
   public static lastTokenState: Array<TokenSaveObject> = [];
 
   constructor() {
     BloodNGuts.allFontsLoaded = false;
-    BloodNGuts.fadingSplatPool = [];
     BloodNGuts.lastTokenState = [];
   }
 
@@ -166,8 +164,8 @@ export class BloodNGuts {
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
       return {
-        x: randX - tm.width / 2,
-        y: randY - tm.height / 2,
+        x: Math.round(randX - tm.width / 2),
+        y: Math.round(randY - tm.height / 2),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
@@ -247,8 +245,8 @@ export class BloodNGuts {
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
       return {
-        x: randX - tm.width / 2,
-        y: randY - tm.height / 2,
+        x: Math.round(randX - tm.width / 2),
+        y: Math.round(randY - tm.height / 2),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
@@ -337,8 +335,8 @@ export class BloodNGuts {
       const pt = getPointOnCurve(lastPosOrigin, controlPt, currPosOrigin, dist);
       dist += increment;
       return {
-        x: pt.x - tm.width / 2,
-        y: pt.y - tm.height / 2,
+        x: Math.round(pt.x - tm.width / 2),
+        y: Math.round(pt.y - tm.height / 2),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
@@ -458,7 +456,7 @@ export class BloodNGuts {
       token.addChildAt(splatsContainer, 2);
     } else log(LogLevel.ERROR, 'drawSplats: splatSaveObj should have either .imgPath or .maskPolygon!');
 
-    if (CONFIG.bng.logLevel >= LogLevel.DEBUG) drawDebugRect(splatsContainer);
+    if (CONFIG.bng.logLevel > LogLevel.DEBUG) drawDebugRect(splatsContainer);
 
     return splatsContainer;
   }
@@ -536,31 +534,29 @@ export class BloodNGuts {
     // if we set splatsContainer to null, it will be added on sceneUpdate when it is drawn to canvas.
     const poolObj = { save: splatSaveObj, splatsContainer: splatsContainer };
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
+    const fadedPoolSize = Math.ceil(globalThis.sceneSplatPool.length * 0.15);
+    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.25);
     log(LogLevel.DEBUG, 'addToSplatPool sizes curr, max', globalThis.sceneSplatPool.length, maxPoolSize);
 
-    // 15% of splats will be set to fade
-    const unfadedSplatPoolSize = Math.round(maxPoolSize * 0.85);
-    if (globalThis.sceneSplatPool.length >= unfadedSplatPoolSize) {
-      const fadingSplatPoolObj = globalThis.sceneSplatPool.shift();
-      log(LogLevel.DEBUG, 'addToSplatPool fadingSplatPoolObj', fadingSplatPoolObj);
-
-      if (!fadingSplatPoolObj.splatsContainer)
-        log(LogLevel.ERROR, 'addToSplatPool fadingSplatPoolObj.splatsContainer is null', fadingSplatPoolObj);
-
-      fadingSplatPoolObj.splatsContainer.alpha = 0.3;
-      if (this.fadingSplatPool.length >= maxPoolSize - unfadedSplatPoolSize) {
-        //debugger;
-        const destroy = this.fadingSplatPool.shift();
-        log(LogLevel.DEBUG, 'fadingSplatPool destroying id', destroy.save.id);
-        destroy.splatsContainer.destroy({ children: true });
-      }
-      this.fadingSplatPool.push(fadingSplatPoolObj);
+    if (globalThis.sceneSplatPool.length >= maxPoolSize) {
+      // remove the oldest splat
+      const destroy = globalThis.sceneSplatPool.shift();
+      log(LogLevel.DEBUG, 'fadingSplatPool destroying id', destroy.save.id);
+      destroy.splatsContainer.destroy({ children: true });
     }
+    //add the new splat
     globalThis.sceneSplatPool.push(poolObj);
-
+    // 15% of splats will be set to fade. 1/3rd of those will be very faded
+    if (globalThis.sceneSplatPool.length >= fadedPoolSize) {
+      const size = Math.min(fadedPoolSize, globalThis.sceneSplatPool.length);
+      for (let index = 0; index < size; index++) {
+        const alpha = index < veryFadedPoolSize ? 0.1 : 0.3;
+        globalThis.sceneSplatPool[index].splatsContainer.alpha = alpha;
+      }
+    }
     log(
       LogLevel.DEBUG,
-      `addToSplatPool sceneSplatPool:${globalThis.sceneSplatPool.length}, fadingSplatPool:${this.fadingSplatPool.length}`,
+      `addToSplatPool sceneSplatPool:${globalThis.sceneSplatPool.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
     );
   }
 
@@ -603,11 +599,7 @@ export class BloodNGuts {
     globalThis.sceneSplatPool.forEach((poolObj) => {
       poolObj.splatsContainer.destroy();
     });
-    BloodNGuts.fadingSplatPool.forEach((poolObj) => {
-      poolObj.splatsContainer.destroy();
-    });
     globalThis.sceneSplatPool = [];
-    BloodNGuts.fadingSplatPool = [];
     splatState = [];
   }
 
@@ -777,7 +769,6 @@ export class BloodNGuts {
 
     // wipe pools to be refilled from scene flag data
     globalThis.sceneSplatPool = [];
-    BloodNGuts.fadingSplatPool = [];
 
     // need to wait on fonts loading before we can setupScene
     if (!BloodNGuts.allFontsLoaded)
