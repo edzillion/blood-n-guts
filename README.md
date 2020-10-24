@@ -17,16 +17,16 @@ This is a work in progress.
 1. ~~update container positioning to make more sense~~
 1. ~~base blood colour on race etc~~
 1. ~~mask flicker, addChild?~~
-1. control flow review, await always needed?
+1. ~~control flow review, await always needed?~~
 1. ~~change bleeding to flag on token~~
 1. ~~remove cut-off glyphs~~
 1. use preloadTemplates to trigger DOM font loading
 1. ~~wire up advanced config form~~
-1. order of settings in config window
+1. ~~order of settings in config window~~
 1. ~~clearly separate token from tokenData objects~~
 1. ~~implement Tile pool to reuse tiles instead of creating new.~~
 1. thank vance and skimble on release, sky, Monkeyy, Erceron
-1. use token velocity for direction? it's private
+1. ~~use token velocity for direction?~~ it's private
 1. i18n
 1. ~~Are both filters needed to get a sprite mask~~  YES
 1. use duplicate helper? 
@@ -35,7 +35,7 @@ This is a work in progress.
 1. ~~permissions~~
 1. documentation
 1. ~~feature: enemy is bloodied at half health~~
-1. UX. going to scene then activating it
+1. ~~UX. going to scene then activating it~~
 
 ## Bugs
 1. ~~No trail when moving to a grid coord y < grid.size~~
@@ -44,7 +44,7 @@ This is a work in progress.
 1. ~~ux - enter on adv config just closes doesnot save~~
 1. ~~reloading splats deletes the latest splat? changing scenes also, change away and back~~
 1. ~~splat vs. mask alignment w tokensplats~~
-1. extra splat on first trail
-1. why am I not getting rounded x and y positions
+1. ~~extra splat on first trail~~
+1. ~~why am I not getting rounded x and y positions~~
 1. ~~Order of splats reloading (faded should be last)~~
 1. ~~Oldest splats don't always fade first~~
