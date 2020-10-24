@@ -122,7 +122,7 @@ export const lookupTokenBloodColor = (token: Token): string => {
   const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
 
   // if useBloodColor is disabled then all blood is blood red
-  const bloodColor = enabled ? bloodColorSettings.color[type] : 'blood';
+  const bloodColor = enabled ? bloodColorSettings.color[type.toLowerCase()] : 'blood';
 
   // bloodSettings can return either an rbga string, a color string or 'name' which looks up the
   // color based on it's name. e.g. 'Purple Ooze'
