@@ -571,26 +571,26 @@ export class BloodNGuts {
    * @function
    */
   private static setupScene(): void {
-    const saveObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
+    let saveObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
     log(LogLevel.INFO, 'setupScene saveObjects loaded:', saveObjects);
-
-    if (saveObjects) {
-      log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
-
-      // draw each missing splatsContainer and save a reference to it in the pool.
-      // if the splatPoolSize has changed then we want to add only the latest
-      const maxPoolSize = Math.min(game.settings.get(MODULE_ID, 'sceneSplatPoolSize'), saveObjects.length);
-
-      for (let i = 0; i < maxPoolSize; i++) {
-        this.addToSplatPool(saveObjects[i], this.drawSplatsGetContainer(saveObjects[i]));
-        splatState.push(saveObjects[i]);
-      }
-    }
 
     //save tokens state
     const canvasTokens = canvas.tokens.placeables.filter((t) => t.actor);
     for (let i = 0; i < canvasTokens.length; i++) this.saveTokenState(canvasTokens[i]);
-    console.log('setupScene lastTokenState', lastTokenState);
+
+    if (saveObjects) {
+      log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
+      const extantTokens = Object.keys(BloodNGuts.lastTokenState);
+      saveObjects = saveObjects.filter((so) => !so.tokenId || extantTokens.includes(so.tokenId));
+    }
+    // draw each missing splatsContainer and save a reference to it in the pool.
+    // if the splatPoolSize has changed then we want to add only the latest
+    const maxPoolSize = Math.min(game.settings.get(MODULE_ID, 'sceneSplatPoolSize'), saveObjects.length);
+
+    for (let i = 0; i < maxPoolSize; i++) {
+      this.addToSplatPool(saveObjects[i], this.drawSplatsGetContainer(saveObjects[i]));
+      BloodNGuts.splatState.push(saveObjects[i]);
+    }
   }
 
   /**
@@ -808,10 +808,13 @@ export class BloodNGuts {
     } else if (!changes.flags[MODULE_ID]?.splatState) return;
     log(LogLevel.INFO, 'updateSceneHandler');
 
-    console.log('updateSceneHandler state', changes.flags[MODULE_ID].splatState);
-    console.log('updateSceneHandler state', changes.flags[MODULE_ID].splatState.length);
+    const extantTokens = Object.keys(BloodNGuts.lastTokenState);
+    const splatState = changes.flags[MODULE_ID].splatState.filter(
+      (so) => !so.tokenId || extantTokens.includes(so.tokenId),
+    );
+
     //todo: bug TypeError: Cannot read property 'splatState' of undefined
-    const updatedSaveIds = changes.flags[MODULE_ID].splatState.map((s) => s.id);
+    const updatedSaveIds = splatState.map((s) => s.id);
     log(LogLevel.DEBUG, 'updateScene updatedSaveIds', updatedSaveIds);
 
     const oldSaveIds = globalThis.sceneSplatPool.map((poolObj) => poolObj.save.id);
@@ -832,7 +835,7 @@ export class BloodNGuts {
     log(LogLevel.DEBUG, 'updateScene sceneSplatPool', globalThis.sceneSplatPool);
 
     // addSaveObjects are saves that are not yet in the splat pool
-    const addSaveObjects = changes.flags[MODULE_ID].splatState.filter((saveObj) => {
+    const addSaveObjects = splatState.filter((saveObj) => {
       if (addIds.includes(saveObj.id)) return saveObj;
     });
     log(LogLevel.DEBUG, 'updateScene addSaveObjects', addSaveObjects);
