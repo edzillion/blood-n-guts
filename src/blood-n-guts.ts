@@ -24,8 +24,6 @@ import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 
 globalThis.sceneSplatPool = [];
-let splatState = [];
-const lastTokenState: Array<TokenSaveObject> = [];
 
 //CONFIG.debug.hooks = true;
 CONFIG.bng = { logLevel: 1 };
@@ -36,10 +34,14 @@ CONFIG.bng = { logLevel: 1 };
  * @extends FormApplication
  */
 export class BloodNGuts {
-  public static allFontsLoaded: boolean;
+  private static allFontsLoaded: boolean;
+  private static splatState: Array<SplatSaveObject> = [];
+  private static lastTokenState: Array<TokenSaveObject> = [];
 
   constructor() {
     BloodNGuts.allFontsLoaded = false;
+    BloodNGuts.splatState = [];
+    BloodNGuts.lastTokenState = [];
   }
 
   /**
@@ -54,12 +56,12 @@ export class BloodNGuts {
 
     log(LogLevel.INFO, 'checkForMovement id:' + token.id);
     log(LogLevel.DEBUG, 'checkForMovement actorDataChanges:', actorDataChanges);
-    log(LogLevel.INFO, 'checkForMovement id:', lastTokenState[token.id]);
+    log(LogLevel.INFO, 'checkForMovement id:', BloodNGuts.lastTokenState[token.id]);
 
-    const posX = actorDataChanges.x === undefined ? lastTokenState[token.id].x : actorDataChanges.x;
-    const posY = actorDataChanges.y === undefined ? lastTokenState[token.id].y : actorDataChanges.y;
+    const posX = actorDataChanges.x === undefined ? BloodNGuts.lastTokenState[token.id].x : actorDataChanges.x;
+    const posY = actorDataChanges.y === undefined ? BloodNGuts.lastTokenState[token.id].y : actorDataChanges.y;
     const currPos = new PIXI.Point(posX, posY);
-    const lastPos = new PIXI.Point(lastTokenState[token.id].x, lastTokenState[token.id].y);
+    const lastPos = new PIXI.Point(BloodNGuts.lastTokenState[token.id].x, BloodNGuts.lastTokenState[token.id].y);
     log(LogLevel.DEBUG, 'checkForMovement pos: l,c:', lastPos, currPos);
 
     return getDirectionNrml(lastPos, currPos);
@@ -87,7 +89,7 @@ export class BloodNGuts {
 
     const healthThreshold = game.settings.get(MODULE_ID, 'healthThreshold');
     const damageThreshold = game.settings.get(MODULE_ID, 'damageThreshold');
-    const lastHP = lastTokenState[token.id].hp;
+    const lastHP = BloodNGuts.lastTokenState[token.id].hp;
     const fractionOfMax = currentHP / maxHP;
     const changeFractionOfMax = (lastHP - currentHP) / maxHP;
 
@@ -294,10 +296,10 @@ export class BloodNGuts {
     };
     const style = new PIXI.TextStyle(splatSaveObj.styleData);
 
-    log(LogLevel.DEBUG, 'generateTokenSplats lastPosOrigin', lastTokenState[token.id], token);
+    log(LogLevel.DEBUG, 'generateTokenSplats lastPosOrigin', BloodNGuts.lastTokenState[token.id], token);
     const lastPosOrigin = new PIXI.Point(
-      lastTokenState[token.id].x - token.data.x,
-      lastTokenState[token.id].y - token.data.y,
+      BloodNGuts.lastTokenState[token.id].x - token.data.x,
+      BloodNGuts.lastTokenState[token.id].y - token.data.y,
     );
     const currPosOrigin = new PIXI.Point(0, 0);
     const direction = getDirectionNrml(lastPosOrigin, currPosOrigin);
@@ -471,8 +473,12 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'saveTokenState:', token.data.name, token.id);
 
     // only save severity if it's higher. if severity is 0 reset to 1.
-    if (!severity || !lastTokenState[token.id]) severity = 1;
-    else severity = lastTokenState[token.id].severity > severity ? lastTokenState[token.id].severity : severity;
+    if (!severity || !BloodNGuts.lastTokenState[token.id]) severity = 1;
+    else
+      severity =
+        BloodNGuts.lastTokenState[token.id].severity > severity
+          ? BloodNGuts.lastTokenState[token.id].severity
+          : severity;
 
     let saveObj: TokenSaveObject = {
       id: token.id,
@@ -484,7 +490,7 @@ export class BloodNGuts {
 
     saveObj = duplicate(saveObj);
     log(LogLevel.DEBUG, 'saveTokenState clonedSaveObj:', saveObj);
-    lastTokenState[token.id] = Object.assign(saveObj);
+    BloodNGuts.lastTokenState[token.id] = Object.assign(saveObj);
   }
 
   /**
@@ -504,17 +510,17 @@ export class BloodNGuts {
     if (newSaveObjs) {
       newSaveObjs.forEach((s) => {
         if (!s.id) s.id = getUID();
-        splatState.push(s);
+        BloodNGuts.splatState.push(s);
       });
 
-      if (splatState.length > poolSize) {
-        splatState.splice(0, splatState.length - poolSize);
+      if (BloodNGuts.splatState.length > poolSize) {
+        BloodNGuts.splatState.splice(0, BloodNGuts.splatState.length - poolSize);
       }
-      log(LogLevel.DEBUG, `saveToSceneFlag splatState.length:${splatState.length}`);
+      log(LogLevel.DEBUG, `saveToSceneFlag splatState.length:${BloodNGuts.splatState.length}`);
     }
 
-    log(LogLevel.DEBUG, 'saveToSceneFlag: saveObjects', splatState);
-    return canvas.scene.setFlag(MODULE_ID, 'splatState', splatState);
+    log(LogLevel.DEBUG, 'saveToSceneFlag: saveObjects', BloodNGuts.splatState);
+    return canvas.scene.setFlag(MODULE_ID, 'splatState', BloodNGuts.splatState);
   }
 
   /**
@@ -599,7 +605,7 @@ export class BloodNGuts {
       poolObj.splatsContainer.destroy();
     });
     globalThis.sceneSplatPool = [];
-    splatState = [];
+    BloodNGuts.splatState = [];
   }
 
   /**
@@ -646,7 +652,7 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'updateTokenOrActorHandler', token.name, token);
     let saveObjects: Array<SplatSaveObject> = [];
     const promises: Array<Promise<PlaceableObject | Entity>> = [];
-    let severity = lastTokenState[token.id].severity;
+    let severity = BloodNGuts.lastTokenState[token.id].severity;
 
     // check for damage and generate splats
     let tempSeverity = BloodNGuts.getDamageSeverity(token, changes);
@@ -691,14 +697,14 @@ export class BloodNGuts {
           if (tempSeverity > 1) tempSeverity = 1;
           promises.push(token.unsetFlag(MODULE_ID, 'bleeding'), token.unsetFlag(MODULE_ID, 'bleedingCount'));
           log(LogLevel.DEBUG, 'updateTokenOrActorHandler damageScale < 0:' + token.id + ' - bleeding:unset');
-          const allTokensSplats = splatState.filter((save) => save.tokenId === token.id);
+          const allTokensSplats = BloodNGuts.splatState.filter((save) => save.tokenId === token.id);
           if (!allTokensSplats) break;
 
           log(LogLevel.DEBUG, 'updateTokenOrActorHandler allTokensSplats:');
           let keepThisMany = allTokensSplats.length - Math.ceil(allTokensSplats.length * tempSeverity);
           log(LogLevel.DEBUG, 'updateTokenOrActorHandler keepThisMany:', keepThisMany);
 
-          splatState = splatState.filter((save) => {
+          BloodNGuts.splatState = BloodNGuts.splatState.filter((save) => {
             if (save.tokenId !== token.id) return true;
             else if (keepThisMany-- > 0) return true;
           });
