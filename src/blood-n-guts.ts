@@ -166,8 +166,8 @@ export class BloodNGuts {
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
       return {
-        x: randX - tm.width / 2,
-        y: randY - tm.height / 2,
+        x: Math.round(randX - tm.width / 2),
+        y: Math.round(randY - tm.height / 2),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
@@ -247,8 +247,8 @@ export class BloodNGuts {
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
       return {
-        x: randX - tm.width / 2,
-        y: randY - tm.height / 2,
+        x: Math.round(randX - tm.width / 2),
+        y: Math.round(randY - tm.height / 2),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
@@ -337,8 +337,8 @@ export class BloodNGuts {
       const pt = getPointOnCurve(lastPosOrigin, controlPt, currPosOrigin, dist);
       dist += increment;
       return {
-        x: pt.x - tm.width / 2,
-        y: pt.y - tm.height / 2,
+        x: Math.round(pt.x - tm.width / 2),
+        y: Math.round(pt.y - tm.height / 2),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
