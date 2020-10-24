@@ -879,6 +879,24 @@ export class BloodNGuts {
       });
     }
   }
+
+  /**
+   * Handler called when token is deleted. Removed tokenSplats and state for this token.
+   * @category GMOnly
+   * @function
+   * @param {buttons} - reference to the buttons controller
+   */
+  public static async deleteTokenHandler(scene, token) {
+    // perhaps this is not scene agnostic
+    if (!game.user.isGM) return;
+    log(LogLevel.INFO, 'deleteTokenHandler', token);
+    // let state = canvas.scene.getFlag(MODULE_ID, 'splatState');
+    // if (state) state = state.filter((s) => s.tokenId !== token._id);
+    //log(LogLevel.INFO, 'deleteTokenHandler state', state);
+    if (BloodNGuts.lastTokenState) delete BloodNGuts.lastTokenState[token._id];
+
+    //return canvas.scene.setFlag(MODULE_ID, 'splatState', state);
+  }
 }
 
 // Hooks
@@ -933,16 +951,7 @@ Hooks.on('updateActor', (actor, changes) => {
   else BloodNGuts.updateTokenOrActorHandler(canvas.scene, token.data, changes);
 });
 
-Hooks.on('deleteToken', async (scene, token, b, c) => {
-  // perhaps this is not scene agnostic
-  if (!game.user.isGM) return;
-  log(LogLevel.INFO, 'deleteToken', token, b, c);
-  let state = canvas.scene.getFlag(MODULE_ID, 'splatState');
-  if (state) state = state.filter((s) => s.tokenId !== token._id);
-  if (lastTokenState) delete lastTokenState[token._id];
-
-  return canvas.scene.setFlag(MODULE_ID, 'splatState', state);
-});
+Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
