@@ -453,7 +453,7 @@ export class BloodNGuts {
       splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
       splatsContainer.position.set(token.w / 2, token.h / 2);
       splatsContainer.angle = token.data.rotation;
-
+      console.log('token.children', token.children);
       token.addChildAt(splatsContainer, 2);
     } else log(LogLevel.ERROR, 'drawSplats: splatSaveObj should have either .imgPath or .maskPolygon!');
 
@@ -582,14 +582,14 @@ export class BloodNGuts {
       log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
       const extantTokens = Object.keys(BloodNGuts.lastTokenState);
       saveObjects = saveObjects.filter((so) => !so.tokenId || extantTokens.includes(so.tokenId));
-    }
-    // draw each missing splatsContainer and save a reference to it in the pool.
-    // if the splatPoolSize has changed then we want to add only the latest
-    const maxPoolSize = Math.min(game.settings.get(MODULE_ID, 'sceneSplatPoolSize'), saveObjects.length);
+      // draw each missing splatsContainer and save a reference to it in the pool.
+      // if the splatPoolSize has changed then we want to add only the latest
+      const maxPoolSize = Math.min(game.settings.get(MODULE_ID, 'sceneSplatPoolSize'), saveObjects.length);
 
-    for (let i = 0; i < maxPoolSize; i++) {
-      this.addToSplatPool(saveObjects[i], this.drawSplatsGetContainer(saveObjects[i]));
-      BloodNGuts.splatState.push(saveObjects[i]);
+      for (let i = 0; i < maxPoolSize; i++) {
+        this.addToSplatPool(saveObjects[i], this.drawSplatsGetContainer(saveObjects[i]));
+        BloodNGuts.splatState.push(saveObjects[i]);
+      }
     }
   }
 
