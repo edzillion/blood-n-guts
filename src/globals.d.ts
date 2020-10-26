@@ -31,7 +31,7 @@ interface TokenStateObject {
   y: number;
   hp: number;
   severity: number;
-  tokenSplatZIndex?: number;
+  splatContainerZIndex: number;
 }
 
 interface SplatPoolObject {
