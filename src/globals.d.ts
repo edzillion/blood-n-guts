@@ -25,7 +25,7 @@ interface ViolenceLevel {
   sceneSplatPoolSize: number;
 }
 
-interface TokenSaveObject {
+interface TokenStateObject {
   id: string;
   x: number;
   y: number;
@@ -34,11 +34,11 @@ interface TokenSaveObject {
 }
 
 interface SplatPoolObject {
-  save: SplatSaveObject;
+  state: SplatStateObject;
   splatsContainer: PIXI.Container;
 }
 
-interface SplatSaveObject {
+interface SplatStateObject {
   id: string;
   x: number;
   y: number;
