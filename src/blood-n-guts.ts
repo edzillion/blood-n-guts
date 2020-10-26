@@ -853,32 +853,32 @@ export class BloodNGuts {
     log(LogLevel.DEBUG, 'updateScene removeIds', removeIds);
 
     if (removeIds) {
-    globalThis.sceneSplatPool = globalThis.sceneSplatPool.filter((poolObj) => {
-      if (removeIds.includes(poolObj.state.id)) {
-        // if it is a tokensplat we do not want to destroy our mask etc. we will just destroy the individual splats
-        if (poolObj.state.tokenId) {
-          poolObj.splatsContainer.children.forEach((displayObj) => {
-            if (!displayObj.isMask) displayObj.destroy();
-          });
-        } else poolObj.splatsContainer.destroy();
-        return false;
-      }
-      return true;
-    });
+      globalThis.sceneSplatPool = globalThis.sceneSplatPool.filter((poolObj) => {
+        if (removeIds.includes(poolObj.state.id)) {
+          // if it is a tokensplat we do not want to destroy our mask etc. we will just destroy the individual splats
+          if (poolObj.state.tokenId) {
+            poolObj.splatsContainer.children.forEach((displayObj) => {
+              if (!displayObj.isMask) displayObj.destroy();
+            });
+          } else poolObj.splatsContainer.destroy();
+          return false;
+        }
+        return true;
+      });
     }
 
     const addIds = updatedStateIds.filter((id) => !oldStateIds.includes(id));
     log(LogLevel.DEBUG, 'updateScene addIds', addIds);
     // addstateObjects are stateObjs that are not yet in the splat pool
     if (addIds) {
-    const addStateObjects = splatState.filter((stateObj) => {
-      if (addIds.includes(stateObj.id)) return stateObj;
-    });
+      const addStateObjects = splatState.filter((stateObj) => {
+        if (addIds.includes(stateObj.id)) return stateObj;
+      });
 
-    // draw each missing splatsContainer and save a reference to it in the pool.
-    addStateObjects.forEach((stateObj) => {
-      BloodNGuts.addToSplatPool(stateObj, BloodNGuts.drawSplatsGetContainer(stateObj));
-    });
+      // draw each missing splatsContainer and save a reference to it in the pool.
+      addStateObjects.forEach((stateObj) => {
+        BloodNGuts.addToSplatPool(stateObj, BloodNGuts.drawSplatsGetContainer(stateObj));
+      });
       log(LogLevel.DEBUG, 'updateScene addStateObjects', addStateObjects);
     }
     log(LogLevel.DEBUG, 'updateScene sceneSplatPool', globalThis.sceneSplatPool);
