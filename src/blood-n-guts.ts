@@ -379,7 +379,7 @@ export class BloodNGuts {
   private static drawSplatsGetContainer(splatStateObject: SplatStateObject): PIXI.Container {
     log(LogLevel.INFO, 'drawSplats');
     log(LogLevel.DEBUG, 'drawSplats: splatStateObject', splatStateObject);
-    const splatsContainer = new PIXI.Container();
+    let splatsContainer = new PIXI.Container();
     const style = new PIXI.TextStyle(splatStateObject.styleData);
 
     // if it's maskPolygon type we can create a sightMask directly.
@@ -408,61 +408,86 @@ export class BloodNGuts {
     }
     // if it's tokenId type we must create renderSprite to use as a mask.
     else if (splatStateObject.tokenId) {
+      debugger;
       log(LogLevel.DEBUG, 'drawSplats: splatStateObj.tokenId');
-
       const token = canvas.tokens.placeables.find((t) => t.data._id === splatStateObject.tokenId);
       if (!token) log(LogLevel.ERROR, 'drawSplats token not found!', splatStateObject);
-      const tokenSpriteWidth = token.data.width * canvas.grid.size * token.data.scale;
-      const tokenSpriteHeight = token.data.height * canvas.grid.size * token.data.scale;
 
-      splatStateObject.splats.forEach((splat) => {
-        const text = new PIXI.Text(splat.glyph, style);
-        text.x = splat.x + splatStateObject.offset.x + tokenSpriteWidth / 2;
-        text.y = splat.y + splatStateObject.offset.y + tokenSpriteHeight / 2;
-        splatsContainer.addChild(text);
-        return text;
-      });
+      const tokenStateObj = BloodNGuts.tokenState[splatStateObject.tokenId];
+      if (!tokenStateObj) log(LogLevel.ERROR, 'tokenStateObj token not found!', splatStateObject);
 
-      const maskSprite = PIXI.Sprite.from(token.data.img);
+      // can't be zero here as it is always added one above the icon
+      if (tokenStateObj.tokenSplatZIndex) {
+        splatsContainer = token.children[tokenStateObj.tokenSplatZIndex];
 
-      maskSprite.width = tokenSpriteWidth;
-      maskSprite.height = tokenSpriteHeight;
-      log(LogLevel.DEBUG, 'drawSplats maskSprite: ', duplicate(maskSprite.width), duplicate(maskSprite.height));
+        const tokenSpriteWidth = token.data.width * canvas.grid.size * token.data.scale;
+        const tokenSpriteHeight = token.data.height * canvas.grid.size * token.data.scale;
 
-      const textureContainer = new PIXI.Container();
-      textureContainer.addChild(maskSprite);
+        splatStateObject.splats.forEach((splat) => {
+          const text = new PIXI.Text(splat.glyph, style);
+          text.x = splat.x + splatStateObject.offset.x + tokenSpriteWidth / 2;
+          text.y = splat.y + splatStateObject.offset.y + tokenSpriteHeight / 2;
+          splatsContainer.addChild(text);
+          return text;
+        });
 
-      const bwMatrix = new PIXI.filters.ColorMatrixFilter();
-      const negativeMatrix = new PIXI.filters.ColorMatrixFilter();
-      maskSprite.filters = [bwMatrix, negativeMatrix];
-      bwMatrix.brightness(0, false);
-      negativeMatrix.negative(false);
+        splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
+        splatsContainer.position.set(token.w / 2, token.h / 2);
+        splatsContainer.angle = token.data.rotation;
+      } else {
+        const tokenSpriteWidth = token.data.width * canvas.grid.size * token.data.scale;
+        const tokenSpriteHeight = token.data.height * canvas.grid.size * token.data.scale;
 
-      const renderTexture = new PIXI.RenderTexture(
-        new PIXI.BaseRenderTexture({
-          width: tokenSpriteWidth,
-          height: tokenSpriteHeight,
-          // scaleMode: PIXI.SCALE_MODES.LINEAR,
-          // resolution: 1
-        }),
-      );
-      const renderSprite = new PIXI.Sprite(renderTexture);
-      canvas.app.renderer.render(textureContainer, renderTexture);
+        splatStateObject.splats.forEach((splat) => {
+          const text = new PIXI.Text(splat.glyph, style);
+          text.x = splat.x + splatStateObject.offset.x + tokenSpriteWidth / 2;
+          text.y = splat.y + splatStateObject.offset.y + tokenSpriteHeight / 2;
+          splatsContainer.addChild(text);
+          return text;
+        });
 
-      splatsContainer.addChild(renderSprite);
-      splatsContainer.mask = renderSprite;
+        const maskSprite = PIXI.Sprite.from(token.data.img);
 
-      splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
-      splatsContainer.position.set(token.w / 2, token.h / 2);
-      splatsContainer.angle = token.data.rotation;
+        maskSprite.width = tokenSpriteWidth;
+        maskSprite.height = tokenSpriteHeight;
+        log(LogLevel.DEBUG, 'drawSplats maskSprite: ', duplicate(maskSprite.width), duplicate(maskSprite.height));
 
-      console.log('ourchild', token.data.name, splatStateObject);
-      console.log('ourchild', token.children);
+        const textureContainer = new PIXI.Container();
+        textureContainer.addChild(maskSprite);
 
-      const iconIndex = token.children.findIndex((child) => child === token.icon);
-      this.tokenState[token.id].tokenSplatZIndex = iconIndex + 1;
-      ourchild = token.addChildAt(splatsContainer, iconIndex + 1);
-      console.log('ourchild drawSplats', ourchild);
+        const bwMatrix = new PIXI.filters.ColorMatrixFilter();
+        const negativeMatrix = new PIXI.filters.ColorMatrixFilter();
+        maskSprite.filters = [bwMatrix, negativeMatrix];
+        bwMatrix.brightness(0, false);
+        negativeMatrix.negative(false);
+
+        const renderTexture = new PIXI.RenderTexture(
+          new PIXI.BaseRenderTexture({
+            width: tokenSpriteWidth,
+            height: tokenSpriteHeight,
+            // scaleMode: PIXI.SCALE_MODES.LINEAR,
+            // resolution: 1
+          }),
+        );
+        const renderSprite = new PIXI.Sprite(renderTexture);
+        canvas.app.renderer.render(textureContainer, renderTexture);
+
+        splatsContainer.addChild(renderSprite);
+        splatsContainer.mask = renderSprite;
+
+        splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
+        splatsContainer.position.set(token.w / 2, token.h / 2);
+        splatsContainer.angle = token.data.rotation;
+
+        console.log('ourchild', token.data.name, splatStateObject);
+        console.log('ourchild', token.children);
+
+        const iconIndex = token.children.findIndex((child) => child === token.icon);
+        if (iconIndex === -1) log(LogLevel.ERROR, 'drawSplats, cant find token.icon!');
+        BloodNGuts.tokenState[token.id].tokenSplatZIndex = iconIndex + 1;
+        ourchild = token.addChildAt(splatsContainer, iconIndex + 1);
+        console.log('ourchild drawSplats', ourchild);
+      }
     } else log(LogLevel.ERROR, 'drawSplats: splatStateObject should have either .imgPath or .maskPolygon!');
 
     if (CONFIG.bng.logLevel > LogLevel.DEBUG) drawDebugRect(splatsContainer);
@@ -493,6 +518,9 @@ export class BloodNGuts {
       hp: token.actor.data.data.attributes.hp.value,
       severity: severity,
     };
+
+    if (BloodNGuts.tokenState[token.id]?.tokenSplatZIndex)
+      stateObj.tokenSplatZIndex = BloodNGuts.tokenState[token.id].tokenSplatZIndex;
 
     stateObj = duplicate(stateObj);
     log(LogLevel.DEBUG, 'saveTokenState clonedStateObj:', stateObj);
