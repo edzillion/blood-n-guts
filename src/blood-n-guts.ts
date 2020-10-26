@@ -635,7 +635,12 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'wipeSceneSplats');
     canvas.scene.setFlag(MODULE_ID, 'splatState', null);
     globalThis.sceneSplatPool.forEach((poolObj) => {
-      poolObj.splatsContainer.destroy();
+      // don't destroy our already built masks
+      if (poolObj.state.tokenId) {
+        poolObj.splatsContainer.children.forEach((displayObj) => {
+          if (!displayObj.isMask) displayObj.destroy();
+        });
+      } else poolObj.splatsContainer.destroy();
     });
     globalThis.sceneSplatPool = [];
     BloodNGuts.splatState = [];
@@ -870,7 +875,12 @@ export class BloodNGuts {
 
     globalThis.sceneSplatPool = globalThis.sceneSplatPool.filter((poolObj) => {
       if (removeIds.includes(poolObj.state.id)) {
-        poolObj.splatsContainer.destroy();
+        // if it is a tokensplat we do not want to destroy our mask etc. we will just destroy the individual splats
+        if (poolObj.state.tokenId) {
+          poolObj.splatsContainer.children.forEach((displayObj) => {
+            if (!displayObj.isMask) displayObj.destroy();
+          });
+        } else poolObj.splatsContainer.destroy();
         return false;
       }
       return true;
