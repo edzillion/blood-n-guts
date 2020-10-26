@@ -632,13 +632,16 @@ export class BloodNGuts {
     // update rotation of tokenSplats
     if (changes.rotation != undefined) {
       log(LogLevel.DEBUG, 'updateTokenOrActorHandler updating rotation', changes.rotation);
-      if (globalThis.sceneSplatPool) {
-        globalThis.sceneSplatPool
-          .filter((s) => s.state.tokenId === token.id)
-          .forEach((s) => {
-            s.splatsContainer.angle = changes.rotation;
-          });
-      }
+      const tc = token.children[BloodNGuts.tokenState[token.id].splatContainerZIndex];
+      debugger;
+      tc.angle = changes.rotation;
+      // if (globalThis.sceneSplatPool) {
+      //   globalThis.sceneSplatPool
+      //     .filter((s) => s.state.tokenId === token.id)
+      //     .forEach((s) => {
+      //       s.splatsContainer.angle = changes.rotation;
+      //     });
+      //}
     }
 
     // at this point we're only interested in these changes.
@@ -898,6 +901,7 @@ export class BloodNGuts {
     emptySplatsContainer.position.set(token.w / 2, token.h / 2);
     emptySplatsContainer.angle = data.rotation;
 
+    console.log(token.children);
     //return new Promise<void>((resolve, reject) => {
     //we need to call draw to make sure the Token has set up Token.icon etc.
     return token.draw().then(() => {
@@ -905,7 +909,8 @@ export class BloodNGuts {
       const splatContainerZIndex = token.children.findIndex((child) => child === token.icon) + 1;
       if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'drawSplats, cant find token.icon!');
       else token.addChildAt(emptySplatsContainer, splatContainerZIndex);
-
+      debugger;
+      console.log(token.children);
       BloodNGuts.saveTokenState(token, 1, splatContainerZIndex);
     });
   }
