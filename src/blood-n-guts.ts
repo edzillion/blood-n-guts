@@ -417,8 +417,7 @@ export class BloodNGuts {
       if (!tokenStateObj) log(LogLevel.ERROR, 'tokenStateObj token not found!', splatStateObject);
 
       // can't be zero here as it is always added one above the icon
-      if (tokenStateObj.tokenSplatZIndex) {
-        splatsContainer = token.children[tokenStateObj.tokenSplatZIndex];
+      if (tokenStateObj.tokenSplatZIndex) splatsContainer = token.children[tokenStateObj.tokenSplatZIndex];
 
         const tokenSpriteWidth = token.data.width * canvas.grid.size * token.data.scale;
         const tokenSpriteHeight = token.data.height * canvas.grid.size * token.data.scale;
@@ -431,21 +430,7 @@ export class BloodNGuts {
           return text;
         });
 
-        splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
-        splatsContainer.position.set(token.w / 2, token.h / 2);
-        splatsContainer.angle = token.data.rotation;
-      } else {
-        const tokenSpriteWidth = token.data.width * canvas.grid.size * token.data.scale;
-        const tokenSpriteHeight = token.data.height * canvas.grid.size * token.data.scale;
-
-        splatStateObject.splats.forEach((splat) => {
-          const text = new PIXI.Text(splat.glyph, style);
-          text.x = splat.x + splatStateObject.offset.x + tokenSpriteWidth / 2;
-          text.y = splat.y + splatStateObject.offset.y + tokenSpriteHeight / 2;
-          splatsContainer.addChild(text);
-          return text;
-        });
-
+      if (!tokenStateObj.tokenSplatZIndex) {
         const maskSprite = PIXI.Sprite.from(token.data.img);
 
         maskSprite.width = tokenSpriteWidth;
@@ -475,19 +460,21 @@ export class BloodNGuts {
         splatsContainer.addChild(renderSprite);
         splatsContainer.mask = renderSprite;
 
-        splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
-        splatsContainer.position.set(token.w / 2, token.h / 2);
-        splatsContainer.angle = token.data.rotation;
-
         console.log('ourchild', token.data.name, splatStateObject);
         console.log('ourchild', token.children);
 
-        const iconIndex = token.children.findIndex((child) => child === token.icon);
-        if (iconIndex === -1) log(LogLevel.ERROR, 'drawSplats, cant find token.icon!');
-        BloodNGuts.tokenState[token.id].tokenSplatZIndex = iconIndex + 1;
-        ourchild = token.addChildAt(splatsContainer, iconIndex + 1);
+        const splatContainerZIndex = token.children.findIndex((child) => child === token.icon) + 1;
+        if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'drawSplats, cant find token.icon!');
+        else {
+          BloodNGuts.tokenState[token.id].tokenSplatZIndex = splatContainerZIndex;
+          ourchild = token.addChildAt(splatsContainer, splatContainerZIndex);
         console.log('ourchild drawSplats', ourchild);
       }
+      }
+
+      splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
+      splatsContainer.position.set(token.w / 2, token.h / 2);
+      splatsContainer.angle = token.data.rotation;
     } else log(LogLevel.ERROR, 'drawSplats: splatStateObject should have either .imgPath or .maskPolygon!');
 
     if (CONFIG.bng.logLevel > LogLevel.DEBUG) drawDebugRect(splatsContainer);
