@@ -26,7 +26,9 @@ import { MODULE_ID } from './constants';
 globalThis.sceneSplatPool = [];
 
 //CONFIG.debug.hooks = true;
-CONFIG.bng = { logLevel: 1 };
+CONFIG.bng = { logLevel: 2 };
+
+let ourchild;
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -453,9 +455,15 @@ export class BloodNGuts {
       splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
       splatsContainer.position.set(token.w / 2, token.h / 2);
       splatsContainer.angle = token.data.rotation;
-      console.log('token.children', token.children);
-      token.addChildAt(splatsContainer, 2);
-    } else log(LogLevel.ERROR, 'drawSplats: splatStateObj should have either .imgPath or .maskPolygon!');
+
+      console.log('ourchild', token.data.name, splatStateObject);
+      console.log('ourchild', token.children);
+
+      const iconIndex = token.children.findIndex((child) => child === token.icon);
+      this.tokenState[token.id].tokenSplatZIndex = iconIndex + 1;
+      ourchild = token.addChildAt(splatsContainer, iconIndex + 1);
+      console.log('ourchild drawSplats', ourchild);
+    } else log(LogLevel.ERROR, 'drawSplats: splatStateObject should have either .imgPath or .maskPolygon!');
 
     if (CONFIG.bng.logLevel > LogLevel.DEBUG) drawDebugRect(splatsContainer);
 
@@ -522,10 +530,9 @@ export class BloodNGuts {
   }
 
   /**
-   * Adds the token data and a reference to the token on the canvas to our pool. The pool is a FIFO
-   * stack with maximum size `blood-n-guts.sceneSplatPoolSize`. When size is exceeded the oldest entries
-   * are moved to `fadingSplatPool` and their alpha is changed to 0.3. When this pool is exceeded (which is hard-coded
-   * to be 20% of the size of the main pool) then those entries are destroyed.
+   * Adds the token data and a reference to the token on the canvas to our pool. The pool is a FIFO stack with
+   * maximum size `blood-n-guts.sceneSplatPoolSize`. When size is exceeded the oldest entries are destroyed.
+   * 15% of the oldest splats are set to fade (alpha 0.3) and the oldest 1/3 of those are set to very faded (alpha 0.1)
    * @category GMOnly
    * @function
    * @param {SplatStateObject} splatStateObj - token data to add.
@@ -630,6 +637,15 @@ export class BloodNGuts {
       log(LogLevel.DEBUG, 'updateTokenOrActorHandler has no actor, skipping');
       return;
     }
+
+    const iconIndex = token.children.findIndex((child) => child === token.icon);
+    console.log('icon index is ' + iconIndex);
+    const tszi = BloodNGuts.tokenState[token.id].tokenSplatZIndex;
+    console.log('tokensplats z index ' + tszi);
+    //token.children.foreach((child) => console.log(child));
+
+    console.log('ourchild updateTokenOrActorHandler', ourchild);
+    // if (tszi) token.children[tszi].render();
 
     // update rotation of tokenSplats
     if (changes.rotation != undefined) {
@@ -753,7 +769,7 @@ export class BloodNGuts {
     // filter out null entries returned when density = 0
     stateObjects = stateObjects.filter((s) => s);
     promises.push(BloodNGuts.saveToSceneFlag(stateObjects));
-    //await Promise.all(promises);
+    await Promise.all(promises);
   }
 
   /**
@@ -811,7 +827,8 @@ export class BloodNGuts {
       (so) => !so.tokenId || extantTokens.includes(so.tokenId),
     );
 
-    //todo: bug TypeError: Cannot read property 'splatState' of undefined
+    // todo: bug TypeError: Cannot read property 'splatState' of undefined
+
     const updatedStateIds = splatState.map((s) => s.id);
     log(LogLevel.DEBUG, 'updateScene updatedStateIds', updatedStateIds);
 
