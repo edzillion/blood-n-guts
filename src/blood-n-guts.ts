@@ -369,18 +369,6 @@ export class BloodNGuts {
     let stateObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
     log(LogLevel.INFO, 'setupScene stateObjects loaded:', stateObjects);
 
-    // save tokens state
-    // const ids = [];
-    // for (let i = 0; i < canvas.tokens.placeables.length; i++) {
-    //   const token = canvas.tokens.placeables[i];
-    //   BloodNGuts.splatTokens[token.id] = new SplatToken(token);
-    //   await BloodNGuts.splatTokens[token.id].createMask();
-    //   ids.push[token.id];
-    // }
-    // for (let j = 0; j < ids.length; j++) {
-    //   BloodNGuts.splatTokens[ids[j]].token.draw();
-    // }
-
     if (stateObjects) {
       log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
       const extantTokens = Object.keys(BloodNGuts.splatTokens);
@@ -413,7 +401,7 @@ export class BloodNGuts {
     // destroy token splats
     for (const tokenId in BloodNGuts.splatTokens) {
       const splatToken = BloodNGuts.splatTokens[tokenId];
-      splatToken.wipe();
+      splatToken.wipeAll();
     }
     globalThis.sceneSplatPool = [];
     BloodNGuts.splatState = [];
@@ -456,7 +444,7 @@ export class BloodNGuts {
 
     // need to wait on fonts loading before we can setupScene
     BloodNGuts.allFontsReady.then(() => {
-        BloodNGuts.setupScene();
+      BloodNGuts.setupScene();
     });
   }
 
@@ -706,13 +694,11 @@ class SplatToken {
     this.splatsContainer.angle = this.token.data.rotation;
   }
 
-  private async setSeverity(severity: number) {
-    if (severity >= 0) {
-      this.hitSeverity = severity;
-      if (this.hitSeverity > (this.bleedingSeverity ?? 0) + 1) {
-        this.bleedingSeverity = this.hitSeverity;
-        await this.token.setFlag(MODULE_ID, 'bleedingSeverity', severity);
-      }
+  private setSeverity(severity: number) {
+    this.hitSeverity = severity;
+    if (this.hitSeverity > (this.bleedingSeverity ?? 0) + 1) {
+      this.bleedingSeverity = this.hitSeverity;
+      this.token.setFlag(MODULE_ID, 'bleedingSeverity', severity);
     }
   }
 
@@ -742,6 +728,8 @@ class SplatToken {
     if (this.hitSeverity > 0) {
       this.bleedFloor();
       this.bleedToken();
+    } else if (this.hitSeverity < 0) {
+      this.healToken();
     }
     if (this.direction && this.bleedingSeverity) this.bleedTrail();
 
@@ -783,6 +771,23 @@ class SplatToken {
         density,
       );
     }
+  }
+
+  private async healToken() {
+    debugger;
+    if (!this.tokenSplats) return;
+    // make positive for sanity purposes
+    let tempSeverity = this.hitSeverity * -1;
+    // deal with scale/healthThreshold > 1. We can only heal potentially 100%
+    if (tempSeverity > 1) tempSeverity = 1;
+    this.token.unsetFlag(MODULE_ID, 'bleeding');
+    this.token.unsetFlag(MODULE_ID, 'bleedingCount');
+    const allTokensSplats = this.tokenSplats;
+
+    log(LogLevel.DEBUG, 'updateTokenOrActorHandler allTokensSplats:');
+    const removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
+    log(LogLevel.DEBUG, 'updateTokenOrActorHandler removeAmount:', removeAmount);
+    this.tokenSplats.splice(0, removeAmount);
   }
 
   private async bleedToken() {
@@ -867,21 +872,20 @@ class SplatToken {
   private updateRotation(changes) {
     if (changes.rotation === undefined) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler updating rotation', changes.rotation);
-    //this.rotate(changes.rotation);
+    this.splatsContainer.angle = changes.rotation;
   }
 
   public async draw() {
     log(LogLevel.DEBUG, 'drawSplats: splatStateObj.tokenId');
-
-    if (!BloodNGuts.allFontsLoaded) await fontsLoaded();
-    //this.splatsContainer.removeChildren().forEach((c) => c.destroy());
-
-    this.tokenSplats.forEach((splatState) => {
-      splatState.splats.forEach((splat) => {
-        const text = new PIXI.Text(splat.glyph, splatState.styleData);
-        text.x = splat.x;
-        text.y = splat.y;
-        this.splatsContainer.addChild(text);
+    this.wipe();
+    BloodNGuts.allFontsReady.then(() => {
+      this.tokenSplats.forEach((splatState) => {
+        splatState.splats.forEach((splat) => {
+          const text = new PIXI.Text(splat.glyph, splatState.styleData);
+          text.x = splat.x;
+          text.y = splat.y;
+          this.splatsContainer.addChild(text);
+        });
       });
     });
   }
@@ -894,6 +898,10 @@ class SplatToken {
       if (!displayObj.isMask) displayObj.destroy();
       else counter++;
     }
+  }
+
+  public wipeAll() {
+    this.wipe();
     this.tokenSplats = [];
     this.token.setFlag(MODULE_ID, 'splats', null);
   }
