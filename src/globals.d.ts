@@ -1,3 +1,5 @@
+import { StringifyOptions } from 'querystring';
+
 interface Global {
   sceneSplatPool: Array<SplatPoolObject>;
 }
@@ -48,6 +50,13 @@ interface SplatStateObject {
   offset: PIXI.Point;
   maskPolygon?: Array<number>;
   tokenId?: string;
+}
+
+interface TokenSplatStateObject {
+  id: string;
+  styleData: any;
+  splats: Array<Splat>;
+  offset: PIXI.Point;
 }
 
 interface Splat {
