@@ -774,15 +774,13 @@ class SplatToken {
   }
 
   private async healToken() {
-    debugger;
     if (!this.tokenSplats) return;
     // make positive for sanity purposes
     let tempSeverity = this.hitSeverity * -1;
     // deal with scale/healthThreshold > 1. We can only heal potentially 100%
     if (tempSeverity > 1) tempSeverity = 1;
-    this.token.unsetFlag(MODULE_ID, 'bleeding');
-    this.token.unsetFlag(MODULE_ID, 'bleedingCount');
-    const allTokensSplats = this.tokenSplats;
+    this.token.setFlag(MODULE_ID, 'bleedingSeverity', null);
+    this.bleedingSeverity = null;
 
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler allTokensSplats:');
     const removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
