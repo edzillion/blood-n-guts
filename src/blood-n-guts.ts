@@ -415,13 +415,7 @@ export class BloodNGuts {
     // destroy token splats
     for (const tokenId in BloodNGuts.splatTokens) {
       const splatToken = BloodNGuts.splatTokens[tokenId];
-      let counter = 0;
-      // delete everything except the sprite mask
-      while (splatToken.splatsContainer.children.length > 1) {
-        const displayObj = splatToken.splatsContainer.children[counter];
-        if (!displayObj.isMask) displayObj.destroy();
-        else counter++;
-      }
+      splatToken.wipe();
     }
     globalThis.sceneSplatPool = [];
     BloodNGuts.splatState = [];
@@ -906,6 +900,18 @@ class SplatToken {
         this.splatsContainer.addChild(text);
       });
     });
+  }
+
+  public wipe() {
+    let counter = 0;
+    // delete everything except the sprite mask
+    while (this.splatsContainer.children.length > 1) {
+      const displayObj = this.splatsContainer.children[counter];
+      if (!displayObj.isMask) displayObj.destroy();
+      else counter++;
+    }
+    this.tokenSplats = [];
+    this.token.setFlag(MODULE_ID, 'splats', null);
   }
 
   /**
