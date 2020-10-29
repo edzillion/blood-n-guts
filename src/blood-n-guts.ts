@@ -66,7 +66,9 @@ export class BloodNGuts {
     const splatStateObj: Partial<SplatStateObject> = {};
 
     // scale the splats based on token size and severity
-    const fontSize = Math.round(size * ((splatToken.w + splatToken.h) / canvas.grid.size / 2) * splatToken.hitSeverity);
+    const fontSize = Math.round(
+      size * ((splatToken.spriteWidth + splatToken.spriteWidth) / canvas.grid.size / 2) * splatToken.hitSeverity,
+    );
     log(LogLevel.DEBUG, 'splatFloor fontSize', fontSize);
     splatStateObj.styleData = {
       fontFamily: font.name,
@@ -80,8 +82,8 @@ export class BloodNGuts {
     const amount = Math.round(density * splatToken.hitSeverity);
     // get a random glyph and then get a random (x,y) spread away from the token.
     const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
-    const pixelSpreadX = splatToken.w * game.settings.get(MODULE_ID, 'splatSpread');
-    const pixelSpreadY = splatToken.h * game.settings.get(MODULE_ID, 'splatSpread');
+    const pixelSpreadX = splatToken.spriteWidth * game.settings.get(MODULE_ID, 'splatSpread');
+    const pixelSpreadY = splatToken.spriteHeight * game.settings.get(MODULE_ID, 'splatSpread');
     log(LogLevel.DEBUG, 'splatFloor amount', amount);
     log(LogLevel.DEBUG, 'splatFloor pixelSpread', pixelSpreadX, pixelSpreadY);
 
@@ -146,7 +148,7 @@ export class BloodNGuts {
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(
-      size * ((splatToken.w + splatToken.h) / canvas.grid.size / 2) * splatToken.bleedingSeverity,
+      size * ((splatToken.spriteWidth + splatToken.spriteHeight) / canvas.grid.size / 2) * splatToken.bleedingSeverity,
     );
     log(LogLevel.DEBUG, 'splatTrail fontSize', fontSize);
     splatStateObj.styleData = {
@@ -167,8 +169,8 @@ export class BloodNGuts {
 
     //horiz or vert movement
     const pixelSpread = splatToken.direction.x
-      ? splatToken.w * game.settings.get(MODULE_ID, 'splatSpread') * 2
-      : splatToken.h * game.settings.get(MODULE_ID, 'splatSpread') * 2;
+      ? splatToken.spriteWidth * game.settings.get(MODULE_ID, 'splatSpread') * 2
+      : splatToken.spriteHeight * game.settings.get(MODULE_ID, 'splatSpread') * 2;
 
     const rand = getRandomBoxMuller() * pixelSpread - pixelSpread / 2;
     log(LogLevel.DEBUG, 'splatTrail rand', rand);
@@ -272,8 +274,8 @@ export class BloodNGuts {
 
       splatStateObject.splats.forEach((splat) => {
         const text = new PIXI.Text(splat.glyph, style);
-        text.x = splat.x + splatStateObject.offset.x + splatToken.w / 2;
-        text.y = splat.y + splatStateObject.offset.y + splatToken.h / 2;
+        text.x = splat.x + splatStateObject.offset.x + splatToken.spriteWidth / 2;
+        text.y = splat.y + splatStateObject.offset.y + splatToken.spriteHeight / 2;
         splatToken.splatsContainer.addChild(text);
         return text;
       });
@@ -652,9 +654,8 @@ class SplatToken {
     // @ts-ignore
     this.id = token.id || token.actor.data._id;
     this.token = token;
-    debugger;
-    this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
-    this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
+    this.spriteWidth = token.width;
+    this.spriteHeight = token.height;
     this.bloodColor = lookupTokenBloodColor(token);
     this.saveState(token);
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
@@ -689,7 +690,7 @@ class SplatToken {
     canvas.app.renderer.render(textureContainer, renderTexture);
 
     this.splatsContainer.addChild(renderSprite);
-    this.splatsContainer.mask = renderSprite;
+    // this.splatsContainer.mask = renderSprite;
 
     this.splatsContainer.pivot.set(this.spriteWidth / 2, this.spriteHeight / 2);
     this.splatsContainer.position.set(
