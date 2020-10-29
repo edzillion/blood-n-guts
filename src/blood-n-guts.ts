@@ -405,14 +405,23 @@ export class BloodNGuts {
   public static wipeSceneSplats(): void {
     log(LogLevel.INFO, 'wipeSceneSplats');
     canvas.scene.setFlag(MODULE_ID, 'splatState', null);
+
+    // destroy scene splats
     globalThis.sceneSplatPool.forEach((poolObj) => {
-      // don't destroy our already built masks
-      if (poolObj.state.tokenId) {
-        poolObj.splatsContainer.children.forEach((displayObj) => {
-          if (!displayObj.isMask) displayObj.destroy();
-        });
-      } else poolObj.splatsContainer.destroy();
+      poolObj.splatsContainer.destroy();
     });
+
+    // destroy token splats
+    for (const tokenId in BloodNGuts.splatTokens) {
+      const splatToken = BloodNGuts.splatTokens[tokenId];
+      let counter = 0;
+      // delete everything except the sprite mask
+      while (splatToken.splatsContainer.children.length > 1) {
+        const displayObj = splatToken.splatsContainer.children[counter];
+          if (!displayObj.isMask) displayObj.destroy();
+        else counter++;
+      }
+    }
     globalThis.sceneSplatPool = [];
     BloodNGuts.splatState = [];
   }
