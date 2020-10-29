@@ -371,10 +371,16 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'setupScene stateObjects loaded:', stateObjects);
 
     // save tokens state
-    for (let index = 0; index < canvas.tokens.placeables.length; index++) {
-      const token = canvas.tokens.placeables[index];
-      BloodNGuts.splatTokens[token.id] = new SplatToken(token);
-    }
+    // const ids = [];
+    // for (let i = 0; i < canvas.tokens.placeables.length; i++) {
+    //   const token = canvas.tokens.placeables[i];
+    //   BloodNGuts.splatTokens[token.id] = new SplatToken(token);
+    //   await BloodNGuts.splatTokens[token.id].createMask();
+    //   ids.push[token.id];
+    // }
+    // for (let j = 0; j < ids.length; j++) {
+    //   BloodNGuts.splatTokens[ids[j]].token.draw();
+    // }
 
     if (stateObjects) {
       log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
@@ -438,6 +444,7 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static canvasReadyHandler(canvas): void {
+    debugger;
     if (!canvas.scene.active) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
 
@@ -540,6 +547,7 @@ export class BloodNGuts {
     const token = new Token(tokenData);
     // we save the token by actorId but replace it in SplatToken.draw() when it has generated an id.
     BloodNGuts.splatTokens[tokenData.actorId] = new SplatToken(token);
+    BloodNGuts.splatTokens[tokenData.actorId].createMask();
   }
 
   /**
@@ -681,13 +689,12 @@ class SplatToken {
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
     this.splatsContainer = new PIXI.Container();
-
-    this.createMask(token);
   }
 
-  private async createMask(token) {
+  public async createMask() {
+    debugger;
     // @ts-ignore
-    const maskTexture = await PIXI.Texture.fromURL(token.data.img);
+    const maskTexture = await PIXI.Texture.fromURL(this.token.data.img);
     const maskSprite = PIXI.Sprite.from(maskTexture);
     maskSprite.width = this.w;
     maskSprite.height = this.h;
@@ -714,7 +721,7 @@ class SplatToken {
     this.splatsContainer.addChild(renderSprite);
     this.splatsContainer.pivot.set(this.w / 2, this.h / 2);
     this.splatsContainer.position.set(this.w / 2, this.h / 2);
-    this.splatsContainer.angle = token.data.rotation;
+    this.splatsContainer.angle = this.token.data.rotation;
   }
 
   private async setSeverity(severity: number) {
@@ -946,16 +953,21 @@ Token.prototype.draw = (function () {
   const cached = Token.prototype.draw;
   return async function () {
     await cached.apply(this);
+    debugger;
     if (!this.icon) return this;
     if (BloodNGuts.splatTokens[this.actor.id]) {
       BloodNGuts.splatTokens[this.id] = BloodNGuts.splatTokens[this.actor.id];
       delete BloodNGuts.splatTokens[this.actor.id];
+    } else if (!BloodNGuts.splatTokens[this.id]) {
+      BloodNGuts.splatTokens[this.id] = new SplatToken(this);
+      await BloodNGuts.splatTokens[this.id].createMask();
     }
     const splatToken = BloodNGuts.splatTokens[this.id];
     if (!splatToken) return this;
     const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;
     if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
     else {
+      debugger;
       this.addChildAt(splatToken.splatsContainer, splatContainerZIndex);
       return this;
     }
