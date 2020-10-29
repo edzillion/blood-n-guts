@@ -19,7 +19,6 @@ import {
   alignSplatsGetOffsetAndDimensions,
   getPointOnCurve,
   getUID,
-  fontsLoaded,
 } from './module/helpers';
 import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
@@ -34,13 +33,12 @@ CONFIG.bng = { logLevel: 2 };
  * @class
  */
 export class BloodNGuts {
-  public static allFontsLoaded: boolean;
+  public static allFontsReady: Promise<any>;
   private static splatState: Array<SplatStateObject>;
   private static tokenState: Array<TokenStateObject>;
   public static splatTokens: Record<string, SplatToken>;
 
   public static initialize(): void {
-    BloodNGuts.allFontsLoaded = false;
     BloodNGuts.splatState = [];
     BloodNGuts.tokenState = [];
     BloodNGuts.splatTokens = {};
@@ -457,19 +455,9 @@ export class BloodNGuts {
     globalThis.sceneSplatPool = [];
 
     // need to wait on fonts loading before we can setupScene
-    if (!BloodNGuts.allFontsLoaded)
-      (document as any).fonts.onloadingdone = () => {
-        const allFontsPresent =
-          (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'floorSplatFont')) &&
-          (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'tokenSplatFont')) &&
-          (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'trailSplatFont'));
-
-        if (!allFontsPresent) return;
-        log(LogLevel.DEBUG, 'canvasReady allFontsPresent');
-        BloodNGuts.allFontsLoaded = true;
+    BloodNGuts.allFontsReady.then(() => {
         BloodNGuts.setupScene();
-      };
-    else BloodNGuts.setupScene();
+    });
   }
 
   /**
@@ -605,6 +593,11 @@ Hooks.once('init', async () => {
   // Register custom module settings
   registerSettings();
 
+  (document as any).fonts.load('12px splatter');
+  (document as any).fonts.load('12px WC Rhesus A Bta');
+
+  BloodNGuts.allFontsReady = (document as any).fonts.ready;
+
   // Preload Handlebars templates
   await preloadTemplates();
   // Register custom sheets (if any)
@@ -617,16 +610,7 @@ Hooks.once('setup', () => {
 });
 
 Hooks.once('ready', () => {
-  log(LogLevel.INFO, 'ready, inserting preload stub');
-  // Insert a div that uses the font so that it preloads
-  const stub = document.createElement('div');
-  stub.style.cssText = "visibility:hidden; font-family: 'splatter';";
-  stub.innerHTML = 'A';
-  const stub2 = document.createElement('div');
-  stub2.style.cssText = "visibility:hidden; font-family: 'WC Rhesus A Bta';";
-  stub2.innerHTML = 'A';
-  document.body.appendChild(stub);
-  document.body.appendChild(stub2);
+  log(LogLevel.INFO, 'ready');
 });
 
 Hooks.on('canvasInit', (canvas) => {
