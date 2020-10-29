@@ -666,7 +666,6 @@ class SplatToken {
   tokenSplats: Array<TokenSplatStateObject>;
 
   constructor(token: Token) {
-    debugger;
     this.id = token.id || token.actor.data._id;
     this.token = token;
     this.w = token.data.width * canvas.grid.size * token.data.scale;
@@ -677,10 +676,15 @@ class SplatToken {
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
     this.splatsContainer = new PIXI.Container();
 
-    const maskSprite = PIXI.Sprite.from(token.data.img);
+    this.createMask(token);
+  }
+
+  private async createMask(token) {
+    // @ts-ignore
+    const maskTexture = await PIXI.Texture.fromURL(token.data.img);
+    const maskSprite = PIXI.Sprite.from(maskTexture);
     maskSprite.width = this.w;
     maskSprite.height = this.h;
-    log(LogLevel.DEBUG, 'drawSplats maskSprite: ', duplicate(maskSprite.width), duplicate(maskSprite.height));
 
     const textureContainer = new PIXI.Container();
     textureContainer.addChild(maskSprite);
@@ -702,13 +706,9 @@ class SplatToken {
     canvas.app.renderer.render(textureContainer, renderTexture);
 
     this.splatsContainer.addChild(renderSprite);
-    //this.splatsContainer.mask = renderSprite;
-
     this.splatsContainer.pivot.set(this.w / 2, this.h / 2);
     this.splatsContainer.position.set(this.w / 2, this.h / 2);
     this.splatsContainer.angle = token.data.rotation;
-
-    console.log('finished constructor');
   }
 
   private async setSeverity(severity: number) {
@@ -971,7 +971,6 @@ Token.prototype.draw = (function () {
     if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
     else {
       this.addChildAt(splatToken.splatsContainer, splatContainerZIndex);
-      debugger;
       return this;
     }
   };
