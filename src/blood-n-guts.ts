@@ -633,8 +633,8 @@ class SplatToken {
   id: string;
   x: number;
   y: number;
-  w: number;
-  h: number;
+  spriteWidth: number;
+  spriteHeight: number;
   direction: PIXI.Point;
   hp: number;
   maxHP: number;
@@ -652,8 +652,9 @@ class SplatToken {
     // @ts-ignore
     this.id = token.id || token.actor.data._id;
     this.token = token;
-    this.w = token.data.width * canvas.grid.size * token.data.scale;
-    this.h = token.data.height * canvas.grid.size * token.data.scale;
+    debugger;
+    this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
+    this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
     this.bloodColor = lookupTokenBloodColor(token);
     this.saveState(token);
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
@@ -665,8 +666,8 @@ class SplatToken {
     // @ts-ignore
     const maskTexture = await PIXI.Texture.fromURL(this.token.data.img);
     const maskSprite = PIXI.Sprite.from(maskTexture);
-    maskSprite.width = this.w;
-    maskSprite.height = this.h;
+    maskSprite.width = this.spriteWidth;
+    maskSprite.height = this.spriteHeight;
 
     const textureContainer = new PIXI.Container();
     textureContainer.addChild(maskSprite);
@@ -677,8 +678,8 @@ class SplatToken {
     negativeMatrix.negative(false);
     const renderTexture = new PIXI.RenderTexture(
       new PIXI.BaseRenderTexture({
-        width: this.w,
-        height: this.h,
+        width: this.spriteWidth,
+        height: this.spriteHeight,
         // scaleMode: PIXI.SCALE_MODES.LINEAR,
         // resolution: 1
       }),
@@ -689,8 +690,12 @@ class SplatToken {
 
     this.splatsContainer.addChild(renderSprite);
     this.splatsContainer.mask = renderSprite;
-    this.splatsContainer.pivot.set(this.w / 2, this.h / 2);
-    this.splatsContainer.position.set(this.w / 2, this.h / 2);
+
+    this.splatsContainer.pivot.set(this.spriteWidth / 2, this.spriteHeight / 2);
+    this.splatsContainer.position.set(
+      (this.token.data.width * canvas.grid.size) / 2,
+      (this.token.data.height * canvas.grid.size) / 2,
+    );
     this.splatsContainer.angle = this.token.data.rotation;
   }
 
@@ -797,7 +802,9 @@ class SplatToken {
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(
-      game.settings.get(MODULE_ID, 'trailSplatSize') * ((this.w + this.h) / canvas.grid.size / 2) * this.hitSeverity,
+      game.settings.get(MODULE_ID, 'trailSplatSize') *
+        ((this.spriteWidth + this.spriteHeight) / canvas.grid.size / 2) *
+        this.hitSeverity,
     );
     log(LogLevel.DEBUG, 'bleedToken fontSize', fontSize);
     splatStateObj.styleData = {
@@ -812,8 +819,8 @@ class SplatToken {
     if (amount === 0) return;
     // get a random glyph and then get a random (x,y) spread away from the token.
     const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
-    const pixelSpreadX = this.w * game.settings.get(MODULE_ID, 'splatSpread');
-    const pixelSpreadY = this.h * game.settings.get(MODULE_ID, 'splatSpread');
+    const pixelSpreadX = this.spriteWidth * game.settings.get(MODULE_ID, 'splatSpread');
+    const pixelSpreadY = this.spriteHeight * game.settings.get(MODULE_ID, 'splatSpread');
     log(LogLevel.DEBUG, 'bleedToken amount', amount);
     log(LogLevel.DEBUG, 'bleedToken pixelSpread', pixelSpreadX, pixelSpreadY);
 
@@ -833,8 +840,8 @@ class SplatToken {
     const { offset } = alignSplatsGetOffsetAndDimensions(splatStateObj.splats);
     splatStateObj.offset = offset;
     splatStateObj.splats.forEach((s) => {
-      s.x += offset.x + this.h / 2;
-      s.y += offset.y + this.w / 2;
+      s.x += offset.x + this.spriteHeight / 2;
+      s.y += offset.y + this.spriteWidth / 2;
     });
 
     this.tokenSplats.push(<TokenSplatStateObject>splatStateObj);
