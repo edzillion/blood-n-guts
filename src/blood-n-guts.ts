@@ -19,6 +19,7 @@ import {
   alignSplatsGetOffsetAndDimensions,
   getPointOnCurve,
   getUID,
+  fontsLoaded,
 } from './module/helpers';
 import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
@@ -33,7 +34,7 @@ CONFIG.bng = { logLevel: 2 };
  * @class
  */
 export class BloodNGuts {
-  private static allFontsLoaded: boolean;
+  public static allFontsLoaded: boolean;
   private static splatState: Array<SplatStateObject>;
   private static tokenState: Array<TokenStateObject>;
   public static splatTokens: Record<string, SplatToken>;
@@ -418,7 +419,7 @@ export class BloodNGuts {
       // delete everything except the sprite mask
       while (splatToken.splatsContainer.children.length > 1) {
         const displayObj = splatToken.splatsContainer.children[counter];
-          if (!displayObj.isMask) displayObj.destroy();
+        if (!displayObj.isMask) displayObj.destroy();
         else counter++;
       }
     }
@@ -453,7 +454,6 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static canvasReadyHandler(canvas): void {
-    debugger;
     if (!canvas.scene.active) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
 
@@ -488,7 +488,6 @@ export class BloodNGuts {
   public static updateSceneHandler(scene, changes): void {
     if (!scene.active || !globalThis.sceneSplatPool) return;
 
-    // if (BloodNGuts.fadingSplatPool.length) debugger;
     if (changes.flags[MODULE_ID]?.splatState === null) {
       if (game.user.isRole(CONST.USER_ROLES.PLAYER)) BloodNGuts.wipeSceneSplats();
       return;
@@ -697,7 +696,6 @@ class SplatToken {
   }
 
   public async createMask() {
-    debugger;
     // @ts-ignore
     const maskTexture = await PIXI.Texture.fromURL(this.token.data.img);
     const maskSprite = PIXI.Sprite.from(maskTexture);
@@ -724,6 +722,7 @@ class SplatToken {
     canvas.app.renderer.render(textureContainer, renderTexture);
 
     this.splatsContainer.addChild(renderSprite);
+    this.splatsContainer.mask = renderSprite;
     this.splatsContainer.pivot.set(this.w / 2, this.h / 2);
     this.splatsContainer.position.set(this.w / 2, this.h / 2);
     this.splatsContainer.angle = this.token.data.rotation;
@@ -769,6 +768,7 @@ class SplatToken {
     if (this.direction && this.bleedingSeverity) this.bleedTrail();
 
     this.updateRotation(changes);
+    this.draw();
 
     this.saveState(this.token);
   }
@@ -857,6 +857,7 @@ class SplatToken {
     });
 
     this.tokenSplats.push(<TokenSplatStateObject>splatStateObj);
+
     await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
   }
 
@@ -893,7 +894,9 @@ class SplatToken {
 
   public async draw() {
     log(LogLevel.DEBUG, 'drawSplats: splatStateObj.tokenId');
-    this.splatsContainer.removeChildren().forEach((c) => c.destroy());
+
+    if (!BloodNGuts.allFontsLoaded) await fontsLoaded();
+    //this.splatsContainer.removeChildren().forEach((c) => c.destroy());
 
     this.tokenSplats.forEach((splatState) => {
       splatState.splats.forEach((splat) => {
@@ -968,6 +971,7 @@ Token.prototype.draw = (function () {
     if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
     else {
       this.addChildAt(splatToken.splatsContainer, splatContainerZIndex);
+      splatToken.draw();
       return this;
     }
   };
