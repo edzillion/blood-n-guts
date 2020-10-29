@@ -28,12 +28,6 @@ globalThis.sceneSplatPool = [];
 //CONFIG.debug.hooks = true;
 CONFIG.bng = { logLevel: 2 };
 
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-let ourchild;
-
 /**
  * Main class wrapper for all blood-n-guts features.
  * @class
@@ -61,7 +55,12 @@ export class BloodNGuts {
    * @param {number} density - the amount of splats.
    * @param {number} severity - more and bigger splats based on the severity of the wound.
    */
-  public static splatFloor(splatToken: SplatToken, font: SplatFont, size: number, density: number) {
+  public static splatFloor(
+    splatToken: SplatToken,
+    font: SplatFont,
+    size: number,
+    density: number,
+  ): Promise<Entity<PlaceableObject>> {
     if (!density) return;
     log(LogLevel.INFO, 'splatFloor');
 
@@ -134,7 +133,12 @@ export class BloodNGuts {
    * @param {number} density - the amount of splats.
    * @param {number} severity - more and bigger splats based on the severity of the wound.
    */
-  public static splatTrail(splatToken: SplatToken, font: SplatFont, size: number, density: number) {
+  public static splatTrail(
+    splatToken: SplatToken,
+    font: SplatFont,
+    size: number,
+    density: number,
+  ): Promise<Entity<PlaceableObject>> {
     if (!density) return;
     log(LogLevel.INFO, 'splatTrail');
     log(LogLevel.DEBUG, 'splatTrail severity', splatToken.bleedingSeverity);
@@ -362,7 +366,7 @@ export class BloodNGuts {
    * @category GMOnly
    * @function
    */
-  private static async setupScene(): void {
+  private static async setupScene(): Promise<void> {
     let stateObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
     log(LogLevel.INFO, 'setupScene stateObjects loaded:', stateObjects);
 
@@ -534,6 +538,7 @@ export class BloodNGuts {
     if (!scene.active || !game.user.isGM) return;
     log(LogLevel.INFO, 'preCreateTokenHandler', tokenData);
     const token = new Token(tokenData);
+    // we save the token by actorId but replace it in SplatToken.draw() when it has generated an id.
     BloodNGuts.splatTokens[tokenData.actorId] = new SplatToken(token);
   }
 
@@ -666,6 +671,7 @@ class SplatToken {
   tokenSplats: Array<TokenSplatStateObject>;
 
   constructor(token: Token) {
+    // @ts-ignore
     this.id = token.id || token.actor.data._id;
     this.token = token;
     this.w = token.data.width * canvas.grid.size * token.data.scale;
@@ -715,10 +721,8 @@ class SplatToken {
     if (severity >= 0) {
       this.hitSeverity = severity;
       if (this.hitSeverity > (this.bleedingSeverity ?? 0) + 1) {
-        this.bleedingSeverity = this.hitSeverity; //Math.max((this.bleedingSeverity ?? 0) + 1, severity);
-
-        //await this.token.setFlag(MODULE_ID, 'bleedingSeverity', severity);
-        console.log('ggigigigigi');
+        this.bleedingSeverity = this.hitSeverity;
+        await this.token.setFlag(MODULE_ID, 'bleedingSeverity', severity);
       }
     }
   }
@@ -741,6 +745,7 @@ class SplatToken {
       changes.actorData?.data?.attributes?.hp === undefined
     )
       return;
+
     this.updateDamage(changes);
     this.updateMovement(changes);
     this.updateBleeding(changes);
@@ -840,7 +845,7 @@ class SplatToken {
     });
 
     this.tokenSplats.push(<TokenSplatStateObject>splatStateObj);
-    // await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
+    await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
   }
 
   private updateBleeding(changes) {
@@ -880,7 +885,7 @@ class SplatToken {
 
     this.tokenSplats.forEach((splatState) => {
       splatState.splats.forEach((splat) => {
-        const text = new PIXI.Text(splat.glyph, splatState.style);
+        const text = new PIXI.Text(splat.glyph, splatState.styleData);
         text.x = splat.x;
         text.y = splat.y;
         this.splatsContainer.addChild(text);
@@ -937,25 +942,6 @@ class SplatToken {
   }
 }
 
-// Token.prototype.draw = (function () {
-//   const cached = Token.prototype.draw;
-//   return function () {
-//     const p = cached.apply(this);
-//     if (!this.icon) return p;
-
-//     return p.then(() => {
-//       const splatToken = BloodNGuts.splatTokens[this.id];
-//       const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;
-//       if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
-//       else {
-//         this.addChildAt(splatToken.splatsContainer, splatContainerZIndex);
-//         splatToken.draw();
-//         return new Promise(this); //what do I do here?
-//       }
-//     });
-//   };
-// })();
-
 Token.prototype.draw = (function () {
   const cached = Token.prototype.draw;
   return async function () {
@@ -975,13 +961,3 @@ Token.prototype.draw = (function () {
     }
   };
 })();
-
-// // @ts-ignore
-// Token.prototype._onUpdate = (function () {
-//   // @ts-ignore
-//   const cached = Token.prototype._onUpdate;
-//   return function (data) {
-//     debugger;
-//     cached.apply(this);
-//   };
-// })();

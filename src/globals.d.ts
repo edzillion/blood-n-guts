@@ -1,5 +1,3 @@
-import { StringifyOptions } from 'querystring';
-
 interface Global {
   sceneSplatPool: Array<SplatPoolObject>;
 }
