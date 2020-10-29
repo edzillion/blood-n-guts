@@ -31,7 +31,7 @@ interface TokenStateObject {
   y: number;
   hp: number;
   severity: number;
-  tokenSplatZIndex?: number;
+  splatsContainerZIndex: number;
 }
 
 interface SplatPoolObject {
@@ -48,6 +48,13 @@ interface SplatStateObject {
   offset: PIXI.Point;
   maskPolygon?: Array<number>;
   tokenId?: string;
+}
+
+interface TokenSplatStateObject {
+  id: string;
+  styleData: any;
+  splats: Array<Splat>;
+  offset: PIXI.Point;
 }
 
 interface Splat {
