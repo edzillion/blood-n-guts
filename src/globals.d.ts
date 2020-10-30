@@ -1,7 +1,3 @@
-interface Global {
-  sceneSplatPool: Array<SplatPoolObject>;
-}
-
 interface SplatFont {
   name: string;
   availableGlyphs: Array<string>;
