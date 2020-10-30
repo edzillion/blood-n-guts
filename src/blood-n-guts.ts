@@ -264,27 +264,7 @@ export class BloodNGuts {
       splatsContainer.y = splatStateObject.y;
 
       canvas.tiles.addChild(splatsContainer);
-    }
-    // if it's tokenId add to our previously created tokenSplat container
-    else if (splatStateObject.tokenId) {
-      log(LogLevel.DEBUG, 'drawSplats: splatStateObj.tokenId');
-
-      const splatToken = BloodNGuts.splatTokens[splatStateObject.tokenId];
-      if (!splatToken) log(LogLevel.ERROR, 'drawSplats token not found!', splatStateObject);
-
-      splatStateObject.splats.forEach((splat) => {
-        const text = new PIXI.Text(splat.glyph, style);
-        text.x = splat.x + splatStateObject.offset.x + splatToken.spriteWidth / 2;
-        text.y = splat.y + splatStateObject.offset.y + splatToken.spriteHeight / 2;
-        splatToken.splatsContainer.addChild(text);
-        return text;
-      });
-
-      //todo: maybe don't need this
-      // splatsContainer.pivot.set(tokenSpriteWidth / 2, tokenSpriteHeight / 2);
-      // splatsContainer.position.set(token.w / 2, token.h / 2);
-      // splatsContainer.angle = token.data.rotation;
-    } else log(LogLevel.ERROR, 'drawSplats: splatStateObject should have either .imgPath or .maskPolygon!');
+    } else log(LogLevel.ERROR, 'drawSplats: splatStateObject has no .maskPolygon!');
 
     if (CONFIG.bng.logLevel > LogLevel.DEBUG) drawDebugRect(splatsContainer);
 
@@ -470,8 +450,6 @@ export class BloodNGuts {
     const splatState = changes.flags[MODULE_ID].splatState.filter(
       (so) => !so.tokenId || extantTokens.includes(so.tokenId),
     );
-
-    // todo: bug TypeError: Cannot read property 'splatState' of undefined
 
     const updatedStateIds = splatState.map((s) => s.id);
     log(LogLevel.DEBUG, 'updateScene updatedStateIds', updatedStateIds);
