@@ -71,7 +71,7 @@ export default class SplatToken {
     canvas.app.renderer.render(textureContainer, renderTexture);
 
     this.splatsContainer.addChild(renderSprite);
-    // this.splatsContainer.mask = renderSprite;
+    this.splatsContainer.mask = renderSprite;
 
     this.splatsContainer.pivot.set(this.spriteWidth / 2, this.spriteHeight / 2);
     this.splatsContainer.position.set(
@@ -106,6 +106,7 @@ export default class SplatToken {
     this.draw();
 
     this.saveState(this.token);
+    BloodNGuts.saveState();
   }
 
   private updateDamage(changes): void {
@@ -225,9 +226,10 @@ export default class SplatToken {
     });
 
     splatStateObj.id = getUID();
+    splatStateObj.tokenId = this.id;
 
     this.tokenSplats.push(<SplatStateObject>splatStateObj);
-    BloodNGuts.addToSplatPool(splatStateObj, this.splatsContainer);
+    BloodNGuts.scenePool.push({ state: <SplatStateObject>splatStateObj });
 
     await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
   }
@@ -326,6 +328,10 @@ export default class SplatToken {
     this.wipe();
     this.tokenSplats = [];
     this.token.setFlag(MODULE_ID, 'splats', null);
+  }
+
+  public removeState(id): void {
+    this.tokenSplats = this.tokenSplats.filter((stateObj) => stateObj.id !== id);
   }
 
   public draw(): void {
