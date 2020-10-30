@@ -11,16 +11,13 @@ import { preloadTemplates } from './module/preloadTemplates';
 import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
-  lookupTokenBloodColor,
   computeSightFromPoint,
   drawDebugRect,
   getRandomBoxMuller,
-  getDirectionNrml,
   alignSplatsGetOffsetAndDimensions,
   getPointOnCurve,
   getUID,
 } from './module/helpers';
-import * as splatFonts from './data/splatFonts';
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
 
@@ -607,3 +604,23 @@ Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
+
+Token.prototype.draw = (function () {
+  const cached = Token.prototype.draw;
+  return async function () {
+    await cached.apply(this);
+    if (!this.icon) return this;
+    if (!BloodNGuts.splatTokens[this.id]) {
+      BloodNGuts.splatTokens[this.id] = new SplatToken(this);
+      await BloodNGuts.splatTokens[this.id].createMask();
+    }
+    const splatToken = BloodNGuts.splatTokens[this.id];
+    const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;
+    if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
+    else {
+      this.addChildAt(splatToken.splatsContainer, splatContainerZIndex);
+      splatToken.draw();
+      return this;
+    }
+  };
+})();

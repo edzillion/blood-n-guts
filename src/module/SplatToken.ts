@@ -1,4 +1,4 @@
-import { log } from 'console';
+import { log, LogLevel } from '../module/logging';
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import {
@@ -8,7 +8,6 @@ import {
   alignSplatsGetOffsetAndDimensions,
   getDirectionNrml,
 } from './helpers';
-import { LogLevel } from './logging';
 import * as splatFonts from '../data/splatFonts';
 
 export default class SplatToken {
@@ -340,23 +339,3 @@ export default class SplatToken {
     });
   }
 }
-
-Token.prototype.draw = (function () {
-  const cached = Token.prototype.draw;
-  return async function () {
-    await cached.apply(this);
-    if (!this.icon) return this;
-    if (!BloodNGuts.splatTokens[this.id]) {
-      BloodNGuts.splatTokens[this.id] = new SplatToken(this);
-      await BloodNGuts.splatTokens[this.id].createMask();
-    }
-    const splatToken = BloodNGuts.splatTokens[this.id];
-    const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;
-    if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
-    else {
-      this.addChildAt(splatToken.splatsContainer, splatContainerZIndex);
-      splatToken.draw();
-      return this;
-    }
-  };
-})();
