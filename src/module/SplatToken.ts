@@ -33,7 +33,6 @@ export default class SplatToken {
 
   constructor(token: Token) {
     // @ts-ignore
-    debugger;
     this.id = token.id || token.actor.data._id;
     this.token = token;
     this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
@@ -48,7 +47,6 @@ export default class SplatToken {
   public async createMask(): Promise<void> {
     // @ts-ignore
     const maskTexture = await PIXI.Texture.fromURL(this.token.data.img);
-    debugger;
     const maskSprite = PIXI.Sprite.from(maskTexture);
     maskSprite.width = this.spriteWidth;
     maskSprite.height = this.spriteHeight;
