@@ -33,12 +33,10 @@ CONFIG.bng = { logLevel: 2 };
 export class BloodNGuts {
   public static allFontsReady: Promise<any>;
   private static splatState: Array<SplatStateObject>;
-  private static tokenState: Array<TokenStateObject>;
   public static splatTokens: Record<string, SplatToken>;
 
   public static initialize(): void {
     BloodNGuts.splatState = [];
-    BloodNGuts.tokenState = [];
     BloodNGuts.splatTokens = {};
   }
 
@@ -341,7 +339,7 @@ export class BloodNGuts {
 
   /**
    * Loads all `SplatStateObject`s from scene flag `splatState` and draws them - this
-   * will also add them back into the pool. Also adds scene tokens to `tokenState`
+   * will also add them back into the pool.
    * @category GMOnly
    * @function
    */
@@ -491,7 +489,7 @@ export class BloodNGuts {
   }
 
   /**
-   * Handler called before token added to scene. Saves new tokens via `saveTokenState()`
+   * Handler called before token added to scene.
    * @category GMOnly
    * @function
    * @param {scene} - reference to the current scene
@@ -503,7 +501,7 @@ export class BloodNGuts {
   }
 
   /**
-   * Handler called when token added to scene. Saves new tokens via `saveTokenState()`
+   * Handler called when token added to scene.
    * @category GMOnly
    * @function
    * @param {scene} - reference to the current scene
@@ -546,7 +544,7 @@ export class BloodNGuts {
     // perhaps this is not scene agnostic
     if (!game.user.isGM) return;
     log(LogLevel.INFO, 'deleteTokenHandler', token);
-    if (BloodNGuts.tokenState) delete BloodNGuts.tokenState[token._id];
+    //todo: remove states from tracker here
   }
 }
 
