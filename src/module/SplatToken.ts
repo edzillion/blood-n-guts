@@ -7,6 +7,7 @@ import {
   getRandomBoxMuller,
   alignSplatsGetOffsetAndDimensions,
   getDirectionNrml,
+  getUID,
 } from './helpers';
 import * as splatFonts from '../data/splatFonts';
 
@@ -28,14 +29,15 @@ export default class SplatToken {
   hitSeverity: number;
   bleedingSeverity: number;
 
-  tokenSplats: Array<TokenSplatStateObject>;
+  tokenSplats: Array<SplatStateObject>;
 
   constructor(token: Token) {
     // @ts-ignore
+    debugger;
     this.id = token.id || token.actor.data._id;
     this.token = token;
-    this.spriteWidth = token.width;
-    this.spriteHeight = token.height;
+    this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
+    this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
     this.bloodColor = lookupTokenBloodColor(token);
     this.saveState(token);
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
@@ -46,6 +48,7 @@ export default class SplatToken {
   public async createMask(): Promise<void> {
     // @ts-ignore
     const maskTexture = await PIXI.Texture.fromURL(this.token.data.img);
+    debugger;
     const maskSprite = PIXI.Sprite.from(maskTexture);
     maskSprite.width = this.spriteWidth;
     maskSprite.height = this.spriteHeight;
@@ -172,23 +175,8 @@ export default class SplatToken {
     }
   }
 
-  private healToken(): void {
-    if (!this.tokenSplats) return;
-    // make positive for sanity purposes
-    let tempSeverity = this.hitSeverity * -1;
-    // deal with scale/healthThreshold > 1. We can only heal potentially 100%
-    if (tempSeverity > 1) tempSeverity = 1;
-    this.token.setFlag(MODULE_ID, 'bleedingSeverity', null);
-    this.bleedingSeverity = null;
-
-    log(LogLevel.DEBUG, 'updateTokenOrActorHandler allTokensSplats:');
-    const removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
-    log(LogLevel.DEBUG, 'updateTokenOrActorHandler removeAmount:', removeAmount);
-    this.tokenSplats.splice(0, removeAmount);
-  }
-
   private async bleedToken(): Promise<void> {
-    const splatStateObj: Partial<TokenSplatStateObject> = {};
+    const splatStateObj: Partial<SplatStateObject> = {};
     const density = game.settings.get(MODULE_ID, 'tokenSplatDensity');
     if (density === 0) return;
 
@@ -238,9 +226,27 @@ export default class SplatToken {
       s.y += offset.y + this.spriteWidth / 2;
     });
 
-    this.tokenSplats.push(<TokenSplatStateObject>splatStateObj);
+    splatStateObj.id = getUID();
+
+    this.tokenSplats.push(<SplatStateObject>splatStateObj);
+    BloodNGuts.addToSplatPool(splatStateObj, this.splatsContainer);
 
     await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
+  }
+
+  private healToken(): void {
+    if (!this.tokenSplats) return;
+    // make positive for sanity purposes
+    let tempSeverity = this.hitSeverity * -1;
+    // deal with scale/healthThreshold > 1. We can only heal potentially 100%
+    if (tempSeverity > 1) tempSeverity = 1;
+    this.token.setFlag(MODULE_ID, 'bleedingSeverity', null);
+    this.bleedingSeverity = null;
+
+    log(LogLevel.DEBUG, 'updateTokenOrActorHandler allTokensSplats:');
+    const removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
+    log(LogLevel.DEBUG, 'updateTokenOrActorHandler removeAmount:', removeAmount);
+    this.tokenSplats.splice(0, removeAmount);
   }
 
   private saveState(token): void {
