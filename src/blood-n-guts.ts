@@ -21,8 +21,6 @@ import {
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
 
-globalThis.sceneSplatPool = [];
-
 //CONFIG.debug.hooks = true;
 CONFIG.bng = { logLevel: 2 };
 
@@ -118,8 +116,7 @@ export class BloodNGuts {
     splatStateObj.maskPolygon = sight;
 
     splatStateObj.id = getUID();
-    this.scenePool.push({ state: <SplatStateObject>splatStateObj });
-    //return BloodNGuts.addToSplatPool(<SplatStateObject>splatStateObj);
+    BloodNGuts.scenePool.push({ state: <SplatStateObject>splatStateObj });
   }
 
   /**
@@ -226,18 +223,14 @@ export class BloodNGuts {
     splatStateObj.y += splatToken.token.center.y;
 
     splatStateObj.id = getUID();
-    this.scenePool.push({ state: <SplatStateObject>splatStateObj });
-    //return BloodNGuts.addToSplatPool(<SplatStateObject>splatStateObj);
+
+    BloodNGuts.scenePool.push({ state: <SplatStateObject>splatStateObj });
   }
 
   private static drawSplatPool(updatedState) {
-    const updatedStateIds = updatedState.map((s) => s.id);
-    log(LogLevel.DEBUG, 'updatePool updatedStateIds', updatedStateIds);
-
-    const oldStateIds = this.scenePool.map((poolObj) => poolObj.state.id);
-    log(LogLevel.DEBUG, 'updatePool oldStateIds', oldStateIds);
-
-    const addStates = updatedState.filter((state) => !oldStateIds.includes(state.id) && !state.tokenId);
+    const addStates = updatedState.filter((state) => {
+      return !state.splatsContainer;
+    });
     log(LogLevel.DEBUG, 'updatePool addIds', addStates);
 
     // addstateObjects are stateObjs that are not yet in the splat pool
@@ -255,7 +248,7 @@ export class BloodNGuts {
             return text;
           });
 
-          log(LogLevel.DEBUG, 'drawSplats: splatStateObj.maskPolygon');
+          log(LogLevel.DEBUG, 'drawSplatPool: splatStateObj.maskPolygon');
           const sightMask = new PIXI.Graphics();
           sightMask.beginFill(1, 1);
           sightMask.drawPolygon(state.maskPolygon);
@@ -268,8 +261,8 @@ export class BloodNGuts {
           splatsContainer.y = state.y;
 
           canvas.tiles.addChild(splatsContainer);
-          this.scenePool.push({ state: state, splatsContainer: splatsContainer });
-        } else log(LogLevel.ERROR, 'drawSplats: splatStateObject has no .maskPolygon!');
+          BloodNGuts.scenePool.push({ state: state, splatsContainer: splatsContainer });
+        } else log(LogLevel.ERROR, 'drawSplatPool: splatStateObject has no .maskPolygon!');
       });
     }
   }
@@ -278,22 +271,22 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'trimSplatPool');
 
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
-    const fadedPoolSize = Math.floor(this.scenePool.length * 0.15);
+    const fadedPoolSize = Math.floor(BloodNGuts.scenePool.length * 0.15);
     const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
-    log(LogLevel.DEBUG, 'trimSplatPool sizes curr, max', this.scenePool.length, maxPoolSize);
+    log(LogLevel.DEBUG, 'trimSplatPool sizes curr, max', BloodNGuts.scenePool.length, maxPoolSize);
 
-    if (this.scenePool.length >= maxPoolSize) {
+    if (BloodNGuts.scenePool.length >= maxPoolSize) {
       // remove the oldest splat
-      const removePoolObj = this.scenePool.shift();
+      const removePoolObj = BloodNGuts.scenePool.shift();
       log(LogLevel.DEBUG, 'fadingSplatPool destroying id', removePoolObj.state.id);
       if (removePoolObj.state.tokenId)
-        this.splatTokens[removePoolObj.state.tokenId].removeState(removePoolObj.state.id);
+        BloodNGuts.splatTokens[removePoolObj.state.tokenId].removeState(removePoolObj.state.id);
       else removePoolObj.splatsContainer.destroy({ children: true });
     }
 
     // 15% of splats will be set to fade. 1/3rd of those will be very faded
-    if (this.scenePool.length >= fadedPoolSize) {
-      const size = Math.min(fadedPoolSize, this.scenePool.length);
+    if (BloodNGuts.scenePool.length >= fadedPoolSize) {
+      const size = Math.min(fadedPoolSize, BloodNGuts.scenePool.length);
       for (let i = 0; i < size; i++) {
         const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
         BloodNGuts.scenePool[i].splatsContainer.alpha = alpha;
@@ -302,94 +295,7 @@ export class BloodNGuts {
 
     log(
       LogLevel.DEBUG,
-      `addToSplatPool sceneSplatPool:${globalThis.sceneSplatPool.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
-    );
-  }
-
-  /**
-   * Draw splats to the canvas from it's state object and return a reference to the `PIXI.Container` that holds them.
-   * @category GMOnly
-   * @function
-   * @param {SplatStateObject} splatStateObject - the splats data.
-   * @returns {PIXI.Container} - the canvas reference.
-   */
-  private static drawSplats(splatStateObject: SplatStateObject): void {
-    log(LogLevel.INFO, 'drawSplats');
-    log(LogLevel.DEBUG, 'drawSplats: splatStateObject', splatStateObject);
-    const splatsContainer = new PIXI.Container();
-    const style = new PIXI.TextStyle(splatStateObject.styleData);
-    // if it's maskPolygon type we can create a sightMask directly.
-    if (splatStateObject.maskPolygon) {
-      splatStateObject.splats.forEach((splat) => {
-        const text = new PIXI.Text(splat.glyph, style);
-        text.x = splat.x;
-        text.y = splat.y;
-        splatsContainer.addChild(text);
-        return text;
-      });
-
-      log(LogLevel.DEBUG, 'drawSplats: splatStateObj.maskPolygon');
-      const sightMask = new PIXI.Graphics();
-      sightMask.beginFill(1, 1);
-      sightMask.drawPolygon(splatStateObject.maskPolygon);
-      sightMask.endFill();
-
-      splatsContainer.addChild(sightMask);
-      splatsContainer.mask = sightMask;
-
-      splatsContainer.x = splatStateObject.x;
-      splatsContainer.y = splatStateObject.y;
-
-      canvas.tiles.addChild(splatsContainer);
-      this.addToSplatPool(splatStateObject, splatsContainer);
-    } else log(LogLevel.ERROR, 'drawSplats: splatStateObject has no .maskPolygon!');
-
-    if (CONFIG.bng.logLevel > LogLevel.DEBUG) drawDebugRect(splatsContainer);
-  }
-
-  /**
-   * Adds the token data and a reference to the token on the canvas to our pool. The pool is a FIFO stack with
-   * maximum size `blood-n-guts.sceneSplatPoolSize`. When size is exceeded the oldest entries are destroyed.
-   * 15% of the oldest splats are set to fade (alpha 0.3) and the oldest 1/3 of those are set to very faded (alpha 0.1)
-   * @category GMOnly
-   * @function
-   * @param {SplatStateObject} splatStateObj - token data to add.
-   */
-  public static addToSplatPool(splatStatObj, splatsContainer = null): Promise<Entity> {
-    log(LogLevel.INFO, 'addToSplatPool', splatsContainer);
-
-    // if splatsContainer is null we will draw it and add the container on the next updateSceneHandler
-    const poolObj = { state: splatStatObj, splatsContainer: splatsContainer };
-    //add the new splat
-    this.scenePool.push(poolObj);
-    if (poolObj.splatsContainer === null) return;
-
-    const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
-    const fadedPoolSize = Math.floor(this.scenePool.length * 0.15);
-    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
-    log(LogLevel.DEBUG, 'addToSplatPool sizes curr, max', this.scenePool.length, maxPoolSize);
-
-    if (this.scenePool.length >= maxPoolSize) {
-      // remove the oldest splat
-      const removePoolObj = this.scenePool.shift();
-      log(LogLevel.DEBUG, 'fadingSplatPool destroying id', removePoolObj.state.id);
-      if (removePoolObj.state.tokenId)
-        this.splatTokens[removePoolObj.state.tokenId].removeState(removePoolObj.state.id);
-      else removePoolObj.splatsContainer.destroy({ children: true });
-    }
-
-    // 15% of splats will be set to fade. 1/3rd of those will be very faded
-    if (globalThis.sceneSplatPool.length >= fadedPoolSize) {
-      const size = Math.min(fadedPoolSize, globalThis.sceneSplatPool.length);
-      for (let i = 0; i < size; i++) {
-        const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
-        BloodNGuts.scenePool[i].splatsContainer.alpha = alpha;
-      }
-    }
-
-    log(
-      LogLevel.DEBUG,
-      `addToSplatPool sceneSplatPool:${globalThis.sceneSplatPool.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
+      `trimSplatPool sceneSplatPool:${BloodNGuts.scenePool.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
     );
   }
 
@@ -404,20 +310,16 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'setupScene stateObjects loaded:', stateObjects);
 
     if (stateObjects) {
-      log(LogLevel.INFO, 'setupScene drawSplats', canvas.scene.name);
+      log(LogLevel.INFO, 'setupScene drawSplatPool', canvas.scene.name);
       const extantTokens = Object.keys(BloodNGuts.splatTokens);
       stateObjects = stateObjects.filter((so) => !so.tokenId || extantTokens.includes(so.tokenId));
-      // draw each missing splatsContainer and save a reference to it in the pool.
-      // if the splatPoolSize has changed then we want to add only the latest
-
-      this.drawSplatPool(stateObjects);
-      this.trimSplatPool();
+      BloodNGuts.drawSplatPool(stateObjects);
+      BloodNGuts.trimSplatPool();
     }
   }
 
   public static saveState(): Promise<Entity> {
-    const splatState = this.scenePool.map((p) => p.state);
-
+    const splatState = BloodNGuts.scenePool.map((p) => p.state);
     return canvas.scene.setFlag(MODULE_ID, 'splatState', splatState);
   }
 
@@ -431,7 +333,7 @@ export class BloodNGuts {
     canvas.scene.setFlag(MODULE_ID, 'splatState', null);
 
     // destroy scene splats
-    globalThis.sceneSplatPool.forEach((poolObj) => {
+    BloodNGuts.scenePool.forEach((poolObj) => {
       if (!poolObj.state.tokenId) poolObj.splatsContainer.destroy();
     });
 
@@ -440,7 +342,7 @@ export class BloodNGuts {
       const splatToken = BloodNGuts.splatTokens[tokenId];
       splatToken.wipeAll();
     }
-    globalThis.sceneSplatPool = [];
+    BloodNGuts.scenePool = [];
   }
 
   /**
@@ -476,7 +378,7 @@ export class BloodNGuts {
     //canvas.scene.setFlag(MODULE_ID, 'sceneSplatPool', null);
 
     // wipe pools to be refilled from scene flag data
-    globalThis.sceneSplatPool = [];
+    BloodNGuts.scenePool = [];
 
     // need to wait on fonts loading before we can setupScene
     BloodNGuts.allFontsReady.then(() => {
@@ -492,16 +394,14 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static updateSceneHandler(scene, changes): void {
-    if (!scene.active || !this.scenePool) return;
-
+    if (!scene.active || !BloodNGuts.scenePool) return;
     if (changes.flags[MODULE_ID]?.splatState === null) {
       if (game.user.isRole(CONST.USER_ROLES.PLAYER)) BloodNGuts.wipeSceneSplats();
       return;
     } else if (!changes.flags[MODULE_ID]?.splatState) return;
     log(LogLevel.INFO, 'updateSceneHandler');
-
-    this.drawSplatPool(changes.flags[MODULE_ID]?.splatState);
-    this.trimSplatPool();
+    BloodNGuts.drawSplatPool(changes.flags[MODULE_ID]?.splatState);
+    BloodNGuts.trimSplatPool();
   }
 
   /**

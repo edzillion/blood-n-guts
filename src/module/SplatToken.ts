@@ -89,7 +89,6 @@ export default class SplatToken {
       changes.actorData?.data?.attributes?.hp === undefined
     )
       return;
-
     this.updateDamage(changes);
     this.updateMovement(changes);
     this.updateBleeding();
@@ -229,7 +228,7 @@ export default class SplatToken {
     splatStateObj.tokenId = this.id;
 
     this.tokenSplats.push(<SplatStateObject>splatStateObj);
-    BloodNGuts.scenePool.push({ state: <SplatStateObject>splatStateObj });
+    BloodNGuts.scenePool.push({ state: <SplatStateObject>splatStateObj, splatsContainer: this.splatsContainer });
 
     await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
   }
