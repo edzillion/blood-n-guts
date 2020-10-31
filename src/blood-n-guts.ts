@@ -44,7 +44,7 @@ export class BloodNGuts {
    * @function
    */
   private static loadScene(): void {
-    if (!canvas.scene.active || !game.user.isGM) return;
+    if (!canvas.scene.active) return;
     log(LogLevel.INFO, 'loadScene');
     let stateObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
     log(LogLevel.DEBUG, 'loadScene stateObjects loaded:', stateObjects);
@@ -59,7 +59,8 @@ export class BloodNGuts {
   }
 
   /**
-   * Saves all `SplatStateObject`s to scene flag `splatState`.
+   * Saves floor and trail `SplatStateObject`s to scene flag `splatState`. Tokensplats are saved in their
+   * own token flags.
    * @category GMOnly
    * @function
    * @returns {Promise<Entity>}
@@ -67,7 +68,7 @@ export class BloodNGuts {
   public static saveScene(): Promise<Entity> {
     if (!canvas.scene.active || !game.user.isGM) return;
     log(LogLevel.INFO, 'saveScene');
-    const splatState = BloodNGuts.scenePool.map((p) => p.state);
+    const splatState = BloodNGuts.scenePool.filter((p) => !p.state.tokenId).map((p) => p.state);
     return canvas.scene.setFlag(MODULE_ID, 'splatState', splatState);
   }
 
@@ -379,11 +380,24 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static async updateTokenOrActorHandler(scene, tokenData, changes): Promise<void> {
-    if (!scene.active || !game.user.isGM) return;
+    if (!scene.active) return;
     log(LogLevel.INFO, 'updateTokenOrActorHandler', changes);
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
-    splatToken.updateChanges(changes);
+
+    //todo: wth does this not work here? changes.flags[MODULE_ID]?.splats;
+    if (changes.flags) {
+      if (changes.flags[MODULE_ID].splats !== undefined) splatToken.updateSplats(changes.flags[MODULE_ID].splats);
+      else if (changes.flags[MODULE_ID].bleedingSeverity === null) splatToken.updateSplats(null);
+    }
+
+    if (game.user.isGM) {
+      log(LogLevel.INFO, 'awaiting');
+      splatToken.updateChanges(changes);
+      log(LogLevel.INFO, 'done');
+      BloodNGuts.saveScene();
+      log(LogLevel.INFO, 'scene saved');
+    }
   }
 
   /**
@@ -484,7 +498,7 @@ Hooks.once('init', async () => {
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
 Hooks.on('updateActor', (actor, changes) => {
-  if (!canvas.scene.active || !game.user.isGM) return;
+  if (!canvas.scene.active) return;
   // convert into same structure as token changes.
   if (changes.data) changes.actorData = { data: changes.data };
   const token = canvas.tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === actor.id);
