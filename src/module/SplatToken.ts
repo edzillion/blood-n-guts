@@ -82,7 +82,7 @@ export default class SplatToken {
   }
 
   public updateSplats(updatedSplats): void {
-    this.tokenSplats = updatedSplats;
+    this.tokenSplats = updatedSplats || [];
     this.draw();
   }
 
@@ -94,7 +94,6 @@ export default class SplatToken {
       changes.actorData?.data?.attributes?.hp === undefined
     )
       return;
-    // todo: why can't I type this array like so? const promises: [Promise<PlaceableObject>] = [];
 
     this.updateDamage(changes);
     this.updateMovement(changes);
@@ -111,7 +110,10 @@ export default class SplatToken {
     this.updateRotation(changes);
 
     this.saveState(this.token);
-    const updateObj = { flags: { [MODULE_ID]: { bleedingSeverity: this.bleedingSeverity, splats: this.tokenSplats } } };
+
+    const updateObj = {
+      flags: { [MODULE_ID]: { bleedingSeverity: this.bleedingSeverity, splats: duplicate(this.tokenSplats) } },
+    };
     await this.token.update(updateObj);
   }
 
@@ -346,7 +348,8 @@ export default class SplatToken {
   public draw(): void {
     log(LogLevel.DEBUG, 'drawSplats: splatStateObj.tokenId');
     this.wipe();
-
+    // @ts-ignore
+    if (!this.tokenSplats || this.tokenSplats === 'wipe') return;
     BloodNGuts.allFontsReady.then(() => {
       this.tokenSplats.forEach((splatState) => {
         splatState.splats.forEach((splat) => {

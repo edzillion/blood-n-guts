@@ -386,8 +386,10 @@ export class BloodNGuts {
     const splatToken = BloodNGuts.splatTokens[tokenId];
 
     //todo: wth does this not work here? changes.flags[MODULE_ID]?.splats;
-    if (changes.flags && changes.flags[MODULE_ID].bleedingSeverity !== undefined)
-      splatToken.updateSplats(tokenData.flags[MODULE_ID].splats);
+    if (changes.flags) {
+      if (changes.flags[MODULE_ID].splats !== undefined) splatToken.updateSplats(changes.flags[MODULE_ID].splats);
+      else if (changes.flags[MODULE_ID].bleedingSeverity === null) splatToken.updateSplats(null);
+    }
 
     if (game.user.isGM) {
       log(LogLevel.INFO, 'awaiting');
