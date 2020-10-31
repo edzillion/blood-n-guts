@@ -228,12 +228,12 @@ export class BloodNGuts {
   }
 
   private static drawSplatPool(updatedState) {
+    log(LogLevel.INFO, 'drawSplatPool');
     const addStates = updatedState.filter((state) => {
       return !state.splatsContainer;
     });
-    log(LogLevel.DEBUG, 'updatePool addIds', addStates);
+    log(LogLevel.DEBUG, 'drawSplatPool addStates', addStates);
 
-    // addstateObjects are stateObjs that are not yet in the splat pool
     if (addStates) {
       addStates.forEach((state) => {
         const splatsContainer = new PIXI.Container();
@@ -437,6 +437,8 @@ export class BloodNGuts {
     if (!game.user.isGM) return;
     log(LogLevel.INFO, 'deleteTokenHandler', token);
     //todo: remove states from tracker here
+    delete BloodNGuts.splatTokens[token._id];
+    BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.state.tokenId != token._id);
   }
 }
 
