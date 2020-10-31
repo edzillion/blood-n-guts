@@ -105,7 +105,7 @@ export default class SplatToken {
     this.draw();
 
     this.saveState(this.token);
-    BloodNGuts.saveState();
+    BloodNGuts.saveScene();
   }
 
   private updateDamage(changes): void {
@@ -143,7 +143,7 @@ export default class SplatToken {
     const density = game.settings.get(MODULE_ID, 'floorSplatDensity');
     if (!density) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler damageScale > 0:' + this.id + ' - bleeding:true');
-    BloodNGuts.splatFloor(
+    BloodNGuts.generateFloorSplats(
       this,
       splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
       game.settings.get(MODULE_ID, 'floorSplatSize'),
@@ -156,7 +156,7 @@ export default class SplatToken {
     if (!density) return;
     if (density > 0 && density < 1) {
       if (this.bleedingCount === 0) {
-        BloodNGuts.splatFloor(
+        BloodNGuts.generateFloorSplats(
           this,
           splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
           game.settings.get(MODULE_ID, 'trailSplatSize'),
@@ -164,7 +164,7 @@ export default class SplatToken {
         );
       }
     } else {
-      BloodNGuts.splatTrail(
+      BloodNGuts.generateTrailSplats(
         this,
         splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
         game.settings.get(MODULE_ID, 'trailSplatSize'),

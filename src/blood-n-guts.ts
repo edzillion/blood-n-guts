@@ -44,12 +44,14 @@ export class BloodNGuts {
    * @category GMOnly
    * @function
    */
-  private static async setupScene(): Promise<void> {
+  private static loadScene(): void {
+    if (!canvas.scene.active || !game.user.isGM) return;
+    log(LogLevel.INFO, 'loadScene');
     let stateObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
-    log(LogLevel.INFO, 'setupScene stateObjects loaded:', stateObjects);
+    log(LogLevel.DEBUG, 'loadScene stateObjects loaded:', stateObjects);
 
     if (stateObjects) {
-      log(LogLevel.INFO, 'setupScene drawSplatPool', canvas.scene.name);
+      log(LogLevel.INFO, 'loadScene drawSplatPool', canvas.scene.name);
       const extantTokens = Object.keys(BloodNGuts.splatTokens);
       stateObjects = stateObjects.filter((so) => !so.tokenId || extantTokens.includes(so.tokenId));
       BloodNGuts.drawSplatPool(stateObjects);
@@ -57,20 +59,40 @@ export class BloodNGuts {
     }
   }
 
-  public static saveState(): Promise<Entity> {
+  /**
+   * Saves all `SplatStateObject`s to scene flag `splatState`.
+   * @category GMOnly
+   * @function
+   * @returns {Promise<Entity>}
+   */
+  public static saveScene(): Promise<Entity> {
+    if (!canvas.scene.active || !game.user.isGM) return;
+    log(LogLevel.INFO, 'saveScene');
     const splatState = BloodNGuts.scenePool.map((p) => p.state);
     return canvas.scene.setFlag(MODULE_ID, 'splatState', splatState);
   }
 
-  private static drawSplatPool(updatedState) {
+  /**
+   * Draws all new `SplatStateObject`s and those that haven't got a .splatContainer yet to the canvas
+   * and adds those to the scene pool.
+   * @category GMOnly
+   * @function
+   * @param {[SplatStateObject]} updatedState - updated array of scene splats
+   */
+  private static drawSplatPool(updatedState: [SplatStateObject]): void {
+    //todo: what's the permissions for this one?
     log(LogLevel.INFO, 'drawSplatPool');
-    const addStates = updatedState.filter((state) => {
-      return !state.splatsContainer;
-    });
-    log(LogLevel.DEBUG, 'drawSplatPool addStates', addStates);
+    const existingStateIds = BloodNGuts.scenePool.map((poolObj) => poolObj.state.id);
+    const drawnStateIds = BloodNGuts.scenePool.filter((poolObj) => poolObj.splatsContainer).map((p) => p.state.id);
 
-    if (addStates) {
-      addStates.forEach((state) => {
+    const statesToAdd = updatedState.filter(
+      (state) => !existingStateIds.includes(state.id) || !drawnStateIds.includes(state.id),
+    );
+
+    log(LogLevel.DEBUG, 'drawSplatPool addStates', statesToAdd);
+
+    if (statesToAdd) {
+      statesToAdd.forEach((state: SplatStateObject) => {
         const splatsContainer = new PIXI.Container();
         const style = new PIXI.TextStyle(state.styleData);
         // if it's maskPolygon type we can create a sightMask directly.
@@ -96,13 +118,24 @@ export class BloodNGuts {
           splatsContainer.y = state.y;
 
           canvas.tiles.addChild(splatsContainer);
-          BloodNGuts.scenePool.push({ state: state, splatsContainer: splatsContainer });
+
+          //if it's in the pool already update it otherwise add new entry
+          if (existingStateIds.includes(state.id))
+            BloodNGuts.scenePool.find((p) => p.state.id === state.id).splatsContainer = splatsContainer;
+          else BloodNGuts.scenePool.push({ state: state, splatsContainer: splatsContainer });
         } else log(LogLevel.ERROR, 'drawSplatPool: splatStateObject has no .maskPolygon!');
       });
     }
   }
 
-  private static trimSplatPool() {
+  /**
+   * Trims excess splats over the `sceneSplatPoolSize` and fades the oldest.
+   * and adds those to the scene pool.
+   * @category GMOnly
+   * @function
+   */
+  private static trimSplatPool(): void {
+    //todo: what's the permissions for this one?
     log(LogLevel.INFO, 'trimSplatPool');
 
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
@@ -165,7 +198,6 @@ export class BloodNGuts {
    * @param {SplatFont} font - the font to use for splats.
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
-   * @param {number} severity - more and bigger splats based on the severity of the wound.
    */
   public static generateFloorSplats(splatToken: SplatToken, font: SplatFont, size: number, density: number): void {
     if (!density) return;
@@ -241,7 +273,6 @@ export class BloodNGuts {
    * @param {SplatFont} font - the font to use for splats.
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
-   * @param {number} severity - more and bigger splats based on the severity of the wound.
    */
   public static generateTrailSplats(splatToken: SplatToken, font: SplatFont, size: number, density: number): void {
     if (!density) return;
@@ -373,9 +404,9 @@ export class BloodNGuts {
     // wipe pools to be refilled from scene flag data
     BloodNGuts.scenePool = [];
 
-    // need to wait on fonts loading before we can setupScene
+    // need to wait on fonts loading before we can loadScene
     BloodNGuts.allFontsReady.then(() => {
-      BloodNGuts.setupScene();
+      BloodNGuts.loadScene();
     });
   }
 
@@ -401,9 +432,10 @@ export class BloodNGuts {
    * Handler called when token is deleted. Removed tokenSplats and state for this token.
    * @category GMOnly
    * @function
-   * @param {buttons} - reference to the buttons controller
+   * @param {scene} - reference to the current scene
+   * @param {token} - reference to deleted token
    */
-  public static async deleteTokenHandler(scene, token) {
+  public static deleteTokenHandler(scene, token) {
     // perhaps this is not scene agnostic
     if (!game.user.isGM) return;
     log(LogLevel.INFO, 'deleteTokenHandler', token);
@@ -435,7 +467,8 @@ export class BloodNGuts {
   }
 }
 
-// Hooks
+// HOOKS
+
 Hooks.once('init', async () => {
   log(LogLevel.INFO, `Initializing module ${MODULE_ID}`);
 
@@ -448,29 +481,8 @@ Hooks.once('init', async () => {
   (document as any).fonts.load('12px WC Rhesus A Bta');
 
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
-
-  // Preload Handlebars templates
-  await preloadTemplates();
-  // Register custom sheets (if any)
 });
-
-Hooks.once('setup', () => {
-  // Do anything after initialization but before
-  // ready
-  log(LogLevel.INFO, 'setup Hook');
-});
-
-Hooks.once('ready', () => {
-  log(LogLevel.INFO, 'ready');
-});
-
-Hooks.on('canvasInit', (canvas) => {
-  log(LogLevel.INFO, 'canvasInit', canvas.scene.name);
-  if (!canvas.scene.active) log(LogLevel.INFO, 'canvasInit, skipping inactive scene');
-});
-
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
-
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
 Hooks.on('updateActor', (actor, changes) => {
   if (!canvas.scene.active || !game.user.isGM) return;
@@ -480,9 +492,7 @@ Hooks.on('updateActor', (actor, changes) => {
   if (!token) log(LogLevel.ERROR, 'updateActor token not found!');
   else BloodNGuts.updateTokenOrActorHandler(canvas.scene, token.data, changes);
 });
-
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
-
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
 
