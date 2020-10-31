@@ -172,26 +172,6 @@ export const getActorColorByName = (actor: Actor): string => {
 };
 
 /**
- * Returns a promise which resolves when all fonts are loaded
- * @category helpers
- * @function
- * @returns {Promise<void>}
- */
-export const fontsLoaded = (): Promise<void> => {
-  // need to wait on fonts loading before we can setupScene
-  return new Promise((resolve, reject) => {
-    (document as any).fonts.onloadingdone = () => {
-      const allFontsPresent =
-        (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'floorSplatFont')) &&
-        (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'tokenSplatFont')) &&
-        (document as any).fonts.check('1em ' + game.settings.get(MODULE_ID, 'trailSplatFont'));
-
-      allFontsPresent ? resolve() : reject();
-    };
-  });
-};
-
-/**
  * Creates and returns a unique identifier.
  * @category helpers
  * @function

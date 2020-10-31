@@ -1,7 +1,3 @@
-interface Global {
-  sceneSplatPool: Array<SplatPoolObject>;
-}
-
 interface SplatFont {
   name: string;
   availableGlyphs: Array<string>;
@@ -25,18 +21,9 @@ interface ViolenceLevel {
   sceneSplatPoolSize: number;
 }
 
-interface TokenStateObject {
-  id: string;
-  x: number;
-  y: number;
-  hp: number;
-  severity: number;
-  splatsContainerZIndex: number;
-}
-
 interface SplatPoolObject {
   state: SplatStateObject;
-  splatsContainer: PIXI.Container;
+  splatsContainer?: PIXI.Container;
 }
 
 interface SplatStateObject {
@@ -48,13 +35,6 @@ interface SplatStateObject {
   offset: PIXI.Point;
   maskPolygon?: Array<number>;
   tokenId?: string;
-}
-
-interface TokenSplatStateObject {
-  id: string;
-  styleData: any;
-  splats: Array<Splat>;
-  offset: PIXI.Point;
 }
 
 interface Splat {
