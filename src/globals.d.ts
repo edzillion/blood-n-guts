@@ -1,7 +1,3 @@
-interface Global {
-  sceneSplatPool: Array<SplatPoolObject>;
-}
-
 interface SplatFont {
   name: string;
   availableGlyphs: Array<string>;
@@ -25,20 +21,12 @@ interface ViolenceLevel {
   sceneSplatPoolSize: number;
 }
 
-interface TokenSaveObject {
-  id: string;
-  x: number;
-  y: number;
-  hp: number;
-  severity: number;
-}
-
 interface SplatPoolObject {
-  save: SplatSaveObject;
-  splatsContainer: PIXI.Container;
+  state: SplatStateObject;
+  splatsContainer?: PIXI.Container;
 }
 
-interface SplatSaveObject {
+interface SplatStateObject {
   id: string;
   x: number;
   y: number;
