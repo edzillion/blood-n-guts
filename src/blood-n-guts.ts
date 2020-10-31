@@ -7,7 +7,6 @@
  */
 
 import { registerSettings } from './module/settings';
-import { preloadTemplates } from './module/preloadTemplates';
 import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
