@@ -111,10 +111,11 @@ export default class SplatToken {
 
     this.saveState(this.token);
 
-    const updateObj = {
-      flags: { [MODULE_ID]: { bleedingSeverity: this.bleedingSeverity, splats: duplicate(this.tokenSplats) } },
+    const flags = {
+      [MODULE_ID]: { bleedingSeverity: this.bleedingSeverity, splats: duplicate(this.tokenSplats) },
     };
-    await this.token.update(updateObj);
+
+    await this.token.update({ flags }, { diff: false });
   }
 
   private updateDamage(changes): void {
