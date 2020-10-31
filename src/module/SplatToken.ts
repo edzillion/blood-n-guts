@@ -81,7 +81,12 @@ export default class SplatToken {
     this.splatsContainer.angle = this.token.data.rotation;
   }
 
-  public updateChanges(changes): void {
+  public updateSplats(updatedSplats): void {
+    this.tokenSplats = updatedSplats;
+    this.draw();
+  }
+
+  public async updateChanges(changes): Promise<void> {
     if (
       changes.rotation === undefined &&
       changes.x === undefined &&
@@ -89,6 +94,8 @@ export default class SplatToken {
       changes.actorData?.data?.attributes?.hp === undefined
     )
       return;
+    // todo: why can't I type this array like so? const promises: [Promise<PlaceableObject>] = [];
+
     this.updateDamage(changes);
     this.updateMovement(changes);
     this.updateBleeding();
@@ -102,16 +109,15 @@ export default class SplatToken {
     if (this.direction && this.bleedingSeverity) this.bleedTrail();
 
     this.updateRotation(changes);
-    this.draw();
 
     this.saveState(this.token);
-    BloodNGuts.saveScene();
+    const updateObj = { flags: { [MODULE_ID]: { bleedingSeverity: this.bleedingSeverity, splats: this.tokenSplats } } };
+    await this.token.update(updateObj);
   }
 
   private updateDamage(changes): void {
     if (changes.actorData === undefined || changes.actorData.data.attributes?.hp === undefined) return;
     this.setSeverity(this.getDamageSeverity(changes));
-    log(LogLevel.DEBUG, 'updateTokenOrActorHandler this.hitSeverity', this.hitSeverity);
   }
 
   private updateMovement(changes): void {
@@ -230,22 +236,23 @@ export default class SplatToken {
     this.tokenSplats.push(<SplatStateObject>splatStateObj);
     BloodNGuts.scenePool.push({ state: <SplatStateObject>splatStateObj, splatsContainer: this.splatsContainer });
 
-    await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
+    //await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
   }
 
-  private healToken(): void {
+  private async healToken(): Promise<void> {
     if (!this.tokenSplats) return;
     // make positive for sanity purposes
     let tempSeverity = this.hitSeverity * -1;
-    // deal with scale/healthThreshold > 1. We can only heal potentially 100%
+    // deal with scale/healthThreshold > 1. We can only heal to 100%
     if (tempSeverity > 1) tempSeverity = 1;
-    this.token.setFlag(MODULE_ID, 'bleedingSeverity', null);
-    this.bleedingSeverity = null;
-
-    log(LogLevel.DEBUG, 'updateTokenOrActorHandler allTokensSplats:');
-    const removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
-    log(LogLevel.DEBUG, 'updateTokenOrActorHandler removeAmount:', removeAmount);
-    this.tokenSplats.splice(0, removeAmount);
+    log(LogLevel.DEBUG, 'healToken allTokensSplats:');
+    let removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
+    log(LogLevel.DEBUG, 'healToken removeAmount:', removeAmount);
+    while (removeAmount-- > 0) {
+      const state = this.tokenSplats.shift();
+      BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.state.id != state.id);
+    }
+    //await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
   }
 
   private saveState(token): void {
@@ -258,11 +265,14 @@ export default class SplatToken {
     this.direction = null;
   }
 
-  private setSeverity(severity: number): void {
+  private async setSeverity(severity: number): Promise<void> {
     this.hitSeverity = severity;
     if (this.hitSeverity > (this.bleedingSeverity ?? 0) + 1) {
       this.bleedingSeverity = this.hitSeverity;
-      this.token.setFlag(MODULE_ID, 'bleedingSeverity', severity);
+      //await this.token.setFlag(MODULE_ID, 'bleedingSeverity', severity);
+    } else if (this.hitSeverity < 0) {
+      this.bleedingSeverity = null;
+      //await this.token.setFlag(MODULE_ID, 'bleedingSeverity', null);
     }
   }
   /**
@@ -336,6 +346,7 @@ export default class SplatToken {
   public draw(): void {
     log(LogLevel.DEBUG, 'drawSplats: splatStateObj.tokenId');
     this.wipe();
+
     BloodNGuts.allFontsReady.then(() => {
       this.tokenSplats.forEach((splatState) => {
         splatState.splats.forEach((splat) => {
