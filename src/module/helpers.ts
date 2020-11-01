@@ -271,6 +271,19 @@ export function getDerivativeAt(p1: PIXI.Point, pc: PIXI.Point, p2: PIXI.Point, 
   return { x, y };
 }
 
+/**
+ * Returns the distance between this and another Point.
+ * @function
+ * @param {Point} pt1
+ * @param {Point} pt2
+ * @returns number
+ */
+export function distanceBetween(pt1: PIXI.Point, pt2: PIXI.Point): number {
+  const x = pt1.x - pt2.x;
+  const y = pt1.y - pt2.y;
+  return Math.sqrt(x * x + y * y);
+}
+
 // colors
 
 /**
