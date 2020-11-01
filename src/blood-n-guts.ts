@@ -247,7 +247,7 @@ export class BloodNGuts {
     splatStateObj.y = offset.y;
 
     const maxDistance = Math.max(width, height);
-    const tokenCenter = game.canvas.grid.getCenter(splatToken.x, splatToken.y);
+    const tokenCenter = new PIXI.Point(...canvas.grid.getCenter(splatToken.x, splatToken.y));
     const sight = computeSightFromPoint(tokenCenter, maxDistance);
 
     // since we don't want to add the mask to the splatsContainer yet (as that will
@@ -329,7 +329,7 @@ export class BloodNGuts {
         width: tm.width,
         height: tm.height,
         glyph: glyph,
-    });
+      });
     }
     log(LogLevel.DEBUG, 'generateTrailSplats splatStateObj.splats', splatStateObj.splats);
 
@@ -340,7 +340,7 @@ export class BloodNGuts {
     splatStateObj.y = offset.y;
 
     const maxDistance = Math.max(width, height);
-    const tokenCenter = game.canvas.grid.getCenter(splatToken.x, splatToken.y);
+    const tokenCenter = new PIXI.Point(...canvas.grid.getCenter(splatToken.currPos.x, splatToken.currPos.y));
     const sight = computeSightFromPoint(tokenCenter, maxDistance);
     splatStateObj.maskPolygon = sight;
 
@@ -511,7 +511,8 @@ Token.prototype.draw = (function () {
     else if (BloodNGuts.splatTokens[this._original?.data?._id])
       splatToken = BloodNGuts.splatTokens[this._original.data._id];
     else {
-      BloodNGuts.splatTokens[this.id] = new SplatToken(this);
+      splatToken = new SplatToken(this);
+      BloodNGuts.splatTokens[this.id] = splatToken;
       await BloodNGuts.splatTokens[this.id].createMask();
     }
     if (splatToken.bloodColor === 'none') return this;
