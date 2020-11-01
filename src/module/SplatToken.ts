@@ -8,43 +8,48 @@ import {
   alignSplatsGetOffsetAndDimensions,
   getDirectionNrml,
   getUID,
+  distanceBetween,
 } from './helpers';
 import * as splatFonts from '../data/splatFonts';
 
 export default class SplatToken {
-  token: Token;
-  splatsContainer: PIXI.Container;
-  id: string;
-  x: number;
-  y: number;
-  spriteWidth: number;
-  spriteHeight: number;
-  direction: PIXI.Point;
-  hp: number;
-  maxHP: number;
+  public id: string;
+  public x: number;
+  public y: number;
+  public bloodColor: string;
+  public spriteWidth: number;
+  public spriteHeight: number;
+  public direction: PIXI.Point;
+  public hitSeverity: number;
+  public bleedingSeverity: number;
+  public currPos: PIXI.Point;
+  public lastPos: PIXI.Point;
+  public movePos: PIXI.Point;
 
-  bloodColor: string;
-
-  bleedingCount: number;
-  hitSeverity: number;
-  bleedingSeverity: number;
-
-  tokenSplats: Array<SplatStateObject>;
+  private token: Token;
+  private hp: number;
+  private maxHP: number;
+  private splatsContainer: PIXI.Container;
+  private bleedingDistance: number;
+  private tokenSplats: Array<SplatStateObject>;
 
   constructor(token: Token) {
+    this.bloodColor = lookupTokenBloodColor(token);
+    if (this.bloodColor === 'none') return;
     // @ts-ignore
     this.id = token.id || token.actor.data._id;
     this.token = token;
     this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
     this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
-    this.bloodColor = lookupTokenBloodColor(token);
     this.saveState(token);
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
+    this.bleedingDistance = 0;
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
     this.splatsContainer = new PIXI.Container();
   }
 
   public async createMask(): Promise<void> {
+    if (this.bloodColor === 'none') return;
     // @ts-ignore
     const maskTexture = await PIXI.Texture.fromURL(this.token.data.img);
     const maskSprite = PIXI.Sprite.from(maskTexture);
@@ -82,22 +87,23 @@ export default class SplatToken {
   }
 
   public updateSplats(updatedSplats): void {
+    if (this.bloodColor === 'none') return;
     this.tokenSplats = updatedSplats || [];
     this.draw();
   }
 
   public async updateChanges(changes): Promise<void> {
     if (
-      changes.rotation === undefined &&
-      changes.x === undefined &&
-      changes.y === undefined &&
-      changes.actorData?.data?.attributes?.hp === undefined
+      this.bloodColor === 'none' ||
+      (changes.rotation === undefined &&
+        changes.x === undefined &&
+        changes.y === undefined &&
+        changes.actorData?.data?.attributes?.hp === undefined)
     )
       return;
-
     this.updateDamage(changes);
     this.updateMovement(changes);
-    this.updateBleeding();
+    //this.updateBleeding();
 
     if (this.hitSeverity > 0) {
       this.bleedFloor();
@@ -109,7 +115,7 @@ export default class SplatToken {
 
     this.updateRotation(changes);
 
-    this.saveState(this.token);
+    this.saveState(this.token, changes);
 
     const flags = {
       [MODULE_ID]: { bleedingSeverity: this.bleedingSeverity, splats: duplicate(this.tokenSplats) },
@@ -128,18 +134,12 @@ export default class SplatToken {
 
     const posX = changes.x === undefined ? this.x : changes.x;
     const posY = changes.y === undefined ? this.y : changes.y;
-    const currPos = new PIXI.Point(posX, posY);
-    const lastPos = new PIXI.Point(this.x, this.y);
-    log(LogLevel.DEBUG, 'checkForMovement pos: l,c:', lastPos, currPos);
+    this.currPos = new PIXI.Point(posX, posY);
+    this.lastPos = new PIXI.Point(this.x, this.y);
+    this.movePos = new PIXI.Point(this.currPos.x - this.lastPos.x, this.currPos.y - this.lastPos.y);
+    log(LogLevel.DEBUG, 'checkForMovement pos: l,c:', this.lastPos, this.currPos);
 
-    this.direction = getDirectionNrml(lastPos, currPos);
-  }
-
-  private updateBleeding(): void {
-    if (!this.direction || !this.bleedingSeverity) return;
-
-    const density = game.settings.get(MODULE_ID, 'trailSplatDensity');
-    if (!--this.bleedingCount) this.bleedingCount = Math.round(1 / density);
+    this.direction = getDirectionNrml(this.lastPos, this.currPos);
   }
 
   private updateRotation(changes): void {
@@ -163,23 +163,26 @@ export default class SplatToken {
   private bleedTrail(): void {
     const density = game.settings.get(MODULE_ID, 'trailSplatDensity');
     if (!density) return;
-    if (density > 0 && density < 1) {
-      if (this.bleedingCount === 0) {
-        BloodNGuts.generateFloorSplats(
-          this,
-          splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
-          game.settings.get(MODULE_ID, 'trailSplatSize'),
-          1, //one splat per 1/density grid squares
-        );
-      }
-    } else {
-      BloodNGuts.generateTrailSplats(
-        this,
-        splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
-        game.settings.get(MODULE_ID, 'trailSplatSize'),
-        density,
-      );
+
+    const amount = density * this.bleedingSeverity;
+
+    const distTravelled = distanceBetween(new PIXI.Point(), this.movePos) + this.bleedingDistance;
+    this.bleedingDistance = (1 / amount) * canvas.grid.size;
+    const numSplats = distTravelled / this.bleedingDistance;
+    this.bleedingDistance = distTravelled % this.bleedingDistance;
+
+    if (numSplats < 1) return;
+
+    const distances: number[] = [];
+    for (let i = 1 / numSplats; i <= 1; i += 1 / numSplats) {
+      distances.push(i);
     }
+    BloodNGuts.generateTrailSplats(
+      this,
+      splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
+      game.settings.get(MODULE_ID, 'trailSplatSize'),
+      distances,
+    );
   }
 
   private async bleedToken(): Promise<void> {
@@ -258,14 +261,15 @@ export default class SplatToken {
     //await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
   }
 
-  private saveState(token): void {
-    this.x = token.x;
-    this.y = token.y;
-    this.hp = token.actor.data.data.attributes.hp.value;
-    this.maxHP = token.actor.data.data.attributes.hp.max;
+  private saveState(token, changes?): void {
+    this.x = changes?.x || token.x;
+    this.y = changes?.y || token.y;
+    this.hp = changes?.actorData?.data?.attributes?.hp?.value || token.actor.data.data.attributes.hp.value;
+    this.maxHP = changes?.actorData?.data?.attributes?.hp?.max || token.actor.data.data.attributes.hp.max;
     // reset hit severity and direction for next round.
     this.hitSeverity = null;
     this.direction = null;
+    this.movePos = null;
   }
 
   private async setSeverity(severity: number): Promise<void> {
@@ -329,7 +333,7 @@ export default class SplatToken {
   private wipe(): void {
     let counter = 0;
     // delete everything except the sprite mask
-    while (this.splatsContainer.children.length > 1) {
+    while (this.splatsContainer?.children?.length > 1) {
       const displayObj = this.splatsContainer.children[counter];
       if (!displayObj.isMask) displayObj.destroy();
       else counter++;
@@ -339,7 +343,7 @@ export default class SplatToken {
   public wipeAll(): void {
     this.wipe();
     this.tokenSplats = [];
-    this.token.setFlag(MODULE_ID, 'splats', null);
+    if (this.token) this.token.setFlag(MODULE_ID, 'splats', null);
   }
 
   public removeState(id): void {
@@ -350,7 +354,7 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'drawSplats: splatStateObj.tokenId');
     this.wipe();
     // @ts-ignore
-    if (!this.tokenSplats || this.tokenSplats === 'wipe') return;
+    if (!this.tokenSplats) return;
     BloodNGuts.allFontsReady.then(() => {
       this.tokenSplats.forEach((splatState) => {
         splatState.splats.forEach((splat) => {
