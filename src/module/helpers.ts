@@ -110,8 +110,8 @@ export const getRandomBoxMuller = (): number => {
  * @returns {string} - color in rgba format, e.g. '[125, 125, 7, 0.7]'.
  */
 export const lookupTokenBloodColor = (token: Token): string => {
-  const enabled = game.settings.get(MODULE_ID, 'useBloodColor');
-  log(LogLevel.INFO, 'lookupTokenBloodColor enabled?: ' + enabled);
+  const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
+  log(LogLevel.INFO, 'lookupTokenBloodColor enabled?: ' + bloodColorEnabled);
 
   const actor: Actor = token.actor;
   const actorType: string = actor.data.type;
@@ -122,12 +122,16 @@ export const lookupTokenBloodColor = (token: Token): string => {
   const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
 
   // if useBloodColor is disabled then all blood is blood red
-  const bloodColor = enabled ? bloodColorSettings.color[type.toLowerCase()] : 'blood';
+  let bloodColor = bloodColorSettings.color[type.toLowerCase()];
+  if (bloodColor === 'none') return 'none';
+  bloodColor = bloodColorEnabled ? bloodColor : 'blood';
 
   // bloodSettings can return either an rbga string, a color string or 'name' which looks up the
   // color based on it's name. e.g. 'Purple Ooze'
   let rgba: string;
-  if (bloodColor === 'name') {
+  if (bloodColor === 'none') {
+    return '';
+  } else if (bloodColor === 'name') {
     rgba = getActorColorByName(actor);
     log(LogLevel.DEBUG, 'lookupTokenBloodColor name:', bloodColor, rgba);
   } else if (getRGBA(bloodColor)) {
