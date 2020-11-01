@@ -275,13 +275,13 @@ export class BloodNGuts {
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
    */
-  public static generateTrailSplats(splatToken: SplatToken, font: SplatFont, size: number, density: number): void {
-    if (!density) return;
+  public static generateTrailSplats(splatToken: SplatToken, font: SplatFont, size: number, distances: number[]): void {
+    if (!distances) return;
     log(LogLevel.INFO, 'generateTrailSplats');
     log(LogLevel.DEBUG, 'generateTrailSplats severity', splatToken.bleedingSeverity);
 
     const splatStateObj: Partial<SplatStateObject> = {};
-
+    splatStateObj.splats = [];
     // scale the splats based on token size and severity
     const fontSize = Math.round(
       size * ((splatToken.spriteWidth + splatToken.spriteHeight) / canvas.grid.size / 2) * splatToken.bleedingSeverity,
@@ -295,9 +295,7 @@ export class BloodNGuts {
     };
     const style = new PIXI.TextStyle(splatStateObj.styleData);
 
-    const origin = new PIXI.Point(0);
-    const trailOrigin = new PIXI.Point(-splatToken.moveDist.x, -splatToken.moveDist.y);
-
+    //todo: improve this
     //horiz or vert movement
     const pixelSpread = splatToken.direction.x
       ? splatToken.spriteWidth * game.settings.get(MODULE_ID, 'splatSpread') * 2
@@ -305,43 +303,34 @@ export class BloodNGuts {
 
     const rand = getRandomBoxMuller() * pixelSpread - pixelSpread / 2;
     log(LogLevel.DEBUG, 'generateTrailSplats rand', rand);
-    // first go half the distance in the direction we are going
-    const controlPt: PIXI.Point = new PIXI.Point(splatToken.moveDist.x / 2, splatToken.moveDist.y / 2);
+    // first get the hafway point between the start and end
+    const controlPt = new PIXI.Point(
+      (splatToken.lastPos.x + splatToken.currPos.x) / 2,
+      (splatToken.lastPos.y + splatToken.currPos.y) / 2,
+    );
     // then swap direction y,x to give us a position to the side
+    controlPt.x += splatToken.direction.y * rand;
+    controlPt.y += splatToken.direction.x * rand;
 
-    const offsetPosition = new PIXI.Point();
-    if (splatToken.direction.x && splatToken.direction.y) {
-      offsetPosition.x = -splatToken.direction.y * rand;
-      offsetPosition.y = splatToken.direction.x * rand;
-    } else controlPt.set(controlPt.x + splatToken.direction.y * rand, controlPt.y + splatToken.direction.x * rand);
-
-    controlPt.x -= offsetPosition.x;
-    controlPt.y -= offsetPosition.y;
-
-    log(LogLevel.DEBUG, 'generateTrailSplats orig,trailOrig,ctrl', origin, trailOrigin, controlPt, rand);
+    log(LogLevel.DEBUG, 'generateTrailSplats', splatToken.lastPos, controlPt, splatToken.currPos, rand);
 
     // get random glyphs and the interval between each splat
     // amount is based on density and severity
-    const amount = Math.round(density * splatToken.bleedingSeverity);
-    const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
-    const increment = 1 / amount;
-    log(LogLevel.DEBUG, 'generateTrailSplats amount', amount);
+    const glyphArray: Array<string> = Array.from({ length: distances.length }, () => getRandomGlyph(font));
 
-    // we skip 0 because that position already has a splat from the last trailSplat/floorSplat
-    let dist = increment;
     // create our splats for later drawing.
-    splatStateObj.splats = glyphArray.map((glyph) => {
+    for (let i = 0; i < glyphArray.length; i++) {
+      const glyph = glyphArray[i];
       const tm = PIXI.TextMetrics.measureText(glyph, style);
-      const pt = getPointOnCurve(trailOrigin, controlPt, origin, dist);
-      dist += increment;
-      return {
-        x: Math.round(pt.x - tm.width / 2),
-        y: Math.round(pt.y - tm.height / 2),
+      const pt = getPointOnCurve(splatToken.lastPos, controlPt, splatToken.currPos, distances[i]);
+      splatStateObj.splats.push({
+        x: Math.round(pt.x - tm.width / 2) - splatToken.currPos.x,
+        y: Math.round(pt.y - tm.height / 2) - splatToken.currPos.y,
         width: tm.width,
         height: tm.height,
         glyph: glyph,
-      };
     });
+    }
     log(LogLevel.DEBUG, 'generateTrailSplats splatStateObj.splats', splatStateObj.splats);
 
     const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatStateObj.splats);
