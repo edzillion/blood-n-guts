@@ -330,6 +330,11 @@ export default class SplatToken {
     return severity;
   }
 
+  public getCenter(): PIXI.Point {
+    debugger;
+    return this.token.center();
+  }
+
   private wipe(): void {
     let counter = 0;
     // delete everything except the sprite mask

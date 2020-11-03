@@ -11,7 +11,6 @@ import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
   computeSightFromPoint,
-  drawDebugRect,
   getRandomBoxMuller,
   alignSplatsGetOffsetAndDimensions,
   getPointOnCurve,
