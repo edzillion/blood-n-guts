@@ -247,7 +247,8 @@ export class BloodNGuts {
     splatStateObj.y = offset.y;
 
     const maxDistance = Math.max(width, height);
-    const sight = computeSightFromPoint(splatToken.token.center, maxDistance);
+    const tokenCenter = new PIXI.Point(...canvas.grid.getCenter(splatToken.x, splatToken.y));
+    const sight = computeSightFromPoint(tokenCenter, maxDistance);
 
     // since we don't want to add the mask to the splatsContainer yet (as that will
     // screw up our alignment) we need to move it by editing the x,y points directly
@@ -256,8 +257,8 @@ export class BloodNGuts {
       sight[i + 1] -= splatStateObj.offset.y;
     }
 
-    splatStateObj.x += splatToken.token.center.x;
-    splatStateObj.y += splatToken.token.center.y;
+    splatStateObj.x += tokenCenter.x;
+    splatStateObj.y += tokenCenter.y;
 
     splatStateObj.maskPolygon = sight;
 
@@ -274,13 +275,13 @@ export class BloodNGuts {
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
    */
-  public static generateTrailSplats(splatToken: SplatToken, font: SplatFont, size: number, density: number): void {
-    if (!density) return;
+  public static generateTrailSplats(splatToken: SplatToken, font: SplatFont, size: number, distances: number[]): void {
+    if (!distances) return;
     log(LogLevel.INFO, 'generateTrailSplats');
     log(LogLevel.DEBUG, 'generateTrailSplats severity', splatToken.bleedingSeverity);
 
     const splatStateObj: Partial<SplatStateObject> = {};
-
+    splatStateObj.splats = [];
     // scale the splats based on token size and severity
     const fontSize = Math.round(
       size * ((splatToken.spriteWidth + splatToken.spriteHeight) / canvas.grid.size / 2) * splatToken.bleedingSeverity,
@@ -294,14 +295,7 @@ export class BloodNGuts {
     };
     const style = new PIXI.TextStyle(splatStateObj.styleData);
 
-    const origin = new PIXI.Point(0);
-    const trailOrigin = new PIXI.Point(
-      -splatToken.direction.x * canvas.grid.size,
-      -splatToken.direction.y * canvas.grid.size,
-    );
-
-    log(LogLevel.DEBUG, 'generateTrailSplats origin,trailOrigin', origin, trailOrigin);
-
+    //todo: improve this
     //horiz or vert movement
     const pixelSpread = splatToken.direction.x
       ? splatToken.spriteWidth * game.settings.get(MODULE_ID, 'splatSpread') * 2
@@ -309,37 +303,34 @@ export class BloodNGuts {
 
     const rand = getRandomBoxMuller() * pixelSpread - pixelSpread / 2;
     log(LogLevel.DEBUG, 'generateTrailSplats rand', rand);
-    // first go half the distance in the direction we are going
-    const controlPt: PIXI.Point = new PIXI.Point(
-      trailOrigin.x + splatToken.direction.x * (canvas.grid.size / 2),
-      trailOrigin.y + splatToken.direction.y * (canvas.grid.size / 2),
+    // first get the hafway point between the start and end
+    const controlPt = new PIXI.Point(
+      (splatToken.lastPos.x + splatToken.currPos.x) / 2,
+      (splatToken.lastPos.y + splatToken.currPos.y) / 2,
     );
-    // then swap direction y,x to give us an position to the side
-    controlPt.set(controlPt.x + splatToken.direction.y * rand, controlPt.y + splatToken.direction.x * rand);
-    log(LogLevel.DEBUG, 'generateTrailSplats spread, ctrlPt', rand, controlPt);
+    // then swap direction y,x to give us a position to the side
+    controlPt.x += splatToken.direction.y * rand;
+    controlPt.y += splatToken.direction.x * rand;
+
+    log(LogLevel.DEBUG, 'generateTrailSplats', splatToken.lastPos, controlPt, splatToken.currPos, rand);
 
     // get random glyphs and the interval between each splat
     // amount is based on density and severity
-    const amount = Math.round(density * splatToken.bleedingSeverity);
-    const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
-    const increment = 1 / amount;
-    log(LogLevel.DEBUG, 'generateTrailSplats amount', amount);
+    const glyphArray: Array<string> = Array.from({ length: distances.length }, () => getRandomGlyph(font));
 
-    // we skip 0 because that position already has a splat from the last trailSplat/floorSplat
-    let dist = increment;
     // create our splats for later drawing.
-    splatStateObj.splats = glyphArray.map((glyph) => {
+    for (let i = 0; i < glyphArray.length; i++) {
+      const glyph = glyphArray[i];
       const tm = PIXI.TextMetrics.measureText(glyph, style);
-      const pt = getPointOnCurve(trailOrigin, controlPt, origin, dist);
-      dist += increment;
-      return {
-        x: Math.round(pt.x - tm.width / 2),
-        y: Math.round(pt.y - tm.height / 2),
+      const pt = getPointOnCurve(splatToken.lastPos, controlPt, splatToken.currPos, distances[i]);
+      splatStateObj.splats.push({
+        x: Math.round(pt.x - tm.width / 2) - splatToken.currPos.x,
+        y: Math.round(pt.y - tm.height / 2) - splatToken.currPos.y,
         width: tm.width,
         height: tm.height,
         glyph: glyph,
-      };
-    });
+      });
+    }
     log(LogLevel.DEBUG, 'generateTrailSplats splatStateObj.splats', splatStateObj.splats);
 
     const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatStateObj.splats);
@@ -349,7 +340,8 @@ export class BloodNGuts {
     splatStateObj.y = offset.y;
 
     const maxDistance = Math.max(width, height);
-    const sight = computeSightFromPoint(splatToken.token.center, maxDistance);
+    const tokenCenter = new PIXI.Point(...canvas.grid.getCenter(splatToken.currPos.x, splatToken.currPos.y));
+    const sight = computeSightFromPoint(tokenCenter, maxDistance);
     splatStateObj.maskPolygon = sight;
 
     // since we don't want to add the mask to the splatsContainer yet (as that will
@@ -359,8 +351,8 @@ export class BloodNGuts {
       sight[i + 1] -= splatStateObj.offset.y;
     }
 
-    splatStateObj.x += splatToken.token.center.x;
-    splatStateObj.y += splatToken.token.center.y;
+    splatStateObj.x += tokenCenter.x;
+    splatStateObj.y += tokenCenter.y;
 
     splatStateObj.id = getUID();
 
@@ -512,11 +504,19 @@ Token.prototype.draw = (function () {
   return async function () {
     await cached.apply(this);
     if (!this.icon) return this;
-    if (!BloodNGuts.splatTokens[this.id]) {
-      BloodNGuts.splatTokens[this.id] = new SplatToken(this);
+    let splatToken;
+    //special case
+    //seems that when dragging this.id is unset. need to get this._original.data._id
+    if (BloodNGuts.splatTokens[this.id]) splatToken = BloodNGuts.splatTokens[this.id];
+    else if (BloodNGuts.splatTokens[this._original?.data?._id])
+      splatToken = BloodNGuts.splatTokens[this._original.data._id];
+    else {
+      splatToken = new SplatToken(this);
+      BloodNGuts.splatTokens[this.id] = splatToken;
       await BloodNGuts.splatTokens[this.id].createMask();
     }
-    const splatToken = BloodNGuts.splatTokens[this.id];
+    if (splatToken.bloodColor === 'none') return this;
+
     const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;
     if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
     else {

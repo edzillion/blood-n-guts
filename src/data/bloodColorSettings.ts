@@ -10,7 +10,7 @@ export const color = {
   dragon: 'name',
   elemental: `rgba(15, 233, 230, 0.7)`,
   elf: 'silver',
-  fey: `rgba(15, 255, 15, 0.7)`,
+  fey: 'none',
   plant: `rgba(15, 255, 15, 0.7)`,
   'half-elf': `rgba(223, 96, 96, 0.7)`,
   monstrosity: `rgba(78, 0, 154, 0.7)`,
