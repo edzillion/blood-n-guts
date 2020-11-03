@@ -351,7 +351,7 @@ export default class SplatToken {
   }
 
   public draw(): void {
-    log(LogLevel.DEBUG, 'drawSplats: splatStateObj.tokenId');
+    log(LogLevel.DEBUG, 'tokenSplat: draw');
     this.wipe();
     // @ts-ignore
     if (!this.tokenSplats) return;
