@@ -378,7 +378,7 @@ export class BloodNGuts {
     const splatToken = BloodNGuts.splatTokens[tokenId];
 
     //todo: wth does this not work here? changes.flags[MODULE_ID]?.splats;
-    if (changes.flags && changes.flags[MODULE_ID].splats !== undefined)
+    if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
       splatToken.updateSplats(changes.flags[MODULE_ID].splats);
 
     if (game.user.isGM) {
