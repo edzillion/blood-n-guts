@@ -194,6 +194,16 @@ export const registerSettings = (): void => {
     },
   });
 
+  game.settings.register(MODULE_ID, 'deathMultiplier', {
+    scope: 'client',
+    config: false,
+    type: Number,
+    default: 2,
+    onChange: (value) => {
+      log(LogLevel.DEBUG, 'Settings: deathMultiplier set to ' + value);
+    },
+  });
+
   game.settings.register(MODULE_ID, 'sceneSplatPoolSize', {
     scope: 'client',
     config: false,
