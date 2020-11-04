@@ -485,6 +485,15 @@ Hooks.once('init', async () => {
 
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
 });
+
+// Hooks.once('ready', () => {
+//   log(LogLevel.INFO, 'ready');
+//   if (game.system.id == 'pf2e') {
+//     BloodNGuts.saveRollMethod = 'rollSave';
+//   } else {
+//   }
+// });
+
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
 Hooks.on('updateActor', (actor, changes) => {
