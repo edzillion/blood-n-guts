@@ -113,10 +113,14 @@ export const lookupTokenBloodColor = (token: Token): string => {
   const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
   log(LogLevel.INFO, 'lookupTokenBloodColor enabled?: ' + bloodColorEnabled);
 
-  const actor: Actor = token.actor;
+  const actor = token.actor;
   const actorType: string = actor.data.type;
-  const type: string = actorType === 'npc' ? actor.data.data.details.type : actor.data.data.details.race;
-
+  let type: string;
+  if (actor.data.type === 'character') {
+    type = actor.data.data.details.ancestry?.value || actor.data.data.details.race;
+  } else if (actor.data.type === 'npc') {
+    type = actor.data.data.details.type || actor.data.data.details.creatureType;
+  }
   log(LogLevel.DEBUG, 'lookupTokenBloodColor: ', token.name, actorType, type);
 
   const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
