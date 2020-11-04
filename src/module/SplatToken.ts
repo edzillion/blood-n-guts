@@ -84,6 +84,13 @@ export default class SplatToken {
       (this.token.data.height * canvas.grid.size) / 2,
     );
     this.splatsContainer.angle = this.token.data.rotation;
+
+    // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
+    if (!this.bleedingSeverity && this.hp < this.maxHP / 2 && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
+      this.hitSeverity = 2 - this.hp / (this.maxHP / 2);
+      this.bleedingSeverity = this.hitSeverity;
+      this.bleedToken();
+    }
   }
 
   public updateSplats(updatedSplats): void {
