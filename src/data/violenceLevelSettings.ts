@@ -9,6 +9,7 @@ export const level = [
     splatSpread: 1.1,
     healthThreshold: 0.5,
     damageThreshold: 0.33,
+    deathMultiplier: 1.5,
     sceneSplatPoolSize: 50,
   },
   {
@@ -21,6 +22,7 @@ export const level = [
     splatSpread: 1.2,
     healthThreshold: 0.75,
     damageThreshold: 0.25,
+    deathMultiplier: 1.75,
     sceneSplatPoolSize: 75,
   },
   {
@@ -33,6 +35,7 @@ export const level = [
     splatSpread: 1.4,
     healthThreshold: 0.85,
     damageThreshold: 0.15,
+    deathMultiplier: 2,
     sceneSplatPoolSize: 150,
   },
   {
@@ -45,6 +48,7 @@ export const level = [
     splatSpread: 2,
     healthThreshold: 0.9,
     damageThreshold: 0.1,
+    deathMultiplier: 2.4,
     sceneSplatPoolSize: 300,
   },
   {
@@ -57,6 +61,7 @@ export const level = [
     splatSpread: 2.5,
     healthThreshold: 1.0,
     damageThreshold: 0.0,
+    deathMultiplier: 3,
     sceneSplatPoolSize: 500,
   },
 ];

@@ -49,6 +49,21 @@ export const registerSettings = (): void => {
     },
   });
 
+  game.settings.register(MODULE_ID, 'halfHealthBloodied', {
+    name: '50% Health = Bloodied',
+    hint: 'Common house rule to show bleeding effects at 50% of max health',
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: false,
+    onChange: (value) => {
+      log(LogLevel.DEBUG, 'Settings: halfHealthBloodied set to ' + value);
+      // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
+      game.settings.set(MODULE_ID, 'healthThreshold', 0.5);
+      game.settings.set(MODULE_ID, 'damageThreshold', 0);
+    },
+  });
+
   game.settings.registerMenu(MODULE_ID, 'advancedConfig', {
     name: 'Advanced Config',
     label: 'Advanced Configuration',
@@ -176,6 +191,16 @@ export const registerSettings = (): void => {
     default: 0.0,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: damageThreshold set to ' + value);
+    },
+  });
+
+  game.settings.register(MODULE_ID, 'deathMultiplier', {
+    scope: 'client',
+    config: false,
+    type: Number,
+    default: 2,
+    onChange: (value) => {
+      log(LogLevel.DEBUG, 'Settings: deathMultiplier set to ' + value);
     },
   });
 
