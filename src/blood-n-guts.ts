@@ -11,7 +11,6 @@ import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
   computeSightFromPoint,
-  drawDebugRect,
   getRandomBoxMuller,
   alignSplatsGetOffsetAndDimensions,
   getPointOnCurve,
@@ -20,7 +19,7 @@ import {
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
 
-CONFIG.debug.hooks = true;
+// CONFIG.debug.hooks = true;
 CONFIG.bng = { logLevel: 1 };
 
 /**
@@ -247,7 +246,7 @@ export class BloodNGuts {
     splatStateObj.y = offset.y;
 
     const maxDistance = Math.max(width, height);
-    const tokenCenter = new PIXI.Point(...canvas.grid.getCenter(splatToken.x, splatToken.y));
+    const tokenCenter = splatToken.getCenter(); //new PIXI.Point(...canvas.grid.getCenter(splatToken.x, splatToken.y));
     const sight = computeSightFromPoint(tokenCenter, maxDistance);
 
     // since we don't want to add the mask to the splatsContainer yet (as that will
@@ -340,7 +339,8 @@ export class BloodNGuts {
     splatStateObj.y = offset.y;
 
     const maxDistance = Math.max(width, height);
-    const tokenCenter = new PIXI.Point(...canvas.grid.getCenter(splatToken.currPos.x, splatToken.currPos.y));
+
+    const tokenCenter = splatToken.getCenter(); //new PIXI.Point(...canvas.grid.getCenter(splatToken.currPos.x, splatToken.currPos.y));
     const sight = computeSightFromPoint(tokenCenter, maxDistance);
     splatStateObj.maskPolygon = sight;
 
@@ -514,8 +514,6 @@ Token.prototype.draw = (function () {
     await cached.apply(this);
     if (!this.icon) return this;
     let splatToken;
-    //special case
-    //seems that when dragging this.id is unset. need to get this._original.data._id
     if (BloodNGuts.splatTokens[this.id]) splatToken = BloodNGuts.splatTokens[this.id];
     else if (this._original?.data?._id) {
       // User is dragging the Token, skip
