@@ -94,7 +94,7 @@ export default class SplatToken {
   }
 
   public updateSplats(updatedSplats): void {
-    if (this.bloodColor === 'none' || (JSON.stringify(updatedSplats) === JSON.stringify(this.tokenSplats))) return;
+    if (this.bloodColor === 'none' || JSON.stringify(updatedSplats) === JSON.stringify(this.tokenSplats)) return;
     this.tokenSplats = updatedSplats || [];
     this.draw();
   }
@@ -338,8 +338,7 @@ export default class SplatToken {
   }
 
   public getCenter(): PIXI.Point {
-    debugger;
-    return this.token.center();
+    return this.token.center;
   }
 
   private wipe(): void {
@@ -354,8 +353,8 @@ export default class SplatToken {
 
   public wipeAll(): void {
     this.wipe();
-    this.tokenSplats = [];
     if (this.token) this.token.setFlag(MODULE_ID, 'splats', null);
+    this.tokenSplats = [];
   }
 
   public removeState(id): void {
