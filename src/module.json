@@ -3,8 +3,8 @@
 	"title": "Blood 'n Guts",
 	"description": "Blood 'n Guts creates blood spray and splatter when tokens recieve damage, drawing to the floor and tokens, and drawing trails of blood after tokens who have taken damage. Many options are configurable.",
 	"author": "edzillion",
-	"systems": ["dnd5e"],
-	"version": "0.5.12",
+	"systems": ["dnd5e", "pf2e"],
+	"version": "0.5.16",
 	"minimumCoreVersion": "0.0.1",
 	"esmodules": [
 		"./blood-n-guts.js"
@@ -12,5 +12,5 @@
 	"styles": ["./blood-n-guts.css"],
 	"url": "https://github.com/edzillion/blood-n-guts",
 	"manifest": "https://raw.githubusercontent.com/edzillion/blood-n-guts/master/src/module.json",
-	"download": "https://github.com/edzillion/blood-n-guts/releases/download/v0.5.12/blood-n-guts-v0.5.12.zip"
+	"download": "https://github.com/edzillion/blood-n-guts/releases/download/v0.5.16/blood-n-guts-v0.5.16.zip"
 }

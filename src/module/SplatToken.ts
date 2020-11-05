@@ -84,6 +84,13 @@ export default class SplatToken {
       (this.token.data.height * canvas.grid.size) / 2,
     );
     this.splatsContainer.angle = this.token.data.rotation;
+
+    // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
+    if (!this.bleedingSeverity && this.hp < this.maxHP / 2 && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
+      this.hitSeverity = 2 - this.hp / (this.maxHP / 2);
+      this.bleedingSeverity = this.hitSeverity;
+      this.bleedToken();
+    }
   }
 
   public updateSplats(updatedSplats): void {
@@ -323,7 +330,7 @@ export default class SplatToken {
       return changeFractionOfMax / healthThreshold;
     }
     // dead, multiply by 2.
-    const deathMultiplier = currentHP === 0 ? 2 : 1;
+    const deathMultiplier = currentHP === 0 ? game.settings.get(MODULE_ID, 'deathMultiplier') : 1;
     const severity = 1 + (changeFractionOfMax / 2) * deathMultiplier;
 
     log(LogLevel.DEBUG, 'getDamageSeverity severity', severity);
@@ -356,7 +363,7 @@ export default class SplatToken {
   }
 
   public draw(): void {
-    log(LogLevel.DEBUG, 'drawSplats: splatStateObj.tokenId');
+    log(LogLevel.DEBUG, 'tokenSplat: draw');
     this.wipe();
     // @ts-ignore
     if (!this.tokenSplats) return;

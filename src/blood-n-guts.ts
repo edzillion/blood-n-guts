@@ -19,8 +19,8 @@ import {
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
 
-//CONFIG.debug.hooks = true;
-CONFIG.bng = { logLevel: 2 };
+CONFIG.debug.hooks = true;
+CONFIG.bng = { logLevel: 1 };
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -377,7 +377,7 @@ export class BloodNGuts {
     const splatToken = BloodNGuts.splatTokens[tokenId];
 
     //todo: wth does this not work here? changes.flags[MODULE_ID]?.splats;
-    if (changes.flags && changes.flags[MODULE_ID].splats !== undefined)
+    if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
       splatToken.updateSplats(changes.flags[MODULE_ID].splats);
 
     if (game.user.isGM) {
@@ -484,6 +484,15 @@ Hooks.once('init', async () => {
 
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
 });
+
+// Hooks.once('ready', () => {
+//   log(LogLevel.INFO, 'ready');
+//   if (game.system.id == 'pf2e') {
+//     BloodNGuts.saveRollMethod = 'rollSave';
+//   } else {
+//   }
+// });
+
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
 Hooks.on('updateActor', (actor, changes) => {
@@ -507,9 +516,10 @@ Token.prototype.draw = (function () {
     //special case
     //seems that when dragging this.id is unset. need to get this._original.data._id
     if (BloodNGuts.splatTokens[this.id]) splatToken = BloodNGuts.splatTokens[this.id];
-    else if (BloodNGuts.splatTokens[this._original?.data?._id])
-      splatToken = BloodNGuts.splatTokens[this._original.data._id];
-    else {
+    else if (this._original?.data?._id) {
+      // User is dragging the Token, skip
+      return this;
+    } else {
       splatToken = new SplatToken(this);
       BloodNGuts.splatTokens[this.id] = splatToken;
       await BloodNGuts.splatTokens[this.id].createMask();
