@@ -20,8 +20,8 @@ import {
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
 
-//CONFIG.debug.hooks = true;
-CONFIG.bng = { logLevel: 2 };
+CONFIG.debug.hooks = true;
+CONFIG.bng = { logLevel: 1 };
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -517,9 +517,10 @@ Token.prototype.draw = (function () {
     //special case
     //seems that when dragging this.id is unset. need to get this._original.data._id
     if (BloodNGuts.splatTokens[this.id]) splatToken = BloodNGuts.splatTokens[this.id];
-    else if (BloodNGuts.splatTokens[this._original?.data?._id])
-      splatToken = BloodNGuts.splatTokens[this._original.data._id];
-    else {
+    else if (this._original?.data?._id) {
+      // User is dragging the Token, skip
+      return this;
+    } else {
       splatToken = new SplatToken(this);
       BloodNGuts.splatTokens[this.id] = splatToken;
       await BloodNGuts.splatTokens[this.id].createMask();
