@@ -94,7 +94,7 @@ export default class SplatToken {
   }
 
   public updateSplats(updatedSplats): void {
-    if (this.bloodColor === 'none') return;
+    if (this.bloodColor === 'none' || (JSON.stringify(updatedSplats) === JSON.stringify(this.tokenSplats))) return;
     this.tokenSplats = updatedSplats || [];
     this.draw();
   }
