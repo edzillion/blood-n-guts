@@ -36,6 +36,7 @@ interface SplatStateObject {
   offset: PIXI.Point;
   maskPolygon?: Array<number>;
   tokenId?: string;
+  alpha?: number;
 }
 
 interface Splat {

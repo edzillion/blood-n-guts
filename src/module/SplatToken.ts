@@ -89,7 +89,7 @@ export default class SplatToken {
     if (!this.bleedingSeverity && this.hp < this.maxHP / 2 && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
       this.hitSeverity = 2 - this.hp / (this.maxHP / 2);
       this.bleedingSeverity = this.hitSeverity;
-      this.bleedToken();
+      this.tokenSplats = this.bleedToken();
     }
   }
 
@@ -99,7 +99,7 @@ export default class SplatToken {
     this.draw();
   }
 
-  public async updateChanges(changes): Promise<void> {
+  public updateChanges(changes): void {
     if (
       this.bloodColor === 'none' ||
       (changes.rotation === undefined &&
@@ -108,35 +108,33 @@ export default class SplatToken {
         changes.actorData?.data?.attributes?.hp === undefined)
     )
       return;
-    this.updateDamage(changes);
-    this.updateMovement(changes);
+    const updates = { bleedingSeverity: null, splats: null };
+    [this.hitSeverity, updates.bleedingSeverity] = this.getUpdatedDamage(changes);
+    if (updates.bleedingSeverity !== null) this.bleedingSeverity = updates.bleedingSeverity;
+    else delete updates.bleedingSeverity;
+    this.direction = this.getUpdatedMovement(changes);
     //this.updateBleeding();
 
     if (this.hitSeverity > 0) {
       this.bleedFloor();
-      this.bleedToken();
-    } else if (this.hitSeverity < 0) {
-      this.healToken();
-    }
+      updates.splats = this.bleedToken();
+    } else if (this.hitSeverity < 0 && this.tokenSplats.length) {
+      updates.splats = this.healToken();
+    } else delete updates.splats;
+
     if (this.direction && this.bleedingSeverity) this.bleedTrail();
 
     this.updateRotation(changes);
 
-    this.saveState(this.token, changes);
-
-    const flags = {
-      [MODULE_ID]: { bleedingSeverity: this.bleedingSeverity, splats: duplicate(this.tokenSplats) },
-    };
-
-    await this.token.update({ flags }, { diff: false });
+    this.saveState(this.token, updates, changes);
   }
 
-  private updateDamage(changes): void {
-    if (changes.actorData === undefined || changes.actorData.data.attributes?.hp === undefined) return;
-    this.setSeverity(this.getDamageSeverity(changes));
+  private getUpdatedDamage(changes): [number, number] {
+    if (changes.actorData === undefined || changes.actorData.data.attributes?.hp === undefined) return [null, null];
+    return this.getSeverities(this.getDamageSeverity(changes));
   }
 
-  private updateMovement(changes): void {
+  private getUpdatedMovement(changes): PIXI.Point {
     if (changes.x === undefined && changes.y === undefined) return;
 
     const posX = changes.x === undefined ? this.x : changes.x;
@@ -146,7 +144,7 @@ export default class SplatToken {
     this.movePos = new PIXI.Point(this.currPos.x - this.lastPos.x, this.currPos.y - this.lastPos.y);
     log(LogLevel.DEBUG, 'checkForMovement pos: l,c:', this.lastPos, this.currPos);
 
-    this.direction = getDirectionNrml(this.lastPos, this.currPos);
+    return getDirectionNrml(this.lastPos, this.currPos);
   }
 
   private updateRotation(changes): void {
@@ -192,7 +190,7 @@ export default class SplatToken {
     );
   }
 
-  private async bleedToken(): Promise<void> {
+  private bleedToken(): SplatStateObject[] {
     const splatStateObj: Partial<SplatStateObject> = {};
     const density = game.settings.get(MODULE_ID, 'tokenSplatDensity');
     if (density === 0) return;
@@ -246,14 +244,15 @@ export default class SplatToken {
     splatStateObj.id = getUID();
     splatStateObj.tokenId = this.id;
 
-    this.tokenSplats.push(<SplatStateObject>splatStateObj);
+    const updatedSplats = duplicate(this.tokenSplats);
+
+    updatedSplats.push(<SplatStateObject>splatStateObj);
     BloodNGuts.scenePool.push({ state: <SplatStateObject>splatStateObj, splatsContainer: this.splatsContainer });
 
-    //await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
+    return updatedSplats;
   }
 
-  private async healToken(): Promise<void> {
-    if (!this.tokenSplats) return;
+  private healToken(): SplatStateObject[] {
     // make positive for sanity purposes
     let tempSeverity = this.hitSeverity * -1;
     // deal with scale/healthThreshold > 1. We can only heal to 100%
@@ -261,33 +260,43 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'healToken allTokensSplats:');
     let removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
     log(LogLevel.DEBUG, 'healToken removeAmount:', removeAmount);
+    const updatedSplats = duplicate(this.tokenSplats);
     while (removeAmount-- > 0) {
-      const state = this.tokenSplats.shift();
+      const state = updatedSplats.shift();
       BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.state.id != state.id);
     }
+    return updatedSplats;
     //await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
   }
 
-  private saveState(token, changes?): void {
+  private async saveState(token, updates?, changes?): Promise<void> {
+    //local state
     this.x = changes?.x || token.x;
     this.y = changes?.y || token.y;
     this.hp = changes?.actorData?.data?.attributes?.hp?.value || token.actor.data.data.attributes.hp.value;
     this.maxHP = changes?.actorData?.data?.attributes?.hp?.max || token.actor.data.data.attributes.hp.max;
+    //flag state
+    if (updates && Object.keys(updates).length) {
+      const flags = {
+        [MODULE_ID]: updates,
+      };
+
+      await this.token.update({ flags }, { diff: false });
+    }
+
     // reset hit severity and direction for next round.
     this.hitSeverity = null;
     this.direction = null;
     this.movePos = null;
   }
 
-  private async setSeverity(severity: number): Promise<void> {
-    this.hitSeverity = severity;
-    if (this.hitSeverity > (this.bleedingSeverity ?? 0) + 1) {
-      this.bleedingSeverity = this.hitSeverity;
-      //await this.token.setFlag(MODULE_ID, 'bleedingSeverity', severity);
-    } else if (this.hitSeverity < 0) {
-      this.bleedingSeverity = null;
-      //await this.token.setFlag(MODULE_ID, 'bleedingSeverity', null);
+  private getSeverities(severity: number): [number, number] {
+    if (severity > (this.bleedingSeverity ?? 0) + 1) {
+      return [severity, severity];
+    } else if (severity < 0) {
+      return [severity, 0];
     }
+    return [severity, this.bleedingSeverity];
   }
   /**
    * Get severity, a number between -1 and 2:
