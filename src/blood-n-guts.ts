@@ -52,8 +52,8 @@ export class BloodNGuts {
       log(LogLevel.INFO, 'loadScene drawSplatPool', canvas.scene.name);
       const extantTokens = Object.keys(BloodNGuts.splatTokens);
       stateObjects = stateObjects.filter((so) => !so.tokenId || extantTokens.includes(so.tokenId));
+      BloodNGuts.trimSplatPool(stateObjects);
       BloodNGuts.drawSplatPool(stateObjects);
-      BloodNGuts.trimSplatPool();
     }
   }
 
@@ -72,25 +72,65 @@ export class BloodNGuts {
   }
 
   /**
+   * Trims excess splats over the `sceneSplatPoolSize` and fades the oldest.
+   * and adds those to the scene pool.
+   * @category GMOnly
+   * @function
+   */
+  private static trimSplatPool(updatedStates: [SplatStateObject]): void {
+    //todo: what's the permissions for this one?
+    log(LogLevel.INFO, 'trimSplatPool');
+    const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
+    const fadedPoolSize = updatedStates.length - Math.round(maxPoolSize * 0.85);
+    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
+    log(LogLevel.DEBUG, 'trimSplatPool sizes curr, max', updatedStates.length, maxPoolSize);
+
+    if (updatedStates.length > maxPoolSize) {
+      // remove the oldest splat
+      updatedStates.splice(0, updatedStates.length - maxPoolSize);
+    }
+
+    // 15% of splats will be set to fade. 1/3rd of those will be very faded
+    if (fadedPoolSize > 0) {
+      for (let i = 0; i < fadedPoolSize; i++) {
+        const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
+        updatedStates[i].alpha = alpha;
+      }
+    }
+
+    log(
+      LogLevel.DEBUG,
+      `trimSplatPool sceneSplatPool:${updatedStates.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
+    );
+  }
+
+  /**
    * Draws all new `SplatStateObject`s and those that haven't got a .splatContainer yet to the canvas
    * and adds those to the scene pool.
    * @category GMOnly
    * @function
-   * @param {[SplatStateObject]} updatedState - updated array of scene splats
+   * @param {[SplatStateObject]} updatedStates - updated array of scene splats
    */
-  private static drawSplatPool(updatedState: [SplatStateObject]): void {
+  private static drawSplatPool(updatedStates: [SplatStateObject]): void {
     //todo: what's the permissions for this one?
     log(LogLevel.INFO, 'drawSplatPool');
+    const updatedIds = updatedStates.map((state) => state.id);
     const existingStateIds = BloodNGuts.scenePool.map((poolObj) => poolObj.state.id);
     const drawnStateIds = BloodNGuts.scenePool.filter((poolObj) => poolObj.splatsContainer).map((p) => p.state.id);
 
-    const statesToAdd = updatedState.filter(
+    BloodNGuts.scenePool = BloodNGuts.scenePool.filter((p) => {
+      if (updatedIds.includes(p.state.id)) return this;
+      else if (p.state.tokenId) BloodNGuts.splatTokens[p.state.tokenId].removeState(p.state.tokenId);
+      else p.splatsContainer.destroy({ children: true });
+    });
+
+    const statesToAdd = updatedStates.filter(
       (state) => !existingStateIds.includes(state.id) || !drawnStateIds.includes(state.id),
     );
 
     log(LogLevel.DEBUG, 'drawSplatPool addStates', statesToAdd);
 
-    if (statesToAdd) {
+    if (statesToAdd.length) {
       statesToAdd.forEach((state: SplatStateObject) => {
         const splatsContainer = new PIXI.Container();
         const style = new PIXI.TextStyle(state.styleData);
@@ -115,7 +155,8 @@ export class BloodNGuts {
 
           splatsContainer.x = state.x;
           splatsContainer.y = state.y;
-
+          splatsContainer.alpha = state.alpha || 1;
+          delete state.alpha;
           canvas.tiles.addChild(splatsContainer);
 
           //if it's in the pool already update it otherwise add new entry
@@ -125,45 +166,14 @@ export class BloodNGuts {
         } else log(LogLevel.ERROR, 'drawSplatPool: splatStateObject has no .maskPolygon!');
       });
     }
-  }
 
-  /**
-   * Trims excess splats over the `sceneSplatPoolSize` and fades the oldest.
-   * and adds those to the scene pool.
-   * @category GMOnly
-   * @function
-   */
-  private static trimSplatPool(): void {
-    //todo: what's the permissions for this one?
-    log(LogLevel.INFO, 'trimSplatPool');
-
-    const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
-    const fadedPoolSize = Math.floor(BloodNGuts.scenePool.length * 0.15);
-    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
-    log(LogLevel.DEBUG, 'trimSplatPool sizes curr, max', BloodNGuts.scenePool.length, maxPoolSize);
-
-    if (BloodNGuts.scenePool.length >= maxPoolSize) {
-      // remove the oldest splat
-      const removePoolObj = BloodNGuts.scenePool.shift();
-      log(LogLevel.DEBUG, 'fadingSplatPool destroying id', removePoolObj.state.id);
-      if (removePoolObj.state.tokenId)
-        BloodNGuts.splatTokens[removePoolObj.state.tokenId].removeState(removePoolObj.state.id);
-      else removePoolObj.splatsContainer.destroy({ children: true });
+    const addedIds = statesToAdd.map((s) => s.id);
+    const statesToFade = updatedStates.filter((s) => s.alpha && !addedIds.includes(s.id));
+    if (statesToFade.length) {
+      statesToFade.forEach((s) => {
+        BloodNGuts.scenePool.find((p) => p.state.id === s.id).splatsContainer.alpha = s.alpha;
+      });
     }
-
-    // 15% of splats will be set to fade. 1/3rd of those will be very faded
-    if (BloodNGuts.scenePool.length >= fadedPoolSize) {
-      const size = Math.min(fadedPoolSize, BloodNGuts.scenePool.length);
-      for (let i = 0; i < size; i++) {
-        const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
-        BloodNGuts.scenePool[i].splatsContainer.alpha = alpha;
-      }
-    }
-
-    log(
-      LogLevel.DEBUG,
-      `trimSplatPool sceneSplatPool:${BloodNGuts.scenePool.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
-    );
   }
 
   /**
@@ -376,7 +386,6 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'updateTokenOrActorHandler', changes);
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
-
     //todo: wth does this not work here? changes.flags[MODULE_ID]?.splats;
     if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
       splatToken.updateSplats(changes.flags[MODULE_ID].splats);
@@ -427,8 +436,8 @@ export class BloodNGuts {
       return;
     } else if (!changes.flags[MODULE_ID]?.splatState) return;
     log(LogLevel.INFO, 'updateSceneHandler');
+    BloodNGuts.trimSplatPool(changes.flags[MODULE_ID]?.splatState);
     BloodNGuts.drawSplatPool(changes.flags[MODULE_ID]?.splatState);
-    BloodNGuts.trimSplatPool();
   }
 
   /**
