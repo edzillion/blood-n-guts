@@ -49,7 +49,6 @@ export class BloodNGuts {
 
     if (sceneSplats) {
       log(LogLevel.INFO, 'loadScene drawSceneSplats', canvas.scene.name);
-      BloodNGuts.trimSceneSplats(sceneSplats);
       BloodNGuts.drawSceneSplats(sceneSplats);
     }
   }
@@ -63,29 +62,30 @@ export class BloodNGuts {
    */
   public static saveScene(): Promise<Entity> {
     log(LogLevel.INFO, 'saveScene');
-    const sceneSplats = BloodNGuts.scenePool.filter((p) => !p.data.tokenId).map((p) => p.data);
+    const sceneSplats = BloodNGuts.getTrimmedSceneSplats();
     return canvas.scene.setFlag(MODULE_ID, 'sceneSplats', sceneSplats);
   }
 
   /**
-   * Trims excess splats over the `sceneSplatPoolSize` and fades the oldest.
-   * and adds those to the scene pool.
+   * Gets all splats from the `scenePool`, trims the excess over 'sceneSplatPoolSize' and fades the oldest.
    * @category GMOnly
    * @function
+   * @returns {SplatDataObject[]} - trimmed splat array
    */
-  private static trimSceneSplats(splats: SplatDataObject[]): void {
-    log(LogLevel.INFO, 'trimSceneSplats');
-    //todo: what's the permissions for this one?
+  private static getTrimmedSceneSplats(): SplatDataObject[] {
+    log(LogLevel.INFO, 'getTrimmedSceneSplats');
     const extantTokens = Object.keys(BloodNGuts.splatTokens);
-    splats = splats.filter((s) => !s.tokenId || extantTokens.includes(s.tokenId));
 
+    const splats = BloodNGuts.scenePool
+      .map((p) => p.data)
+      .filter((s) => !s.tokenId || extantTokens.includes(s.tokenId));
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
     const fadedPoolSize = splats.length - Math.round(maxPoolSize * 0.85);
     const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
-    log(LogLevel.DEBUG, 'trimSceneSplats sizes curr, max', splats.length, maxPoolSize);
+    log(LogLevel.DEBUG, 'getTrimmedSceneSplats sizes curr, max', splats.length, maxPoolSize);
 
     if (splats.length > maxPoolSize) {
-      // remove the oldest splat
+      // remove the oldest splats
       splats.splice(0, splats.length - maxPoolSize);
     }
 
@@ -99,8 +99,9 @@ export class BloodNGuts {
 
     log(
       LogLevel.DEBUG,
-      `trimSceneSplats sceneSplatPool:${splats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
+      `getTrimmedSceneSplats sceneSplatPool:${splats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
     );
+    return splats;
   }
 
   /**
@@ -392,10 +393,8 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'updateTokenOrActorHandler', changes);
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
-
     if (game.user.isGM) {
-      splatToken.updateChanges(changes);
-      BloodNGuts.saveScene();
+      if (splatToken.updateChanges(changes)) BloodNGuts.saveScene();
     }
 
     if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
@@ -438,8 +437,6 @@ export class BloodNGuts {
       BloodNGuts.wipeSceneSplats();
       return;
     }
-
-    BloodNGuts.trimSceneSplats(changes.flags[MODULE_ID]?.sceneSplats);
     BloodNGuts.drawSceneSplats(changes.flags[MODULE_ID]?.sceneSplats);
   }
 
