@@ -43,7 +43,6 @@ export class BloodNGuts {
    * @function
    */
   private static loadScene(): void {
-    if (!canvas.scene.active) return;
     log(LogLevel.INFO, 'loadScene');
     const sceneSplats = canvas.scene.getFlag(MODULE_ID, 'sceneSplats');
     log(LogLevel.DEBUG, 'loadScene sceneSplats loaded:', sceneSplats);
@@ -63,7 +62,6 @@ export class BloodNGuts {
    * @returns {Promise<Entity>}
    */
   public static saveScene(): Promise<Entity> {
-    if (!canvas.scene.active || !game.user.isGM) return;
     log(LogLevel.INFO, 'saveScene');
     const sceneSplats = BloodNGuts.scenePool.filter((p) => !p.data.tokenId).map((p) => p.data);
     return canvas.scene.setFlag(MODULE_ID, 'sceneSplats', sceneSplats);
@@ -113,7 +111,6 @@ export class BloodNGuts {
    * @param {[SplatDataObject]} splats - updated array of scene splats
    */
   private static drawSceneSplats(splats: [SplatDataObject]): void {
-    //todo: what's the permissions for this one?
     log(LogLevel.INFO, 'drawSceneSplats');
     const updatedIds = splats.map((s) => s.id);
     const existingIds = BloodNGuts.scenePool.map((poolObj) => poolObj.data.id);
@@ -180,13 +177,22 @@ export class BloodNGuts {
   }
 
   /**
-   * Wipes all splats from the current scene and empties all pools.
+   * Wipes all splats data from scene flags.
    * @category GMOnly
+   * @function
+   */
+  public static wipeSceneFlags(): void {
+    log(LogLevel.INFO, 'wipeSceneFlags');
+    canvas.scene.setFlag(MODULE_ID, 'sceneSplats', null);
+  }
+
+  /**
+   * Wipes all splats from the current scene and empties all pools.
+   * @category GMandPC
    * @function
    */
   public static wipeSceneSplats(): void {
     log(LogLevel.INFO, 'wipeSceneSplats');
-    canvas.scene.setFlag(MODULE_ID, 'sceneSplats', null);
 
     // destroy scene splats
     BloodNGuts.scenePool.forEach((poolObj) => {
@@ -374,7 +380,7 @@ export class BloodNGuts {
   /**
    * Handler called on all updateToken and updateActor events. Checks for movement and damage and
    * calls splat generate methods.
-   * @category GMOnly
+   * @category GMandPC
    * @function
    * @async
    * @param {scene} - reference to the current scene
@@ -408,7 +414,7 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static canvasReadyHandler(canvas): void {
-    if (!canvas.scene.active) return;
+    if (!canvas.scene.active || !game.user.isGM) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
 
     // wipe pools to be refilled from scene flag data
@@ -428,13 +434,13 @@ export class BloodNGuts {
    * @param {changes} - changes
    */
   public static updateSceneHandler(scene, changes): void {
-    if (!scene.active || !BloodNGuts.scenePool) return;
+    if (!scene.active || !changes.flags || changes.flags[MODULE_ID]?.sceneSplats === undefined) return;
     log(LogLevel.INFO, 'updateSceneHandler');
 
     if (changes.flags[MODULE_ID]?.sceneSplats === null) {
-      if (game.user.isRole(CONST.USER_ROLES.PLAYER)) BloodNGuts.wipeSceneSplats();
+      BloodNGuts.wipeSceneSplats();
       return;
-    } else if (!changes.flags[MODULE_ID]?.sceneSplats) return;
+    }
 
     BloodNGuts.trimSceneSplats(changes.flags[MODULE_ID]?.sceneSplats);
     BloodNGuts.drawSceneSplats(changes.flags[MODULE_ID]?.sceneSplats);
@@ -448,7 +454,7 @@ export class BloodNGuts {
    * @param {token} - reference to deleted token
    */
   public static deleteTokenHandler(scene, token): void {
-    if (!game.user.isGM) return;
+    if (!scene.active || !game.user.isGM) return;
     log(LogLevel.INFO, 'deleteTokenHandler', token);
     delete BloodNGuts.splatTokens[token._id];
     BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.data.tokenId != token._id);
@@ -461,6 +467,7 @@ export class BloodNGuts {
    * @param {buttons} - reference to the buttons controller
    */
   public static getSceneControlButtonsHandler(buttons): void {
+    if (!canvas.scene.active || !game.user.isGM) return;
     log(LogLevel.INFO, 'getSceneControlButtonsHandler');
     const tileButtons = buttons.find((b) => b.name == 'tiles');
 
@@ -471,7 +478,7 @@ export class BloodNGuts {
         icon: 'fas fa-tint-slash',
         active: true,
         visible: true,
-        onClick: BloodNGuts.wipeSceneSplats,
+        onClick: BloodNGuts.wipeSceneFlags,
       });
     }
   }
