@@ -57,7 +57,7 @@ export default class SplatToken {
    * @category GMOnly
    * @function
    */
-  public createMask(): void {
+  public async createMask(): Promise<void> {
     if (this.bloodColor === 'none') return;
     // @ts-ignore
     const maskTexture = await PIXI.Texture.fromURL(this.token.data.img);
