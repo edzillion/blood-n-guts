@@ -37,7 +37,7 @@ export class BloodNGuts {
   }
 
   /**
-   * Loads all `SplatStateObject`s from scene flag `splatState` and draws them - this
+   * Loads all `SplatStateObject`s from scene flag `sceneSplats` and draws them - this
    * will also add them back into the pool.
    * @category GMOnly
    * @function
@@ -45,7 +45,7 @@ export class BloodNGuts {
   private static loadScene(): void {
     if (!canvas.scene.active) return;
     log(LogLevel.INFO, 'loadScene');
-    let stateObjects = canvas.scene.getFlag(MODULE_ID, 'splatState');
+    let stateObjects = canvas.scene.getFlag(MODULE_ID, 'sceneSplats');
     log(LogLevel.DEBUG, 'loadScene stateObjects loaded:', stateObjects);
 
     if (stateObjects) {
@@ -58,7 +58,7 @@ export class BloodNGuts {
   }
 
   /**
-   * Saves floor and trail `SplatStateObject`s to scene flag `splatState`. Tokensplats are saved in their
+   * Saves floor and trail `SplatStateObject`s to scene flag `sceneSplats`. Tokensplats are saved in their
    * own token flags.
    * @category GMOnly
    * @function
@@ -67,8 +67,8 @@ export class BloodNGuts {
   public static saveScene(): Promise<Entity> {
     if (!canvas.scene.active || !game.user.isGM) return;
     log(LogLevel.INFO, 'saveScene');
-    const splatState = BloodNGuts.scenePool.filter((p) => !p.state.tokenId).map((p) => p.state);
-    return canvas.scene.setFlag(MODULE_ID, 'splatState', splatState);
+    const sceneSplats = BloodNGuts.scenePool.filter((p) => !p.state.tokenId).map((p) => p.state);
+    return canvas.scene.setFlag(MODULE_ID, 'sceneSplats', sceneSplats);
   }
 
   /**
@@ -183,7 +183,7 @@ export class BloodNGuts {
    */
   public static wipeSceneSplats(): void {
     log(LogLevel.INFO, 'wipeSceneSplats');
-    canvas.scene.setFlag(MODULE_ID, 'splatState', null);
+    canvas.scene.setFlag(MODULE_ID, 'sceneSplats', null);
 
     // destroy scene splats
     BloodNGuts.scenePool.forEach((poolObj) => {
@@ -431,13 +431,13 @@ export class BloodNGuts {
    */
   public static updateSceneHandler(scene, changes): void {
     if (!scene.active || !BloodNGuts.scenePool) return;
-    if (changes.flags[MODULE_ID]?.splatState === null) {
+    if (changes.flags[MODULE_ID]?.sceneSplats === null) {
       if (game.user.isRole(CONST.USER_ROLES.PLAYER)) BloodNGuts.wipeSceneSplats();
       return;
-    } else if (!changes.flags[MODULE_ID]?.splatState) return;
+    } else if (!changes.flags[MODULE_ID]?.sceneSplats) return;
     log(LogLevel.INFO, 'updateSceneHandler');
-    BloodNGuts.trimSplatPool(changes.flags[MODULE_ID]?.splatState);
-    BloodNGuts.drawSplatPool(changes.flags[MODULE_ID]?.splatState);
+    BloodNGuts.trimSplatPool(changes.flags[MODULE_ID]?.sceneSplats);
+    BloodNGuts.drawSplatPool(changes.flags[MODULE_ID]?.sceneSplats);
   }
 
   /**
