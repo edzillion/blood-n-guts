@@ -29,9 +29,9 @@ export default class SplatToken {
   private token: Token;
   private hp: number;
   private maxHP: number;
-  private splatsContainer: PIXI.Container;
+  private container: PIXI.Container;
   private bleedingDistance: number;
-  private tokenSplats: Array<SplatStateObject>;
+  private tokenSplats: Array<SplatDataObject>;
 
   constructor(token: Token) {
     this.bloodColor = lookupTokenBloodColor(token);
@@ -45,7 +45,7 @@ export default class SplatToken {
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
     this.bleedingDistance = 0;
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
-    this.splatsContainer = new PIXI.Container();
+    this.container = new PIXI.Container();
   }
 
   public async createMask(): Promise<void> {
@@ -75,15 +75,15 @@ export default class SplatToken {
     const renderSprite = new PIXI.Sprite(renderTexture);
     canvas.app.renderer.render(textureContainer, renderTexture);
 
-    this.splatsContainer.addChild(renderSprite);
-    this.splatsContainer.mask = renderSprite;
+    this.container.addChild(renderSprite);
+    this.container.mask = renderSprite;
 
-    this.splatsContainer.pivot.set(this.spriteWidth / 2, this.spriteHeight / 2);
-    this.splatsContainer.position.set(
+    this.container.pivot.set(this.spriteWidth / 2, this.spriteHeight / 2);
+    this.container.position.set(
       (this.token.data.width * canvas.grid.size) / 2,
       (this.token.data.height * canvas.grid.size) / 2,
     );
-    this.splatsContainer.angle = this.token.data.rotation;
+    this.container.angle = this.token.data.rotation;
 
     // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
     if (!this.bleedingSeverity && this.hp < this.maxHP / 2 && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
@@ -150,7 +150,7 @@ export default class SplatToken {
   private updateRotation(changes): void {
     if (changes.rotation === undefined) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler updating rotation', changes.rotation);
-    this.splatsContainer.angle = changes.rotation;
+    this.container.angle = changes.rotation;
   }
 
   private bleedFloor(): void {
@@ -190,8 +190,8 @@ export default class SplatToken {
     );
   }
 
-  private bleedToken(): SplatStateObject[] {
-    const splatStateObj: Partial<SplatStateObject> = {};
+  private bleedToken(): SplatDataObject[] {
+    const splatDataObj: Partial<SplatDataObject> = {};
     const density = game.settings.get(MODULE_ID, 'tokenSplatDensity');
     if (density === 0) return;
 
@@ -204,13 +204,13 @@ export default class SplatToken {
         this.hitSeverity,
     );
     log(LogLevel.DEBUG, 'bleedToken fontSize', fontSize);
-    splatStateObj.styleData = {
+    splatDataObj.styleData = {
       fontFamily: font.name,
       fontSize: fontSize,
       fill: this.bloodColor,
       align: 'center',
     };
-    const style = new PIXI.TextStyle(splatStateObj.styleData);
+    const style = new PIXI.TextStyle(splatDataObj.styleData);
     // amount of splats is based on density and severity
     const amount = Math.round(density * this.hitSeverity);
     if (amount === 0) return;
@@ -222,7 +222,7 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'bleedToken pixelSpread', pixelSpreadX, pixelSpreadY);
 
     // create our splats for later drawing.
-    splatStateObj.splats = glyphArray.map((glyph) => {
+    splatDataObj.splats = glyphArray.map((glyph) => {
       const tm = PIXI.TextMetrics.measureText(glyph, style);
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
@@ -234,25 +234,25 @@ export default class SplatToken {
         glyph: glyph,
       };
     });
-    const { offset } = alignSplatsGetOffsetAndDimensions(splatStateObj.splats);
-    splatStateObj.offset = offset;
-    splatStateObj.splats.forEach((s) => {
+    const { offset } = alignSplatsGetOffsetAndDimensions(splatDataObj.splats);
+    splatDataObj.offset = offset;
+    splatDataObj.splats.forEach((s) => {
       s.x += offset.x + this.spriteHeight / 2;
       s.y += offset.y + this.spriteWidth / 2;
     });
 
-    splatStateObj.id = getUID();
-    splatStateObj.tokenId = this.id;
+    splatDataObj.id = getUID();
+    splatDataObj.tokenId = this.id;
 
     const updatedSplats = duplicate(this.tokenSplats);
 
-    updatedSplats.push(<SplatStateObject>splatStateObj);
-    BloodNGuts.scenePool.push({ state: <SplatStateObject>splatStateObj, splatsContainer: this.splatsContainer });
+    updatedSplats.push(<SplatDataObject>splatDataObj);
+    BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj, container: this.container });
 
     return updatedSplats;
   }
 
-  private healToken(): SplatStateObject[] {
+  private healToken(): SplatDataObject[] {
     // make positive for sanity purposes
     let tempSeverity = this.hitSeverity * -1;
     // deal with scale/healthThreshold > 1. We can only heal to 100%
@@ -262,8 +262,8 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'healToken removeAmount:', removeAmount);
     const updatedSplats = duplicate(this.tokenSplats);
     while (removeAmount-- > 0) {
-      const state = updatedSplats.shift();
-      BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.state.id != state.id);
+      const data = updatedSplats.shift();
+      BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.data.id != data.id);
     }
     return updatedSplats;
     //await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
@@ -353,8 +353,8 @@ export default class SplatToken {
   private wipe(): void {
     let counter = 0;
     // delete everything except the sprite mask
-    while (this.splatsContainer?.children?.length > 1) {
-      const displayObj = this.splatsContainer.children[counter];
+    while (this.container?.children?.length > 1) {
+      const displayObj = this.container.children[counter];
       if (!displayObj.isMask) displayObj.destroy();
       else counter++;
     }
@@ -366,8 +366,8 @@ export default class SplatToken {
     this.tokenSplats = [];
   }
 
-  public removeState(id): void {
-    this.tokenSplats = this.tokenSplats.filter((stateObj) => stateObj.id !== id);
+  public removeSplat(id): void {
+    this.tokenSplats = this.tokenSplats.filter((s) => s.id !== id);
   }
 
   public draw(): void {
@@ -376,12 +376,12 @@ export default class SplatToken {
     // @ts-ignore
     if (!this.tokenSplats) return;
     BloodNGuts.allFontsReady.then(() => {
-      this.tokenSplats.forEach((splatState) => {
-        splatState.splats.forEach((splat) => {
-          const text = new PIXI.Text(splat.glyph, splatState.styleData);
+      this.tokenSplats.forEach((splatData) => {
+        splatData.splats.forEach((splat) => {
+          const text = new PIXI.Text(splat.glyph, splatData.styleData);
           text.x = splat.x;
           text.y = splat.y;
-          this.splatsContainer.addChild(text);
+          this.container.addChild(text);
         });
       });
     });

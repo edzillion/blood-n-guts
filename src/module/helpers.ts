@@ -15,7 +15,9 @@ import { MODULE_ID } from '../constants';
  * @param {Array<Splat>} splats - array of `Splat` to be aligned.
  * @returns {PIXI.Point, number, number} - offset, width, height
  */
-export const alignSplatsGetOffsetAndDimensions = (splats: Array<Splat>): SplatAlignment => {
+export const alignSplatsGetOffsetAndDimensions = (
+  splats: Array<Splat>,
+): { offset: PIXI.Point; width: number; height: number } => {
   let lowestX = canvas.dimensions.sceneWidth;
   let lowestY = canvas.dimensions.sceneHeight;
   let highestX = 0;
