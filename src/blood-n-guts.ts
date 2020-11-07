@@ -393,16 +393,13 @@ export class BloodNGuts {
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
 
+    if (game.user.isGM) {
+      splatToken.updateChanges(changes);
+      BloodNGuts.saveScene();
+    }
+
     if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
       splatToken.updateSplats(changes.flags[MODULE_ID].splats);
-
-    if (game.user.isGM) {
-      log(LogLevel.INFO, 'awaiting');
-      splatToken.updateChanges(changes);
-      log(LogLevel.INFO, 'done');
-      BloodNGuts.saveScene();
-      log(LogLevel.INFO, 'scene saved');
-    }
   }
 
   /**
@@ -467,7 +464,7 @@ export class BloodNGuts {
    * @param {buttons} - reference to the buttons controller
    */
   public static getSceneControlButtonsHandler(buttons): void {
-    if (!canvas.scene.active || !game.user.isGM) return;
+    if (!game.user.isGM) return;
     log(LogLevel.INFO, 'getSceneControlButtonsHandler');
     const tileButtons = buttons.find((b) => b.name == 'tiles');
 
