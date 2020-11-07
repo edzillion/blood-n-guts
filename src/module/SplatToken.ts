@@ -42,6 +42,7 @@ export default class SplatToken {
     if (this.bloodColor === 'none') return;
     // @ts-ignore
     this.id = token.id || token.actor.data._id;
+    log(LogLevel.INFO, 'SplatToken constructor for ' + this.id);
     this.token = token;
     this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
     this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
@@ -54,8 +55,9 @@ export default class SplatToken {
 
   /**
    * Creates a transparency mask from the token icon and adds it to it's splat container.
-   * @category GMOnly
+   * @category GMandPC
    * @function
+   * @async
    */
   public async createMask(): Promise<void> {
     if (this.bloodColor === 'none') return;
