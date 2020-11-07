@@ -130,7 +130,7 @@ export const lookupTokenBloodColor = (token: Token): string => {
   // if useBloodColor is disabled then all blood is blood red
   let bloodColor = bloodColorSettings.color[type.toLowerCase()];
   if (bloodColor === 'none') return 'none';
-  bloodColor = bloodColorEnabled ? bloodColor : 'blood';
+  bloodColor = bloodColorEnabled && bloodColor ? bloodColor : 'blood';
 
   // bloodSettings can return either an rbga string, a color string or 'name' which looks up the
   // color based on it's name. e.g. 'Purple Ooze'
