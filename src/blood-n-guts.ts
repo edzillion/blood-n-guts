@@ -527,6 +527,19 @@ Token.prototype.draw = (function () {
       splatToken = new SplatToken(this);
       BloodNGuts.splatTokens[this.id] = splatToken;
       await BloodNGuts.splatTokens[this.id].createMask();
+
+      if (game.user.isGM && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
+        // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
+        if (splatToken.hp < splatToken.maxHP / 2) {
+          splatToken.hitSeverity = 2 - splatToken.hp / (splatToken.maxHP / 2);
+          splatToken.bleedingSeverity = splatToken.hitSeverity;
+          const tempSplats = splatToken.bleedToken();
+          splatToken.token.update(
+            { flags: { [MODULE_ID]: { splats: tempSplats, bleedingSeverity: this.bleedingSeverity } } },
+            { diff: false },
+          );
+        }
+      }
     }
     if (splatToken.bloodColor === 'none') return this;
 

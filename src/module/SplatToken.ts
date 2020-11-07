@@ -20,6 +20,8 @@ export default class SplatToken {
   public id: string;
   public x: number;
   public y: number;
+  public hp: number;
+  public maxHP: number;
   public bloodColor: string;
   public spriteWidth: number;
   public spriteHeight: number;
@@ -121,8 +123,9 @@ export default class SplatToken {
    * @category GMOnly
    * @param changes - the latest token changes.
    * @function
+   * @returns {boolean} - whether there have been changes or not
    */
-  public updateChanges(changes): void {
+  public updateChanges(changes): boolean {
     if (
       this.bloodColor === 'none' ||
       (changes.rotation === undefined &&
@@ -130,7 +133,7 @@ export default class SplatToken {
         changes.y === undefined &&
         changes.actorData?.data?.attributes?.hp === undefined)
     )
-      return;
+      return false;
     const updates = { bleedingSeverity: null, splats: null };
     [this.hitSeverity, updates.bleedingSeverity] = this.getUpdatedDamage(changes);
     if (updates.bleedingSeverity !== null) this.bleedingSeverity = updates.bleedingSeverity;
@@ -149,6 +152,8 @@ export default class SplatToken {
     this.updateRotation(changes);
 
     this.saveState(this.token, updates, changes);
+
+    return updates && Object.keys(updates).length > 0;
   }
 
   /**
@@ -347,7 +352,7 @@ export default class SplatToken {
     this.hp = changes?.actorData?.data?.attributes?.hp?.value || token.actor.data.data.attributes.hp.value;
     this.maxHP = changes?.actorData?.data?.attributes?.hp?.max || token.actor.data.data.attributes.hp.max;
     //flag state
-    if (updates && Object.keys(updates).length) {
+    if (updates && Object.keys(updates).length > 0) {
       const flags = {
         [MODULE_ID]: updates,
       };
