@@ -402,7 +402,7 @@ export default class SplatToken {
    * @returns {number} - the damage severity.
    */
   private getDamageSeverity(changes): number {
-    log(LogLevel.INFO, 'getDamageSeverity', changes.actorData);
+    log(LogLevel.DEBUG, 'getDamageSeverity', changes.actorData);
     const currentHP = changes.actorData.data.attributes.hp.value;
 
     //fully healed, return -1
