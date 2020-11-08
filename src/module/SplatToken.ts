@@ -148,7 +148,7 @@ export default class SplatToken {
     if (updates.bleedingSeverity !== null) this.bleedingSeverity = updates.bleedingSeverity;
     else delete updates.bleedingSeverity;
     this.direction = this.getUpdatedMovement(changes);
-    debugger;
+
     if (this.hitSeverity > 0) {
       this.bleedFloor();
       updates.splats = this.bleedToken();
@@ -404,7 +404,7 @@ export default class SplatToken {
   private getDamageSeverity(changes): number {
     log(LogLevel.INFO, 'getDamageSeverity', changes.actorData);
     const currentHP = changes.actorData.data.attributes.hp.value;
-    debugger;
+
     //fully healed, return -1
     if (currentHP === this.maxHP) return -1;
 
