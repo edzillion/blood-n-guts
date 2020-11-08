@@ -15,7 +15,9 @@ import { MODULE_ID } from '../constants';
  * @param {Array<Splat>} splats - array of `Splat` to be aligned.
  * @returns {PIXI.Point, number, number} - offset, width, height
  */
-export const alignSplatsGetOffsetAndDimensions = (splats: Array<Splat>): SplatAlignment => {
+export const alignSplatsGetOffsetAndDimensions = (
+  splats: Array<Splat>,
+): { offset: PIXI.Point; width: number; height: number } => {
   let lowestX = canvas.dimensions.sceneWidth;
   let lowestY = canvas.dimensions.sceneHeight;
   let highestX = 0;
@@ -128,7 +130,7 @@ export const lookupTokenBloodColor = (token: Token): string => {
   // if useBloodColor is disabled then all blood is blood red
   let bloodColor = bloodColorSettings.color[type.toLowerCase()];
   if (bloodColor === 'none') return 'none';
-  bloodColor = bloodColorEnabled ? bloodColor : 'blood';
+  bloodColor = bloodColorEnabled && bloodColor ? bloodColor : 'blood';
 
   // bloodSettings can return either an rbga string, a color string or 'name' which looks up the
   // color based on it's name. e.g. 'Purple Ooze'

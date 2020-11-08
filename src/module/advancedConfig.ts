@@ -58,8 +58,8 @@ export class AdvancedConfig extends FormApplication {
     const wipeButton = html.find('.advanced-config-wipe-scene-splats');
     if (canvas.scene.active) {
       wipeButton.click(() => {
-        log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeSceneSplats()');
-        BloodNGuts.wipeSceneSplats();
+        log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeSceneFlags()');
+        BloodNGuts.wipeSceneFlags();
       });
     } else wipeButton.attr('disabled', true);
   }

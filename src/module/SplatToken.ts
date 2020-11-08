@@ -12,10 +12,16 @@ import {
 } from './helpers';
 import * as splatFonts from '../data/splatFonts';
 
+/**
+ * Extends `Token` and adds a layer to display token splats.
+ * @class
+ */
 export default class SplatToken {
   public id: string;
   public x: number;
   public y: number;
+  public hp: number;
+  public maxHP: number;
   public bloodColor: string;
   public spriteWidth: number;
   public spriteHeight: number;
@@ -25,19 +31,18 @@ export default class SplatToken {
   public currPos: PIXI.Point;
   public lastPos: PIXI.Point;
   public movePos: PIXI.Point;
+  public container: PIXI.Container;
 
   private token: Token;
-  private hp: number;
-  private maxHP: number;
-  private splatsContainer: PIXI.Container;
+  private tokenSplats: Array<SplatDataObject>;
   private bleedingDistance: number;
-  private tokenSplats: Array<SplatStateObject>;
 
   constructor(token: Token) {
     this.bloodColor = lookupTokenBloodColor(token);
     if (this.bloodColor === 'none') return;
     // @ts-ignore
     this.id = token.id || token.actor.data._id;
+    log(LogLevel.INFO, 'SplatToken constructor for ' + this.id);
     this.token = token;
     this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
     this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
@@ -45,9 +50,15 @@ export default class SplatToken {
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
     this.bleedingDistance = 0;
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
-    this.splatsContainer = new PIXI.Container();
+    this.container = new PIXI.Container();
   }
 
+  /**
+   * Creates a transparency mask from the token icon and adds it to it's splat container.
+   * @category GMandPC
+   * @function
+   * @async
+   */
   public async createMask(): Promise<void> {
     if (this.bloodColor === 'none') return;
     // @ts-ignore
@@ -75,31 +86,55 @@ export default class SplatToken {
     const renderSprite = new PIXI.Sprite(renderTexture);
     canvas.app.renderer.render(textureContainer, renderTexture);
 
-    this.splatsContainer.addChild(renderSprite);
-    this.splatsContainer.mask = renderSprite;
+    this.container.addChild(renderSprite);
+    this.container.mask = renderSprite;
 
-    this.splatsContainer.pivot.set(this.spriteWidth / 2, this.spriteHeight / 2);
-    this.splatsContainer.position.set(
+    this.container.pivot.set(this.spriteWidth / 2, this.spriteHeight / 2);
+    this.container.position.set(
       (this.token.data.width * canvas.grid.size) / 2,
       (this.token.data.height * canvas.grid.size) / 2,
     );
-    this.splatsContainer.angle = this.token.data.rotation;
+    this.container.angle = this.token.data.rotation;
+  }
 
-    // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
-    if (!this.bleedingSeverity && this.hp < this.maxHP / 2 && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
+  /**
+   * Run once after constructor and createMask() to add blood to tokens on a newly loaded scene.
+   * @category GMandPC
+   * @param updatedSplats - the latest token splat data.
+   * @function
+   */
+  public preSplat(): void {
+    if (!this.bleedingSeverity && this.hp < this.maxHP / 2 && !this.tokenSplats.length) {
       this.hitSeverity = 2 - this.hp / (this.maxHP / 2);
       this.bleedingSeverity = this.hitSeverity;
-      this.tokenSplats = this.bleedToken();
+      const tempSplats = this.bleedToken();
+      this.token.update(
+        { flags: { [MODULE_ID]: { splats: tempSplats, bleedingSeverity: this.bleedingSeverity } } },
+        { diff: false },
+      );
     }
   }
 
+  /**
+   * Saves updated splats to tokenSplats and calls draw() if changed.
+   * @category GMandPC
+   * @param updatedSplats - the latest token splat data.
+   * @function
+   */
   public updateSplats(updatedSplats): void {
     if (this.bloodColor === 'none' || JSON.stringify(updatedSplats) === JSON.stringify(this.tokenSplats)) return;
     this.tokenSplats = updatedSplats || [];
     this.draw();
   }
 
-  public updateChanges(changes): void {
+  /**
+   * Checks for token movement and damage, generates splats and saves updates.
+   * @category GMOnly
+   * @param changes - the latest token changes.
+   * @function
+   * @returns {boolean} - whether there have been changes or not
+   */
+  public updateChanges(changes): boolean {
     if (
       this.bloodColor === 'none' ||
       (changes.rotation === undefined &&
@@ -107,13 +142,12 @@ export default class SplatToken {
         changes.y === undefined &&
         changes.actorData?.data?.attributes?.hp === undefined)
     )
-      return;
+      return false;
     const updates = { bleedingSeverity: null, splats: null };
     [this.hitSeverity, updates.bleedingSeverity] = this.getUpdatedDamage(changes);
     if (updates.bleedingSeverity !== null) this.bleedingSeverity = updates.bleedingSeverity;
     else delete updates.bleedingSeverity;
     this.direction = this.getUpdatedMovement(changes);
-    //this.updateBleeding();
 
     if (this.hitSeverity > 0) {
       this.bleedFloor();
@@ -122,18 +156,34 @@ export default class SplatToken {
       updates.splats = this.healToken();
     } else delete updates.splats;
 
-    if (this.direction && this.bleedingSeverity) this.bleedTrail();
+    const bloodTrail = this.direction && this.bleedingSeverity ? this.bleedTrail() : false;
 
     this.updateRotation(changes);
 
     this.saveState(this.token, updates, changes);
+
+    return bloodTrail || (updates && Object.keys(updates).length > 0);
   }
 
+  /**
+   * Checks for token damage and returns severities.
+   * @category GMOnly
+   * @function
+   * @param changes - the latest token changes.
+   * @returns {number, number} - the hitSeverity and bleedingSeverity
+   */
   private getUpdatedDamage(changes): [number, number] {
     if (changes.actorData === undefined || changes.actorData.data.attributes?.hp === undefined) return [null, null];
-    return this.getSeverities(this.getDamageSeverity(changes));
+    return this.updateSeverities(this.getDamageSeverity(changes));
   }
 
+  /**
+   * Checks for token movement and returns direction.
+   * @category GMOnly
+   * @function
+   * @param changes - the latest token changes.
+   * @returns {PIXI.Point} - the direction normalised from {-1,-1} to {0,0} or null if no movement
+   */
   private getUpdatedMovement(changes): PIXI.Point {
     if (changes.x === undefined && changes.y === undefined) return;
 
@@ -147,12 +197,23 @@ export default class SplatToken {
     return getDirectionNrml(this.lastPos, this.currPos);
   }
 
+  /**
+   * Updates splat container rotation.
+   * @category GMOnly
+   * @function
+   * @param changes - the latest token changes.
+   */
   private updateRotation(changes): void {
     if (changes.rotation === undefined) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler updating rotation', changes.rotation);
-    this.splatsContainer.angle = changes.rotation;
+    this.container.angle = changes.rotation;
   }
 
+  /**
+   * Generates blood splatter on the floor under this token.
+   * @category GMOnly
+   * @function
+   */
   private bleedFloor(): void {
     const density = game.settings.get(MODULE_ID, 'floorSplatDensity');
     if (!density) return;
@@ -165,9 +226,15 @@ export default class SplatToken {
     );
   }
 
-  private bleedTrail(): void {
+  /**
+   * Generates a blood trail behind this token.
+   * @category GMOnly
+   * @function
+   * @returns {boolean} - whether a blood trail has been created.
+   */
+  private bleedTrail(): boolean {
     const density = game.settings.get(MODULE_ID, 'trailSplatDensity');
-    if (!density) return;
+    if (!density) return false;
 
     const amount = density * this.bleedingSeverity;
 
@@ -188,10 +255,17 @@ export default class SplatToken {
       game.settings.get(MODULE_ID, 'trailSplatSize'),
       distances,
     );
+    return true;
   }
 
-  private bleedToken(): SplatStateObject[] {
-    const splatStateObj: Partial<SplatStateObject> = {};
+  /**
+   * Generates a blood trail on this token and returns the `SplatDataObject`s
+   * @category GMOnly
+   * @function
+   * @returns {SplatDataObject[]} - the array of updated `SplatDataObject`s
+   */
+  private bleedToken(): SplatDataObject[] {
+    const splatDataObj: Partial<SplatDataObject> = {};
     const density = game.settings.get(MODULE_ID, 'tokenSplatDensity');
     if (density === 0) return;
 
@@ -204,13 +278,13 @@ export default class SplatToken {
         this.hitSeverity,
     );
     log(LogLevel.DEBUG, 'bleedToken fontSize', fontSize);
-    splatStateObj.styleData = {
+    splatDataObj.styleData = {
       fontFamily: font.name,
       fontSize: fontSize,
       fill: this.bloodColor,
       align: 'center',
     };
-    const style = new PIXI.TextStyle(splatStateObj.styleData);
+    const style = new PIXI.TextStyle(splatDataObj.styleData);
     // amount of splats is based on density and severity
     const amount = Math.round(density * this.hitSeverity);
     if (amount === 0) return;
@@ -222,7 +296,7 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'bleedToken pixelSpread', pixelSpreadX, pixelSpreadY);
 
     // create our splats for later drawing.
-    splatStateObj.splats = glyphArray.map((glyph) => {
+    splatDataObj.splats = glyphArray.map((glyph) => {
       const tm = PIXI.TextMetrics.measureText(glyph, style);
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
@@ -234,41 +308,50 @@ export default class SplatToken {
         glyph: glyph,
       };
     });
-    const { offset } = alignSplatsGetOffsetAndDimensions(splatStateObj.splats);
-    splatStateObj.offset = offset;
-    splatStateObj.splats.forEach((s) => {
+    const { offset } = alignSplatsGetOffsetAndDimensions(splatDataObj.splats);
+    splatDataObj.offset = offset;
+    splatDataObj.splats.forEach((s) => {
       s.x += offset.x + this.spriteHeight / 2;
       s.y += offset.y + this.spriteWidth / 2;
     });
 
-    splatStateObj.id = getUID();
-    splatStateObj.tokenId = this.id;
+    splatDataObj.id = getUID();
+    splatDataObj.tokenId = this.id;
 
     const updatedSplats = duplicate(this.tokenSplats);
-
-    updatedSplats.push(<SplatStateObject>splatStateObj);
-    BloodNGuts.scenePool.push({ state: <SplatStateObject>splatStateObj, splatsContainer: this.splatsContainer });
-
+    updatedSplats.push(<SplatDataObject>splatDataObj);
     return updatedSplats;
   }
 
-  private healToken(): SplatStateObject[] {
+  /**
+   * Removes token splats from our splat container based on scale of healing.
+   * @category GMOnly
+   * @function
+   * @returns {SplatDataObject[]} - the array of updated `SplatDataObject`s
+   */
+  private healToken(): SplatDataObject[] {
     // make positive for sanity purposes
-    let tempSeverity = this.hitSeverity * -1;
+    const tempSeverity = this.hitSeverity * -1;
     // deal with scale/healthThreshold > 1. We can only heal to 100%
-    if (tempSeverity > 1) tempSeverity = 1;
+    if (tempSeverity >= 1) return [];
     log(LogLevel.DEBUG, 'healToken allTokensSplats:');
-    let removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
+    const removeAmount = Math.floor(this.tokenSplats.length * tempSeverity);
     log(LogLevel.DEBUG, 'healToken removeAmount:', removeAmount);
     const updatedSplats = duplicate(this.tokenSplats);
-    while (removeAmount-- > 0) {
-      const state = updatedSplats.shift();
-      BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.state.id != state.id);
-    }
+    updatedSplats.splice(0, removeAmount);
+
     return updatedSplats;
-    //await this.token.setFlag(MODULE_ID, 'splats', this.tokenSplats);
   }
 
+  /**
+   * Saves the state of this SplatToken at the end of an update round.
+   * @category GMOnly
+   * @function
+   * @async
+   * @param token - token data to save.
+   * @param updates - updates to save.
+   * @param changes - changes to save.
+   */
   private async saveState(token, updates?, changes?): Promise<void> {
     //local state
     this.x = changes?.x || token.x;
@@ -276,7 +359,7 @@ export default class SplatToken {
     this.hp = changes?.actorData?.data?.attributes?.hp?.value || token.actor.data.data.attributes.hp.value;
     this.maxHP = changes?.actorData?.data?.attributes?.hp?.max || token.actor.data.data.attributes.hp.max;
     //flag state
-    if (updates && Object.keys(updates).length) {
+    if (updates && Object.keys(updates).length > 0) {
       const flags = {
         [MODULE_ID]: updates,
       };
@@ -290,18 +373,27 @@ export default class SplatToken {
     this.movePos = null;
   }
 
-  private getSeverities(severity: number): [number, number] {
-    if (severity > (this.bleedingSeverity ?? 0) + 1) {
-      return [severity, severity];
-    } else if (severity < 0) {
-      return [severity, 0];
-    }
-    return [severity, this.bleedingSeverity];
-  }
   /**
-   * Get severity, a number between -1 and 2:
-   * * > -1[full health or fully healed] to  0[minimal heal]
-   * * > 1 + (0[minimal damage] and 0.5[all HP in one hit])* 2 [if dead]
+   * Takes the new damage severity and determines the hitSeverity and bleedingSeverity
+   * @category GMOnly
+   * @function
+   * @param {number} damageSeverity - the updated damage severity.
+   * @returns {number, number} - the hitSeverity and bleedingSeverity.
+   */
+  private updateSeverities(damageSeverity: number): [number, number] {
+    if (damageSeverity > (this.bleedingSeverity ?? 0) + 1) {
+      return [damageSeverity, damageSeverity];
+    } else if (damageSeverity < 0) {
+      return [damageSeverity, 0];
+    }
+    return [damageSeverity, this.bleedingSeverity];
+  }
+
+  /**
+   * Get severity, a representation of the scale of damage done to this Token in the
+   * form of a number between -1 and 2+:
+   * * -1[full health or fully healed] to  0[minimal heal]
+   * * 1[minimal hit] to 2+[maximal hit]
    * * or 0 if not hit at all.
    * @category GMOnly
    * @function
@@ -310,7 +402,7 @@ export default class SplatToken {
    * @returns {number} - the damage severity.
    */
   private getDamageSeverity(changes): number {
-    log(LogLevel.INFO, 'getDamageSeverity', changes.actorData);
+    log(LogLevel.DEBUG, 'getDamageSeverity', changes.actorData);
     const currentHP = changes.actorData.data.attributes.hp.value;
 
     //fully healed, return -1
@@ -336,7 +428,7 @@ export default class SplatToken {
     // healing
     if (changeFractionOfMax < 0) {
       //renormalise scale based on threshold.
-      return changeFractionOfMax / healthThreshold;
+      return -fractionOfMax / healthThreshold;
     }
     // dead, multiply by 2.
     const deathMultiplier = currentHP === 0 ? game.settings.get(MODULE_ID, 'deathMultiplier') : 1;
@@ -346,43 +438,77 @@ export default class SplatToken {
     return severity;
   }
 
+  /**
+   * Get center point of this token.
+   * @category GMOnly
+   * @function
+   * @returns {PIXI.Point} - the center point.
+   */
   public getCenter(): PIXI.Point {
     return this.token.center;
   }
 
-  private wipe(): void {
+  /**
+   * Wipes all splat tokens but leaves the data and mask alone.
+   * @category GMandPC
+   * @function
+   */
+  private wipeSplats(): void {
     let counter = 0;
     // delete everything except the sprite mask
-    while (this.splatsContainer?.children?.length > 1) {
-      const displayObj = this.splatsContainer.children[counter];
+    while (this.container?.children?.length > 1) {
+      const displayObj = this.container.children[counter];
       if (!displayObj.isMask) displayObj.destroy();
       else counter++;
     }
   }
 
-  public wipeAll(): void {
-    this.wipe();
+  /**
+   * Wipes all splat tokens and token data.
+   * @category GMOnly
+   * @function
+   */
+  public wipeFlags(): void {
+    this.wipeSplats();
     if (this.token) this.token.setFlag(MODULE_ID, 'splats', null);
     this.tokenSplats = [];
   }
 
-  public removeState(id): void {
-    this.tokenSplats = this.tokenSplats.filter((stateObj) => stateObj.id !== id);
+  /**
+   * Removes a token splat based on id.
+   * @category GMOnly
+   * @function
+   * @param {string} - the id of the splat to remove.
+   */
+  public removeSplat(id): void {
+    this.tokenSplats = this.tokenSplats.filter((s) => s.id !== id);
   }
 
+  /**
+   * Wipes and draws all splats on this token.
+   * @category GMandPC
+   * @function
+   */
   public draw(): void {
     log(LogLevel.DEBUG, 'tokenSplat: draw');
-    this.wipe();
+    this.wipeSplats();
     // @ts-ignore
-    if (!this.tokenSplats) return;
+    if (!this.tokenSplats || !this.tokenSplats.length) return;
+    const extantTokenSplatIds = this.tokenSplats.map((ts) => ts.id);
+    BloodNGuts.scenePool = BloodNGuts.scenePool.filter(
+      (p) => p.data.tokenId !== this.id || (p.data.tokenId === this.id && extantTokenSplatIds.includes(p.data.id)),
+    );
+    const extantScenePoolSplatIds = BloodNGuts.scenePool.map((p) => p.data.id);
     BloodNGuts.allFontsReady.then(() => {
-      this.tokenSplats.forEach((splatState) => {
-        splatState.splats.forEach((splat) => {
-          const text = new PIXI.Text(splat.glyph, splatState.styleData);
+      this.tokenSplats.forEach((splatData) => {
+        splatData.splats.forEach((splat) => {
+          const text = new PIXI.Text(splat.glyph, splatData.styleData);
           text.x = splat.x;
           text.y = splat.y;
-          this.splatsContainer.addChild(text);
+          this.container.addChild(text);
         });
+        if (!extantScenePoolSplatIds.includes(splatData.id))
+          BloodNGuts.scenePool.push({ data: splatData, container: this.container });
       });
     });
   }
