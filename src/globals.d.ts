@@ -3,12 +3,6 @@ interface SplatFont {
   availableGlyphs: Array<string>;
 }
 
-interface SplatAlignment {
-  offset: PIXI.Point;
-  width: number;
-  height: number;
-}
-
 interface ViolenceLevel {
   trailSplatDensity: number;
   floorSplatDensity: number;
@@ -23,11 +17,11 @@ interface ViolenceLevel {
 }
 
 interface SplatPoolObject {
-  state: SplatStateObject;
-  splatsContainer?: PIXI.Container;
+  data: SplatDataObject;
+  container?: PIXI.Container;
 }
 
-interface SplatStateObject {
+interface SplatDataObject {
   id: string;
   x: number;
   y: number;
