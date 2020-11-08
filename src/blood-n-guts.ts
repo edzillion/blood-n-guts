@@ -43,12 +43,12 @@ export class BloodNGuts {
    * @function
    */
   private static loadScene(): void {
-    log(LogLevel.INFO, 'loadScene');
+    log(LogLevel.DEBUG, 'loadScene');
     const sceneSplats = canvas.scene.getFlag(MODULE_ID, 'sceneSplats');
     log(LogLevel.DEBUG, 'loadScene sceneSplats loaded:', sceneSplats);
 
     if (sceneSplats) {
-      log(LogLevel.INFO, 'loadScene drawSceneSplats', canvas.scene.name);
+      log(LogLevel.DEBUG, 'loadScene drawSceneSplats', canvas.scene.name);
       BloodNGuts.drawSceneSplats(sceneSplats);
     }
   }
@@ -61,7 +61,7 @@ export class BloodNGuts {
    * @returns {Promise<Entity>}
    */
   public static saveScene(): Promise<Entity> {
-    log(LogLevel.INFO, 'saveScene');
+    log(LogLevel.DEBUG, 'saveScene');
     const sceneSplats = BloodNGuts.getTrimmedSceneSplats();
     return canvas.scene.setFlag(MODULE_ID, 'sceneSplats', sceneSplats);
   }
@@ -73,7 +73,7 @@ export class BloodNGuts {
    * @returns {SplatDataObject[]} - trimmed splat array
    */
   private static getTrimmedSceneSplats(): SplatDataObject[] {
-    log(LogLevel.INFO, 'getTrimmedSceneSplats');
+    log(LogLevel.DEBUG, 'getTrimmedSceneSplats');
     const allSplats = BloodNGuts.scenePool.map((p) => p.data);
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
     if (allSplats.length > maxPoolSize) {
@@ -109,7 +109,7 @@ export class BloodNGuts {
    * @param {[SplatDataObject]} splats - updated array of scene splats
    */
   private static drawSceneSplats(splats: [SplatDataObject]): void {
-    log(LogLevel.INFO, 'drawSceneSplats');
+    log(LogLevel.DEBUG, 'drawSceneSplats');
     const updatedIds = splats.map((s) => s.id);
     const existingIds = BloodNGuts.scenePool.map((poolObj) => poolObj.data.id);
     const drawnIds = BloodNGuts.scenePool.filter((poolObj) => poolObj.container).map((p) => p.data.id);
@@ -192,7 +192,7 @@ export class BloodNGuts {
    * @function
    */
   public static wipeSceneSplats(): void {
-    log(LogLevel.INFO, 'wipeSceneSplats');
+    log(LogLevel.DEBUG, 'wipeSceneSplats');
 
     // destroy scene splats
     BloodNGuts.scenePool.forEach((poolObj) => {
@@ -215,7 +215,7 @@ export class BloodNGuts {
    */
   public static generateFloorSplats(splatToken: SplatToken, font: SplatFont, size: number, density: number): void {
     if (!density) return;
-    log(LogLevel.INFO, 'generateFloorSplats');
+    log(LogLevel.DEBUG, 'generateFloorSplats');
 
     const splatDataObj: Partial<SplatDataObject> = {};
 
@@ -289,7 +289,7 @@ export class BloodNGuts {
    */
   public static generateTrailSplats(splatToken: SplatToken, font: SplatFont, size: number, distances: number[]): void {
     if (!distances) return;
-    log(LogLevel.INFO, 'generateTrailSplats');
+    log(LogLevel.DEBUG, 'generateTrailSplats');
     log(LogLevel.DEBUG, 'generateTrailSplats severity', splatToken.bleedingSeverity);
 
     const splatDataObj: Partial<SplatDataObject> = {};
@@ -384,7 +384,7 @@ export class BloodNGuts {
    */
   public static updateTokenOrActorHandler(scene, tokenData, changes): void {
     if (!scene.active) return;
-    log(LogLevel.INFO, 'updateTokenOrActorHandler', changes);
+    log(LogLevel.DEBUG, 'updateTokenOrActorHandler', changes);
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
     if (game.user.isGM && splatToken.updateChanges(changes)) BloodNGuts.saveScene();
@@ -422,7 +422,7 @@ export class BloodNGuts {
    */
   public static updateSceneHandler(scene, changes): void {
     if (!scene.active || !changes.flags || changes.flags[MODULE_ID]?.sceneSplats === undefined) return;
-    log(LogLevel.INFO, 'updateSceneHandler');
+    log(LogLevel.DEBUG, 'updateSceneHandler');
     if (changes.flags[MODULE_ID]?.sceneSplats === null) {
       BloodNGuts.wipeSceneSplats();
       return;
@@ -452,7 +452,7 @@ export class BloodNGuts {
    */
   public static getSceneControlButtonsHandler(buttons): void {
     if (!game.user.isGM) return;
-    log(LogLevel.INFO, 'getSceneControlButtonsHandler');
+    log(LogLevel.DEBUG, 'getSceneControlButtonsHandler');
     const tileButtons = buttons.find((b) => b.name == 'tiles');
 
     if (tileButtons) {
