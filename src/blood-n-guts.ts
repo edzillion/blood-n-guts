@@ -201,11 +201,6 @@ export class BloodNGuts {
       if (!poolObj.data.tokenId) poolObj.container.destroy();
     });
 
-    // destroy token splats
-    for (const tokenId in BloodNGuts.splatTokens) {
-      const splatToken = BloodNGuts.splatTokens[tokenId];
-      splatToken.wipeAll();
-    }
     BloodNGuts.scenePool = [];
   }
 
@@ -394,9 +389,7 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'updateTokenOrActorHandler', changes);
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
-    if (game.user.isGM) {
-      if (splatToken.updateChanges(changes)) BloodNGuts.saveScene();
-    }
+    if (game.user.isGM && splatToken.updateChanges(changes)) BloodNGuts.saveScene();
 
     if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
       splatToken.updateSplats(changes.flags[MODULE_ID].splats);
@@ -413,7 +406,6 @@ export class BloodNGuts {
   public static canvasReadyHandler(canvas): void {
     if (!canvas.scene.active || !game.user.isGM) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
-
     // wipe pools to be refilled from scene flag data
     BloodNGuts.scenePool = [];
 
@@ -513,22 +505,20 @@ Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
 
 Token.prototype.draw = (function () {
   const cached = Token.prototype.draw;
+
   return async function () {
     await cached.apply(this);
-    if (!this.icon) return this;
+    if (!this.icon || this._original?.data?._id) return this; //no icon or dragging
     let splatToken;
     if (BloodNGuts.splatTokens[this.id]) splatToken = BloodNGuts.splatTokens[this.id];
-    else if (this._original?.data?._id) {
-      // User is dragging the Token, skip
-      return this;
-    } else {
+    else {
       splatToken = new SplatToken(this);
       BloodNGuts.splatTokens[this.id] = splatToken;
       await BloodNGuts.splatTokens[this.id].createMask();
 
       if (game.user.isGM && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
         // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
-        if (splatToken.hp < splatToken.maxHP / 2) {
+        if (splatToken.bleedingSeverity && splatToken.hp < splatToken.maxHP / 2) {
           splatToken.hitSeverity = 2 - splatToken.hp / (splatToken.maxHP / 2);
           splatToken.bleedingSeverity = splatToken.hitSeverity;
           const tempSplats = splatToken.bleedToken();
@@ -540,7 +530,6 @@ Token.prototype.draw = (function () {
       }
     }
     if (splatToken.bloodColor === 'none') return this;
-
     const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;
     if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
     else {

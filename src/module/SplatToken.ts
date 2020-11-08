@@ -138,13 +138,13 @@ export default class SplatToken {
       updates.splats = this.healToken();
     } else delete updates.splats;
 
-    if (this.direction && this.bleedingSeverity) this.bleedTrail();
+    const bloodTrail = this.direction && this.bleedingSeverity ? this.bleedTrail() : false;
 
     this.updateRotation(changes);
 
     this.saveState(this.token, updates, changes);
 
-    return updates && Object.keys(updates).length > 0;
+    return bloodTrail || (updates && Object.keys(updates).length > 0);
   }
 
   /**
@@ -212,10 +212,11 @@ export default class SplatToken {
    * Generates a blood trail behind this token.
    * @category GMOnly
    * @function
+   * @returns {boolean} - whether a blood trail has been created.
    */
-  private bleedTrail(): void {
+  private bleedTrail(): boolean {
     const density = game.settings.get(MODULE_ID, 'trailSplatDensity');
-    if (!density) return;
+    if (!density) return false;
 
     const amount = density * this.bleedingSeverity;
 
@@ -236,6 +237,7 @@ export default class SplatToken {
       game.settings.get(MODULE_ID, 'trailSplatSize'),
       distances,
     );
+    return true;
   }
 
   /**
@@ -434,10 +436,10 @@ export default class SplatToken {
 
   /**
    * Wipes all splat tokens but leaves the data and mask alone.
-   * @category GMOnly
+   * @category GMandPC
    * @function
    */
-  private wipe(): void {
+  private wipeSplats(): void {
     let counter = 0;
     // delete everything except the sprite mask
     while (this.container?.children?.length > 1) {
@@ -452,8 +454,8 @@ export default class SplatToken {
    * @category GMOnly
    * @function
    */
-  public wipeAll(): void {
-    this.wipe();
+  public wipeFlags(): void {
+    this.wipeSplats();
     if (this.token) this.token.setFlag(MODULE_ID, 'splats', null);
     this.tokenSplats = [];
   }
@@ -470,12 +472,12 @@ export default class SplatToken {
 
   /**
    * Wipes and draws all splats on this token.
-   * @category GMOnly
+   * @category GMandPC
    * @function
    */
   public draw(): void {
     log(LogLevel.DEBUG, 'tokenSplat: draw');
-    this.wipe();
+    this.wipeSplats();
     // @ts-ignore
     if (!this.tokenSplats) return;
     BloodNGuts.allFontsReady.then(() => {
