@@ -182,9 +182,10 @@ export class BloodNGuts {
    * @category GMOnly
    * @function
    */
-  public static wipeSceneFlags(): void {
+  public static async wipeSceneFlags(): Promise<void> {
     log(LogLevel.INFO, 'wipeSceneFlags');
-    canvas.scene.setFlag(MODULE_ID, 'sceneSplats', null);
+    await canvas.scene.setFlag(MODULE_ID, 'sceneSplats', null);
+    for (const tokenId in BloodNGuts.splatTokens) BloodNGuts.splatTokens[tokenId].wipeFlags();
   }
 
   /**
