@@ -31,11 +31,11 @@ export default class SplatToken {
   public currPos: PIXI.Point;
   public lastPos: PIXI.Point;
   public movePos: PIXI.Point;
+  public container: PIXI.Container;
 
   private token: Token;
-  private container: PIXI.Container;
-  private bleedingDistance: number;
   private tokenSplats: Array<SplatDataObject>;
+  private bleedingDistance: number;
 
   constructor(token: Token) {
     this.bloodColor = lookupTokenBloodColor(token);
@@ -98,6 +98,24 @@ export default class SplatToken {
   }
 
   /**
+   * Run once after constructor and createMask() to add blood to tokens on a newly loaded scene.
+   * @category GMandPC
+   * @param updatedSplats - the latest token splat data.
+   * @function
+   */
+  public preSplat(): void {
+    if (!this.bleedingSeverity && this.hp < this.maxHP / 2 && !this.tokenSplats.length) {
+      this.hitSeverity = 2 - this.hp / (this.maxHP / 2);
+      this.bleedingSeverity = this.hitSeverity;
+      const tempSplats = this.bleedToken();
+      this.token.update(
+        { flags: { [MODULE_ID]: { splats: tempSplats, bleedingSeverity: this.bleedingSeverity } } },
+        { diff: false },
+      );
+    }
+  }
+
+  /**
    * Saves updated splats to tokenSplats and calls draw() if changed.
    * @category GMandPC
    * @param updatedSplats - the latest token splat data.
@@ -130,7 +148,7 @@ export default class SplatToken {
     if (updates.bleedingSeverity !== null) this.bleedingSeverity = updates.bleedingSeverity;
     else delete updates.bleedingSeverity;
     this.direction = this.getUpdatedMovement(changes);
-
+    debugger;
     if (this.hitSeverity > 0) {
       this.bleedFloor();
       updates.splats = this.bleedToken();
@@ -313,11 +331,11 @@ export default class SplatToken {
    */
   private healToken(): SplatDataObject[] {
     // make positive for sanity purposes
-    let tempSeverity = this.hitSeverity * -1;
+    const tempSeverity = this.hitSeverity * -1;
     // deal with scale/healthThreshold > 1. We can only heal to 100%
-    if (tempSeverity > 1) tempSeverity = 1;
+    if (tempSeverity >= 1) return [];
     log(LogLevel.DEBUG, 'healToken allTokensSplats:');
-    const removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
+    const removeAmount = Math.floor(this.tokenSplats.length * tempSeverity);
     log(LogLevel.DEBUG, 'healToken removeAmount:', removeAmount);
     const updatedSplats = duplicate(this.tokenSplats);
     updatedSplats.splice(0, removeAmount);
@@ -386,7 +404,7 @@ export default class SplatToken {
   private getDamageSeverity(changes): number {
     log(LogLevel.INFO, 'getDamageSeverity', changes.actorData);
     const currentHP = changes.actorData.data.attributes.hp.value;
-
+    debugger;
     //fully healed, return -1
     if (currentHP === this.maxHP) return -1;
 
@@ -410,7 +428,7 @@ export default class SplatToken {
     // healing
     if (changeFractionOfMax < 0) {
       //renormalise scale based on threshold.
-      return changeFractionOfMax / healthThreshold;
+      return -fractionOfMax / healthThreshold;
     }
     // dead, multiply by 2.
     const deathMultiplier = currentHP === 0 ? game.settings.get(MODULE_ID, 'deathMultiplier') : 1;
@@ -475,7 +493,7 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'tokenSplat: draw');
     this.wipeSplats();
     // @ts-ignore
-    if (!this.tokenSplats) return;
+    if (!this.tokenSplats || !this.tokenSplats.length) return;
     const extantTokenSplatIds = this.tokenSplats.map((ts) => ts.id);
     BloodNGuts.scenePool = BloodNGuts.scenePool.filter(
       (p) => p.data.tokenId !== this.id || (p.data.tokenId === this.id && extantTokenSplatIds.includes(p.data.id)),

@@ -59,7 +59,7 @@ export const registerSettings = (): void => {
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: halfHealthBloodied set to ' + value);
       // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
-      game.settings.set(MODULE_ID, 'healthThreshold', 0.5);
+      game.settings.set(MODULE_ID, 'healthThreshold', 0.51);
       game.settings.set(MODULE_ID, 'damageThreshold', 0);
     },
   });
