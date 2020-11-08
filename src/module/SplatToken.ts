@@ -302,8 +302,6 @@ export default class SplatToken {
 
     const updatedSplats = duplicate(this.tokenSplats);
     updatedSplats.push(<SplatDataObject>splatDataObj);
-    BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj, container: this.container });
-
     return updatedSplats;
   }
 
@@ -319,13 +317,11 @@ export default class SplatToken {
     // deal with scale/healthThreshold > 1. We can only heal to 100%
     if (tempSeverity > 1) tempSeverity = 1;
     log(LogLevel.DEBUG, 'healToken allTokensSplats:');
-    let removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
+    const removeAmount = Math.ceil(this.tokenSplats.length * tempSeverity);
     log(LogLevel.DEBUG, 'healToken removeAmount:', removeAmount);
     const updatedSplats = duplicate(this.tokenSplats);
-    while (removeAmount-- > 0) {
-      const data = updatedSplats.shift();
-      BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.data.id != data.id);
-    }
+    updatedSplats.splice(0, removeAmount);
+
     return updatedSplats;
   }
 
@@ -480,6 +476,11 @@ export default class SplatToken {
     this.wipeSplats();
     // @ts-ignore
     if (!this.tokenSplats) return;
+    const extantTokenSplatIds = this.tokenSplats.map((ts) => ts.id);
+    BloodNGuts.scenePool = BloodNGuts.scenePool.filter(
+      (p) => p.data.tokenId !== this.id || (p.data.tokenId === this.id && extantTokenSplatIds.includes(p.data.id)),
+    );
+    const extantScenePoolSplatIds = BloodNGuts.scenePool.map((p) => p.data.id);
     BloodNGuts.allFontsReady.then(() => {
       this.tokenSplats.forEach((splatData) => {
         splatData.splats.forEach((splat) => {
@@ -488,6 +489,8 @@ export default class SplatToken {
           text.y = splat.y;
           this.container.addChild(text);
         });
+        if (!extantScenePoolSplatIds.includes(splatData.id))
+          BloodNGuts.scenePool.push({ data: splatData, container: this.container });
       });
     });
   }

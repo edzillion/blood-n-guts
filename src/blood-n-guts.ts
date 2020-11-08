@@ -74,34 +74,32 @@ export class BloodNGuts {
    */
   private static getTrimmedSceneSplats(): SplatDataObject[] {
     log(LogLevel.INFO, 'getTrimmedSceneSplats');
-    const extantTokens = Object.keys(BloodNGuts.splatTokens);
-
-    const splats = BloodNGuts.scenePool
-      .map((p) => p.data)
-      .filter((s) => !s.tokenId || extantTokens.includes(s.tokenId));
+    debugger;
+    const allSplats = BloodNGuts.scenePool.map((p) => p.data);
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
-    const fadedPoolSize = splats.length - Math.round(maxPoolSize * 0.85);
-    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
-    log(LogLevel.DEBUG, 'getTrimmedSceneSplats sizes curr, max', splats.length, maxPoolSize);
-
-    if (splats.length > maxPoolSize) {
+    if (allSplats.length > maxPoolSize) {
       // remove the oldest splats
-      splats.splice(0, splats.length - maxPoolSize);
+      allSplats.splice(0, allSplats.length - maxPoolSize);
     }
+
+    const fadedPoolSize = allSplats.length - Math.round(maxPoolSize * 0.85);
+    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
+    log(LogLevel.DEBUG, 'getTrimmedSceneSplats sizes curr, max', allSplats.length, maxPoolSize);
 
     // 15% of splats will be set to fade. 1/3rd of those will be very faded
     if (fadedPoolSize > 0) {
       for (let i = 0; i < fadedPoolSize; i++) {
         const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
-        splats[i].alpha = alpha;
+        allSplats[i].alpha = alpha;
       }
     }
 
     log(
       LogLevel.DEBUG,
-      `getTrimmedSceneSplats sceneSplatPool:${splats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
+      `getTrimmedSceneSplats sceneSplatPool:${allSplats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
     );
-    return splats;
+    const splatsToSave = allSplats.filter((s) => !s.tokenId);
+    return splatsToSave;
   }
 
   /**
@@ -163,7 +161,10 @@ export class BloodNGuts {
           if (existingIds.includes(data.id))
             BloodNGuts.scenePool.find((p) => p.data.id === data.id).container = container;
           else BloodNGuts.scenePool.push({ data: data, container: container });
-        } else log(LogLevel.ERROR, 'drawSceneSplats: splatDataObject has no .maskPolygon!');
+        } else {
+          debugger;
+          log(LogLevel.ERROR, 'drawSceneSplats: splatDataObject has no .maskPolygon!');
+        }
       });
     }
 
