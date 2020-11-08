@@ -20,7 +20,7 @@ import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
 
 // CONFIG.debug.hooks = true;
-CONFIG[MODULE_ID] = { logLevel: 2 };
+CONFIG[MODULE_ID] = { logLevel: 1 };
 
 /**
  * Main class wrapper for all blood-n-guts features.
