@@ -18,6 +18,7 @@ import {
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
+import * as splatFonts from './data/splatFonts';
 
 // CONFIG.debug.hooks = true;
 CONFIG[MODULE_ID] = { logLevel: 1 };
@@ -478,8 +479,11 @@ Hooks.once('init', () => {
   // Register custom module settings
   registerSettings();
 
-  (document as any).fonts.load('12px splatter');
-  (document as any).fonts.load('12px WC Rhesus A Bta');
+  for (const fontName in splatFonts.fonts) {
+    const shorthand = '12px ' + fontName;
+    console.log(shorthand);
+    (document as any).fonts.load(shorthand);
+  }
 
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
 });
