@@ -61,7 +61,7 @@ export class AdvancedConfig extends FormApplication {
     } else wipeButton.attr('disabled', true);
   }
 
-  async _updateObject(event: Event, formData: any): Promise<void> {
+  async _updateObject(_event: Event, formData: any): Promise<void> {
     for (const setting in formData) {
       game.settings.set(MODULE_ID, setting, formData[setting]);
     }

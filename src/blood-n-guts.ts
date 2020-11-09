@@ -134,8 +134,10 @@ export class BloodNGuts {
         if (data.maskPolygon) {
           data.splats.forEach((splat) => {
             const text = new PIXI.Text(splat.glyph, style);
-            text.x = splat.x;
-            text.y = splat.y;
+            text.x = splat.x + splat.width / 2;
+            text.y = splat.y + splat.height / 2;
+            text.pivot.set(splat.width / 2, splat.height / 2);
+            text.angle = splat.angle;
             container.addChild(text);
             return text;
           });
@@ -145,7 +147,7 @@ export class BloodNGuts {
           sightMask.beginFill(1, 1);
           sightMask.drawPolygon(data.maskPolygon);
           sightMask.endFill();
-
+          sightMask.alpha = 0.4;
           container.addChild(sightMask);
           container.mask = sightMask;
 
@@ -250,6 +252,7 @@ export class BloodNGuts {
       return {
         x: Math.round(randX - tm.width / 2),
         y: Math.round(randY - tm.height / 2),
+        angle: Math.round(Math.random() * 360),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
@@ -339,6 +342,7 @@ export class BloodNGuts {
       splatDataObj.splats.push({
         x: Math.round(pt.x - tm.width / 2) - splatToken.currPos.x,
         y: Math.round(pt.y - tm.height / 2) - splatToken.currPos.y,
+        angle: Math.round(Math.random() * 360),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
@@ -351,10 +355,12 @@ export class BloodNGuts {
     splatDataObj.offset = offset;
     splatDataObj.x = offset.x;
     splatDataObj.y = offset.y;
+    console.log(width, height);
 
-    const maxDistance = Math.max(width, height);
+    // account for 45deg rotated splats
+    const maxDistance = Math.max(width * 1.414, height * 1.414);
 
-    const tokenCenter = splatToken.getCenter(); //new PIXI.Point(...canvas.grid.getCenter(splatToken.currPos.x, splatToken.currPos.y));
+    const tokenCenter = splatToken.getCenter();
     const sight = computeSightFromPoint(tokenCenter, maxDistance);
     splatDataObj.maskPolygon = sight;
 

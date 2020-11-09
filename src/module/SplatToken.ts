@@ -303,6 +303,7 @@ export default class SplatToken {
       return {
         x: Math.round(randX - tm.width / 2),
         y: Math.round(randY - tm.height / 2),
+        angle: Math.round(Math.random() * 360),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
@@ -430,7 +431,7 @@ export default class SplatToken {
       //renormalise scale based on threshold.
       return -fractionOfMax / healthThreshold;
     }
-    // dead, multiply by 2.
+    // dead, multiply splats.
     const deathMultiplier = currentHP === 0 ? game.settings.get(MODULE_ID, 'deathMultiplier') : 1;
     const severity = 1 + (changeFractionOfMax / 2) * deathMultiplier;
 
@@ -503,8 +504,10 @@ export default class SplatToken {
       this.tokenSplats.forEach((splatData) => {
         splatData.splats.forEach((splat) => {
           const text = new PIXI.Text(splat.glyph, splatData.styleData);
-          text.x = splat.x;
-          text.y = splat.y;
+          text.x = splat.x + splat.width / 2;
+          text.y = splat.y + splat.height / 2;
+          text.pivot.set(splat.width / 2, splat.height / 2);
+          text.angle = splat.angle;
           this.container.addChild(text);
         });
         if (!extantScenePoolSplatIds.includes(splatData.id))
