@@ -32,9 +32,6 @@ export class AdvancedConfig extends FormApplication {
   }
 
   async getData(): Promise<any> {
-    // todo: sort out this permissions stuff
-    // const canConfigure = game.user.can('SETTINGS_MODIFY');
-
     const dataObject = {};
     const level = game.settings.get(MODULE_ID, 'violenceLevel');
     const violenceLevel = violenceLevelSettings.level[level];
