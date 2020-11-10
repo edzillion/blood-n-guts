@@ -39,82 +39,83 @@
     <div class="form-group">
       <label>Floor Splat Size</label>
       <div class="form-fields">
-        <input type="number" value="{{ floorSplatSize }}" class="advanced-config-font-details" name="floorSplatSize" data-dtype="Number">
+        <input type="number" value="{{ floorSplatSize }}" class="advanced-config-font-details" name="floorSplatSize" data-dtype="Number" min="0">
       </div>
       <p class="notes">This will increase the size of floor splats</p>
     </div>
     <div class="form-group">
       <label>Floor Splat Density</label>
       <div class="form-fields">
-        <input type="number" value="{{ floorSplatDensity }}" class="advanced-config-font-details" name="floorSplatDensity" data-dtype="Number">
+        <input type="number" value="{{ floorSplatDensity }}" class="advanced-config-font-details" name="floorSplatDensity" data-dtype="Number" min="0">
       </div>
       <p class="notes">This will increase the amount of floor spats per hit</p>
     </div>
     <div class="form-group">
       <label>Token Splat Size</label>
       <div class="form-fields">
-        <input type="number" value="{{ tokenSplatSize }}" class="advanced-config-font-details" name="tokenSplatSize" data-dtype="Number">
+        <input type="number" value="{{ tokenSplatSize }}" class="advanced-config-font-details" name="tokenSplatSize" data-dtype="Number" min="0">
       </div>
       <p class="notes">This will increase the size of token splats</p>
     </div>
     <div class="form-group">
       <label>Token Splat Density</label>
       <div class="form-fields">
-        <input type="number" value="{{ tokenSplatDensity }}" class="advanced-config-font-details" name="tokenSplatDensity" data-dtype="Number">
+        <input type="number" value="{{ tokenSplatDensity }}" class="advanced-config-font-details" name="tokenSplatDensity" data-dtype="Number" min="0">
       </div>
       <p class="notes">This will increase the amount of token splats per hit</p>
     </div>
     <div class="form-group">
       <label>Trail Splat Size</label>
       <div class="form-fields">
-        <input type="number" value="{{ trailSplatSize }}" class="advanced-config-font-details" name="trailSplatSize" data-dtype="Number">
+        <input type="number" value="{{ trailSplatSize }}" class="advanced-config-font-details" name="trailSplatSize" data-dtype="Number" min="0">
       </div>
       <p class="notes">This will increase the size of splats in a blood trail</p>
     </div>
     <div class="form-group">
       <label>Trail Splat Density</label>
       <div class="form-fields">
-        <input type="number" value="{{ trailSplatDensity }}" class="advanced-config-font-details" name="trailSplatDensity"  data-dtype="Number" step="any">
+        <input type="number" value="{{ trailSplatDensity }}" class="advanced-config-font-details" name="trailSplatDensity"  data-dtype="Number" min="0">
       </div>
       <p class="notes">This will increase the amount of blood splats  in a trail</p>
     </div>
     <div class="form-group">
       <label>Splat Spread</label>
       <div class="form-fields">
-        <input type="number" value="{{ splatSpread }}" class="advanced-config-font-details" name="splatSpread"  data-dtype="Number">
+        <input type="number" value="{{ splatSpread }}" class="advanced-config-font-details" name="splatSpread"  data-dtype="Number" step="0.1" min="1">
       </div>
       <p class="notes">This will determine the random spread of splats</p>
     </div>
     <div class="form-group">
       <label>Health Threshold</label>
       <div class="form-fields">
-        <input type="number" value="{{ healthThreshold }}" class="advanced-config-font-details" name="healthThreshold"  data-dtype="Number" step="any">
+        <input type="number" value="{{ healthThreshold }}" class="advanced-config-font-details" name="healthThreshold"  data-dtype="Number" step="0.01" min="0" max="1"> 
       </div>
       <p class="notes">The % of max health to start showing splats e.g. 1.0 will show splats all the time, 0.25 will show splats when HP is 25% or less.</p>
     </div>    
     <div class="form-group">
       <label>Damage Threshold</label>
       <div class="form-fields">
-        <input type="number" value="{{ damageThreshold }}" class="advanced-config-font-details" name="damageThreshold"  data-dtype="Number" step="any">
+        <input type="number" value="{{ damageThreshold }}" class="advanced-config-font-details" name="damageThreshold"  data-dtype="Number" step="0.01" min="0" max="1">
       </div>
       <p class="notes">The % of max damage to show splats. e.g. 0 will never show splats, 0.25 will show them on a hit that reduces health by 25%.</p>
     </div>
     <div class="form-group">
       <label>Death Multiplier</label>
       <div class="form-fields">
-        <input type="number" value="{{ deathMultiplier }}" class="advanced-config-font-details" name="deathMultiplier"  data-dtype="Number" step="any">
+        <input type="number" value="{{ deathMultiplier }}" class="advanced-config-font-details" name="deathMultiplier"  data-dtype="Number" step="0.1" min="0">
       </div>
       <p class="notes">Scales the amount of blood to show on a death hit.</p>
     </div>    
     <div class="form-group">
       <label>Splat Pool Size</label>
       <div class="form-fields">
-        <input type="number" value="{{ sceneSplatPoolSize }}" class="advanced-config-font-details" name="sceneSplatPoolSize"  data-dtype="Number">
+        <input type="number" value="{{ sceneSplatPoolSize }}" class="advanced-config-font-details" name="sceneSplatPoolSize"  data-dtype="Number" min="10">
       </div>
       <p class="notes">The max amount of splats to display at once before reuse</p>
     </div>
-      <button type="button" class="advanced-config-wipe-scene-splats" name="wipe-scene-splats"><i class="fas fa-trash-alt"></i>Wipe Scene Splats</button>
-      <button type="submit" class="advanced-config-submit" name="submit"><i class="fas fa-dice"></i>Submit</button>
+      <button type="button" onmousedown="event.preventDefault()" class="advanced-config-splat-window" name="splat-window"><i class="fas fa-tint"></i>Splat Window</button>
+      <button type="button" onmousedown="event.preventDefault()" class="advanced-config-wipe-scene-splats" name="wipe-scene-splats"><i class="fas fa-trash-alt"></i>Wipe Scene Splats</button>
+      <button type="submit" onmousedown="event.preventDefault()" class="advanced-config-submit" name="submit"><i class="fas fa-dice"></i>Submit</button>
   </div>
 </form>
 

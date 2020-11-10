@@ -1,12 +1,13 @@
 {
 	"private": true,
 	"name": "blood-n-guts",
-	"version": "0.6.1",
+	"version": "0.6.2",
 	"description": "Spray your dungeons with blood! A module for FoundryVTT",
 	"author": "edzillion",
 	"license": "GNU GPLv3.0 & 'Commons Clause' License Condition v1.0",
 	"devDependencies": {
 		"@types/async": "^3.2.3",
+		"@types/jquery": "^3.5.4",
 		"@types/node": "^14.11.2",
 		"@typescript-eslint/eslint-plugin": "^4.4.0",
 		"@typescript-eslint/parser": "^4.4.0",

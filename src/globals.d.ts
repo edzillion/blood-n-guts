@@ -37,6 +37,7 @@ interface Splat {
   glyph: string;
   x: number;
   y: number;
-  width: number;
-  height: number;
+  angle: number;
+  width?: number;
+  height?: number;
 }

@@ -15,9 +15,11 @@ import {
   alignSplatsGetOffsetAndDimensions,
   getPointOnCurve,
   getUID,
+  getRGBA,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
+import * as splatFonts from './data/splatFonts';
 
 // CONFIG.debug.hooks = true;
 CONFIG[MODULE_ID] = { logLevel: 1 };
@@ -133,8 +135,10 @@ export class BloodNGuts {
         if (data.maskPolygon) {
           data.splats.forEach((splat) => {
             const text = new PIXI.Text(splat.glyph, style);
-            text.x = splat.x;
-            text.y = splat.y;
+            text.x = splat.x + splat.width / 2;
+            text.y = splat.y + splat.height / 2;
+            text.pivot.set(splat.width / 2, splat.height / 2);
+            text.angle = splat.angle;
             container.addChild(text);
             return text;
           });
@@ -144,7 +148,6 @@ export class BloodNGuts {
           sightMask.beginFill(1, 1);
           sightMask.drawPolygon(data.maskPolygon);
           sightMask.endFill();
-
           container.addChild(sightMask);
           container.mask = sightMask;
 
@@ -249,6 +252,7 @@ export class BloodNGuts {
       return {
         x: Math.round(randX - tm.width / 2),
         y: Math.round(randY - tm.height / 2),
+        angle: Math.round(Math.random() * 360),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
@@ -338,6 +342,7 @@ export class BloodNGuts {
       splatDataObj.splats.push({
         x: Math.round(pt.x - tm.width / 2) - splatToken.currPos.x,
         y: Math.round(pt.y - tm.height / 2) - splatToken.currPos.y,
+        angle: Math.round(Math.random() * 360),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
@@ -351,9 +356,10 @@ export class BloodNGuts {
     splatDataObj.x = offset.x;
     splatDataObj.y = offset.y;
 
-    const maxDistance = Math.max(width, height);
+    // account for 45deg rotated splats
+    const maxDistance = Math.max(width * 1.414, height * 1.414);
 
-    const tokenCenter = splatToken.getCenter(); //new PIXI.Point(...canvas.grid.getCenter(splatToken.currPos.x, splatToken.currPos.y));
+    const tokenCenter = splatToken.getCenter();
     const sight = computeSightFromPoint(tokenCenter, maxDistance);
     splatDataObj.maskPolygon = sight;
 
@@ -368,6 +374,59 @@ export class BloodNGuts {
     splatDataObj.y += tokenCenter.y;
     splatDataObj.id = getUID();
     BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
+  }
+
+  /**
+   * Draw splats on any HTMLElement sent to it.
+   * @category GMOnly
+   * @function
+   * @param {HTMLElement} html - the HTMLElement to draw splats on.
+   * @param {SplatFont=splatter} font - the font to use for splats
+   * @param {number} size - the size of splats.
+   * @param {number} density - the amount of splats.
+   * @param {string='blood'} bloodColor - splat color, can be a css color name or RBGA string e.g. '[255,255,0,0.5]'
+   */
+  public static drawDOMSplats(
+    html: HTMLElement,
+    font: SplatFont = splatFonts.fonts.splatter,
+    size: number,
+    density: number,
+    bloodColor = 'blood',
+  ): void {
+    if (!density) return;
+    log(LogLevel.INFO, 'drawDOMSplats');
+
+    const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
+
+    const containerStyle = {
+      width: html.clientWidth,
+      height: html.clientHeight,
+      color: getRGBA(bloodColor),
+    };
+
+    const container = $('<div/>', {
+      class: 'splat-container',
+      css: containerStyle,
+    }).appendTo(html);
+
+    // draw splats to DOM
+    glyphArray.forEach((glyph) => {
+      const style = {
+        fontFamily: font.name,
+        fontSize: size,
+
+        align: 'center',
+        left: Math.round(Math.random() * html.clientWidth) + 'px',
+        top: Math.round(Math.random() * html.clientHeight) + 'px',
+        position: 'absolute',
+        transform: 'rotate(' + Math.round(Math.random() * 360) + 'deg)',
+      };
+
+      $('<div/>', {
+        css: style,
+        text: glyph,
+      }).appendTo(container);
+    });
   }
 
   // HANDLERS
@@ -478,8 +537,10 @@ Hooks.once('init', () => {
   // Register custom module settings
   registerSettings();
 
-  (document as any).fonts.load('12px splatter');
-  (document as any).fonts.load('12px WC Rhesus A Bta');
+  for (const fontName in splatFonts.fonts) {
+    const shorthand = '12px ' + fontName;
+    (document as any).fonts.load(shorthand);
+  }
 
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
 });

@@ -2,6 +2,8 @@ import { log, LogLevel } from './logging';
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import { MODULE_ID } from '../constants';
 
+const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
+
 /**
  * Helper functions.
  * @module Helpers
@@ -124,8 +126,6 @@ export const lookupTokenBloodColor = (token: Token): string => {
     type = actor.data.data.details.type || actor.data.data.details.creatureType;
   }
   log(LogLevel.DEBUG, 'lookupTokenBloodColor: ', token.name, actorType, type);
-
-  const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
 
   // if useBloodColor is disabled then all blood is blood red
   let bloodColor = bloodColorSettings.color[type.toLowerCase()];
@@ -301,6 +301,7 @@ export function distanceBetween(pt1: PIXI.Point, pt2: PIXI.Point): number {
  * @returns {string} - color in rgba format, e.g. '[125, 125, 7, 0.7]'.
  */
 export function getRGBA(colorName: string, alpha = 0.7): string {
+  if (rgbaOnlyRegex.test(colorName)) return colorName;
   const rgbArray: Array<number> = colors[colorName];
   if (!rgbArray) return;
   return `rgba(${rgbArray[0]}, ${rgbArray[1]}, ${rgbArray[2]}, ${alpha})`;

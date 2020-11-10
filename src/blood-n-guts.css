@@ -15,3 +15,45 @@
   font-style: normal;
   font-display: swap;
 }
+
+@font-face {
+  font-family: 'Starz2';
+  src: url('./fonts/Starz2.woff2') format('woff2'),
+      url('./fonts/Starz2.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'wmshapes1';
+  src: url('./fonts/Wmshapes1.woff2') format('woff2'),
+      url('./fonts/Wmshapes1.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Wach Op-Art';
+  src: url('./fonts/WachOp-Art.woff2') format('woff2'),
+      url('./fonts/WachOp-Art.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sigali';
+  src: url('./fonts/Sigali-Script.woff2') format('woff2'),
+      url('./fonts/Sigali-Script.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.splat-container {
+  overflow: hidden;
+  position: absolute;
+  pointer-events: none;
+};
