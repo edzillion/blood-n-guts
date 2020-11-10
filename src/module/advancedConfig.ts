@@ -3,6 +3,7 @@ import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import * as splatFonts from '../data/splatFonts';
 import { BloodNGuts } from '../blood-n-guts';
+import { getRGBA } from './helpers';
 
 /**
  * FormApplication window for advanced configuration options.
@@ -49,16 +50,29 @@ export class AdvancedConfig extends FormApplication {
     return super.render(force, context);
   }
 
-  activateListeners(html: any): any {
+  activateListeners(html: JQuery): any {
     super.activateListeners(html);
-
     const wipeButton = html.find('.advanced-config-wipe-scene-splats');
     if (canvas.scene.active) {
       wipeButton.click(() => {
         log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeSceneFlags()');
         BloodNGuts.wipeSceneFlags();
+        $('.splat-container').remove();
       });
-    } else wipeButton.attr('disabled', true);
+    } else wipeButton.attr('disabled', 'true');
+
+    const splatButton = html.find('.advanced-config-splat-window');
+    const appWindow = html.closest('.app.window-app.form#blood-n-guts');
+    splatButton.click(() => {
+      log(LogLevel.DEBUG, 'splatButton: BloodNGuts.wipeSceneFlags()');
+      BloodNGuts.drawDOMSplats(
+        appWindow[0],
+        splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
+        250,
+        4,
+        getRGBA('blood'),
+      );
+    });
   }
 
   async _updateObject(_event: Event, formData: any): Promise<void> {

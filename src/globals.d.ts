@@ -38,6 +38,6 @@ interface Splat {
   x: number;
   y: number;
   angle: number;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
 }

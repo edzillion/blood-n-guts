@@ -51,3 +51,9 @@
   font-style: normal;
   font-display: swap;
 }
+
+.splat-container {
+  overflow: hidden;
+  position: absolute;
+  pointer-events: none;
+};
