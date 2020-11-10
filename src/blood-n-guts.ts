@@ -148,7 +148,6 @@ export class BloodNGuts {
           sightMask.beginFill(1, 1);
           sightMask.drawPolygon(data.maskPolygon);
           sightMask.endFill();
-          sightMask.alpha = 0.4;
           container.addChild(sightMask);
           container.mask = sightMask;
 
@@ -356,7 +355,6 @@ export class BloodNGuts {
     splatDataObj.offset = offset;
     splatDataObj.x = offset.x;
     splatDataObj.y = offset.y;
-    console.log(width, height);
 
     // account for 45deg rotated splats
     const maxDistance = Math.max(width * 1.414, height * 1.414);
@@ -541,7 +539,6 @@ Hooks.once('init', () => {
 
   for (const fontName in splatFonts.fonts) {
     const shorthand = '12px ' + fontName;
-    console.log(shorthand);
     (document as any).fonts.load(shorthand);
   }
 
