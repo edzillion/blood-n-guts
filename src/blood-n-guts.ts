@@ -15,6 +15,7 @@ import {
   alignSplatsGetOffsetAndDimensions,
   getPointOnCurve,
   getUID,
+  getRGBA,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
@@ -378,58 +379,31 @@ export class BloodNGuts {
   }
 
   /**
-   * Generate splats in on any div sent to it.
+   * Draw splats on any HTMLElement sent to it.
    * @category GMOnly
    * @function
-   * @param {any} div - the div to draw splats on.
-   * @param {SplatFont} font - the font to use for splats.
+   * @param {HTMLElement} html - the HTMLElement to draw splats on.
+   * @param {SplatFont=splatter} font - the font to use for splats
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
-   * @param {number} bloodColor - the css color of the splats.
+   * @param {string='blood'} bloodColor - splat color, can be a css color name or RBGA string e.g. '[255,255,0,0.5]'
    */
   public static drawDOMSplats(
     html: HTMLElement,
-    font: SplatFont,
+    font: SplatFont = splatFonts.fonts.splatter,
     size: number,
     density: number,
-    bloodColor: string,
+    bloodColor = 'blood',
   ): void {
     if (!density) return;
-    log(LogLevel.DEBUG, 'generateFloorSplats');
+    log(LogLevel.INFO, 'drawDOMSplats');
 
-    const splatDataObj: Partial<SplatDataObject> = {};
-
-    // scale the splats based on token size and severity
-    log(LogLevel.DEBUG, 'generateFloorSplats fontSize', size);
-
-    //const style = new PIXI.TextStyle(splatDataObj.styleData);
-
-    // get a random glyph and then get a random (x,y) spread on the div.
     const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
-
-    // let splats =  glyphArray.map((glyph) => {  //div.append($.parseHTML('<div/>')).attr()
-    // $( "<div/>", {
-    //   "class": "test",
-    //   text: "Click me!",
-    //   click: function() {
-    //     $( this ).toggleClass( "test" );
-    //   }
-    // })
-    //   .appendTo( "body" );
-    // //const divToDrawOn = $(div).parent();
-    // create our splats for later drawing.
-    splatDataObj.splats = glyphArray.map((glyph) => {
-      return {
-        x: Math.round(Math.random() * html.clientWidth), // + html.offsetLeft,
-        y: Math.round(Math.random() * html.clientHeight), // + html.offsetTop,
-        angle: Math.round(Math.random() * 360),
-        glyph: glyph,
-      };
-    });
 
     const containerStyle = {
       width: html.clientWidth,
       height: html.clientHeight,
+      color: getRGBA(bloodColor),
     };
 
     const container = $('<div/>', {
@@ -437,47 +411,24 @@ export class BloodNGuts {
       css: containerStyle,
     }).appendTo(html);
 
-    splatDataObj.splats.forEach((splat) => {
+    // draw splats to DOM
+    glyphArray.forEach((glyph) => {
       const style = {
         fontFamily: font.name,
         fontSize: size,
-        color: bloodColor,
+
         align: 'center',
-        left: splat.x + 'px',
-        top: splat.y + 'px',
+        left: Math.round(Math.random() * html.clientWidth) + 'px',
+        top: Math.round(Math.random() * html.clientHeight) + 'px',
         position: 'absolute',
-        transform: 'rotate(' + splat.angle + 'deg)',
+        transform: 'rotate(' + Math.round(Math.random() * 360) + 'deg)',
       };
 
       $('<div/>', {
         css: style,
-        text: splat.glyph,
+        text: glyph,
       }).appendTo(container);
     });
-
-    splatDataObj.id = getUID();
-
-    // const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatDataObj.splats);
-    // splatDataObj.offset = offset;
-    // splatDataObj.x = offset.x;
-    // splatDataObj.y = offset.y;
-
-    // const maxDistance = Math.max(width, height);
-    // const tokenCenter = splatToken.getCenter();
-    // const sight = computeSightFromPoint(tokenCenter, maxDistance);
-
-    // // since we don't want to add the mask to the container yet (as that will
-    // // screw up our alignment) we need to move it by editing the x,y points directly
-    // for (let i = 0; i < sight.length; i += 2) {
-    //   sight[i] -= splatDataObj.offset.x;
-    //   sight[i + 1] -= splatDataObj.offset.y;
-    // }
-
-    // splatDataObj.x += tokenCenter.x;
-    // splatDataObj.y += tokenCenter.y;
-    // splatDataObj.maskPolygon = sight;
-
-    //BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
   }
 
   // HANDLERS
