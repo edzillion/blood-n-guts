@@ -116,36 +116,36 @@ export const getRandomBoxMuller = (): number => {
 export const lookupTokenBloodColor = (token: Token): string => {
   const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
   log(LogLevel.INFO, 'lookupTokenBloodColor enabled?: ' + bloodColorEnabled);
+  if (!token.actor || !token.actor.data) {
+    log(LogLevel.ERROR, 'lookupTokenBloodColor missing actor data for token!', token);
+    return getRGBA('blood');
+  } else if (!bloodColorEnabled) return getRGBA('blood'); // if useBloodColor is disabled then all blood is blood red
 
-  const actor = token.actor;
-  const actorType: string = actor.data.type;
-  let type: string;
-  if (actor.data.type === 'character') {
-    type = actor.data.data.details.ancestry?.value || actor.data.data.details.race;
-  } else if (actor.data.type === 'npc') {
-    type = actor.data.data.details.type || actor.data.data.details.creatureType;
+  const actorType: string = token.actor.data.type;
+  let creatureType: string;
+  if (actorType === 'character') {
+    creatureType = token.actor.data.data.details.ancestry?.value || token.actor.data.data.details.race;
+  } else if (actorType === 'npc') {
+    creatureType = token.actor.data.data.details.type || token.actor.data.data.details.creatureType;
   }
-  log(LogLevel.DEBUG, 'lookupTokenBloodColor: ', token.name, actorType, type);
+  log(LogLevel.INFO, 'lookupTokenBloodColor: ', token.name, actorType, creatureType);
 
-  // if useBloodColor is disabled then all blood is blood red
-  let bloodColor = bloodColorSettings.color[type.toLowerCase()];
+  const bloodColor = bloodColorSettings.color[creatureType.toLowerCase()];
+  if (!bloodColor) return getRGBA('blood');
   if (bloodColor === 'none') return 'none';
-  bloodColor = bloodColorEnabled && bloodColor ? bloodColor : 'blood';
 
   // bloodSettings can return either an rbga string, a color string or 'name' which looks up the
   // color based on it's name. e.g. 'Purple Ooze'
   let rgba: string;
-  if (bloodColor === 'none') {
-    return '';
-  } else if (bloodColor === 'name') {
-    rgba = getActorColorByName(actor);
+  if (bloodColor === 'name') {
+    rgba = getActorColorByName(token.actor);
     log(LogLevel.DEBUG, 'lookupTokenBloodColor name:', bloodColor, rgba);
-  } else if (getRGBA(bloodColor)) {
-    rgba = getRGBA(bloodColor);
-    log(LogLevel.DEBUG, 'lookupTokenBloodColor getRGBA:', bloodColor, rgba);
   } else if (rgbaOnlyRegex.test(bloodColor)) {
     rgba = bloodColor;
     log(LogLevel.DEBUG, 'lookupTokenBloodColor rgbaOnlyRegex:', bloodColor, rgba);
+  } else if (getRGBA(bloodColor)) {
+    rgba = getRGBA(bloodColor);
+    log(LogLevel.DEBUG, 'lookupTokenBloodColor getRGBA:', bloodColor, rgba);
   } else {
     log(LogLevel.ERROR, 'lookupTokenBloodColor color not recognized!', bloodColor, rgba);
     rgba = getRGBA('blood');
