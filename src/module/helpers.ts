@@ -129,6 +129,10 @@ export const lookupTokenBloodColor = (token: Token): string => {
     creatureType = token.actor.data.data.details.type || token.actor.data.data.details.creatureType;
   }
   log(LogLevel.INFO, 'lookupTokenBloodColor: ', token.name, actorType, creatureType);
+  if (!creatureType) {
+    log(LogLevel.ERROR, 'lookupTokenBloodColor missing creatureType', token);
+    return getRGBA('blood');
+  }
 
   const bloodColor = bloodColorSettings.color[creatureType.toLowerCase()];
   if (!bloodColor) return getRGBA('blood');
