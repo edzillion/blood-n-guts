@@ -74,9 +74,9 @@
     <div class="form-group">
       <label>Trail Splat Density</label>
       <div class="form-fields">
-        <input type="number" value="{{ trailSplatDensity }}" class="advanced-config-font-details" name="trailSplatDensity"  data-dtype="Number" min="0">
+        <input type="number" value="{{ trailSplatDensity }}" class="advanced-config-font-details" name="trailSplatDensity"  data-dtype="Number"  step="0.1" min="0">
       </div>
-      <p class="notes">This will increase the amount of blood splats  in a trail</p>
+      <p class="notes">This will increase the amount of blood splats in a trail</p>
     </div>
     <div class="form-group">
       <label>Splat Spread</label>
@@ -102,7 +102,7 @@
     <div class="form-group">
       <label>Death Multiplier</label>
       <div class="form-fields">
-        <input type="number" value="{{ deathMultiplier }}" class="advanced-config-font-details" name="deathMultiplier"  data-dtype="Number" step="0.1" min="0">
+        <input type="number" value="{{ deathMultiplier }}" class="advanced-config-font-details" name="deathMultiplier"  data-dtype="Number" step="0.01" min="0">
       </div>
       <p class="notes">Scales the amount of blood to show on a death hit.</p>
     </div>    
