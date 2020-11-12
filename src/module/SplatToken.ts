@@ -355,6 +355,7 @@ export default class SplatToken {
    */
   private async saveState(token, updates?, changes?): Promise<void> {
     //local state
+    log(LogLevel.DEBUG, 'SplatToken saveState', changes, token);
     this.x = changes?.x || token.x;
     this.y = changes?.y || token.y;
     this.hp = changes?.actorData?.data?.attributes?.hp?.value || token.actor.data.data.attributes.hp.value;
