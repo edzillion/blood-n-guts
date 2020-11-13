@@ -566,10 +566,17 @@ Token.prototype.draw = (function () {
 
   return async function () {
     await cached.apply(this);
-    if (!this.icon || this._original?.data?._id) return this; //no icon or dragging
+
+    if (!canvas.scene.active || !this.icon || this._original?.data?._id) return this; //no icon or dragging
     let splatToken: SplatToken;
-    if (BloodNGuts.splatTokens[this.id]) splatToken = BloodNGuts.splatTokens[this.id];
-    else {
+
+    if (BloodNGuts.splatTokens[this.id]) {
+      splatToken = BloodNGuts.splatTokens[this.id];
+      if (splatToken.container.children.length === 0) {
+        splatToken.container = new PIXI.Container();
+        await BloodNGuts.splatTokens[this.id].createMask();
+      }
+    } else {
       splatToken = new SplatToken(this);
       BloodNGuts.splatTokens[this.id] = splatToken;
       await BloodNGuts.splatTokens[this.id].createMask();
