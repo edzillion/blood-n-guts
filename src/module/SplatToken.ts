@@ -354,8 +354,11 @@ export default class SplatToken {
    * @param changes - changes to save.
    */
   private async saveState(token, updates?, changes?): Promise<void> {
+    if (!token.actor?.data?.data?.attributes) {
+      log(LogLevel.ERROR, 'saveState missing token actor data', token);
+      return;
+    }
     //local state
-    log(LogLevel.DEBUG, 'SplatToken saveState', changes, token);
     this.x = changes?.x || token.x;
     this.y = changes?.y || token.y;
     this.hp = changes?.actorData?.data?.attributes?.hp?.value || token.actor.data.data.attributes.hp.value;
