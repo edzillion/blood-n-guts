@@ -239,7 +239,7 @@ export default class SplatToken {
     const amount = density * this.bleedingSeverity;
 
     const distTravelled = distanceBetween(new PIXI.Point(), this.movePos) + this.bleedingDistance;
-    this.bleedingDistance = (1 / amount) * canvas.grid.size;
+    this.bleedingDistance = Math.round((1 / amount) * canvas.grid.size);
     const numSplats = distTravelled / this.bleedingDistance;
     this.bleedingDistance = distTravelled % this.bleedingDistance;
 
