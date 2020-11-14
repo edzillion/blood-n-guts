@@ -144,7 +144,13 @@ export class BloodNGuts {
         // all scene splats have a .maskPolgyon.
         if (data.maskPolygon) {
           data.splats.forEach((splat) => {
-            const text = new PIXI.Text(splat.glyph, style);
+            const sty = {
+              fontName: 'splatter',
+              align: 'center',
+              fontSize: 100,
+            };
+            // @ts-ignore
+            const text = new PIXI.BitmapText(splat.glyph, sty);
             text.x = splat.x + splat.width / 2;
             text.y = splat.y + splat.height / 2;
             text.pivot.set(splat.width / 2, splat.height / 2);
@@ -560,6 +566,17 @@ Hooks.once('init', () => {
   }
 
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
+  BloodNGuts.allFontsReady.then(() => {
+    //@ts-ignore
+    PIXI.BitmapFont.from(
+      'splatter',
+      { fontFamily: 'splatter' },
+      {
+        chars: splatFonts.fonts.splatter.availableGlyphs,
+        resolution: 4,
+      },
+    );
+  });
 });
 
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
