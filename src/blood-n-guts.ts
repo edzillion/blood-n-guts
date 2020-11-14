@@ -80,6 +80,7 @@ export class BloodNGuts {
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
     if (allSplats.length > maxPoolSize) {
       // remove the oldest splats
+      log(LogLevel.DEBUG, 'getTrimmedSceneSplats removing ', allSplats.length - maxPoolSize);
       allSplats.splice(0, allSplats.length - maxPoolSize);
     }
 
@@ -119,7 +120,16 @@ export class BloodNGuts {
     // remove splats from the pool that are not in our updated splats
     BloodNGuts.scenePool = BloodNGuts.scenePool.filter((p) => {
       if (p.data.tokenId || updatedIds.includes(p.data.id)) return this;
-      else p.container.destroy({ children: true });
+      else {
+        if (p.container) p.container.destroy({ children: true });
+        else {
+          // todo: is there a way to make sure we always are using the latest scene flag data?
+          // sometimes when pool is full and perf decreases we will have splats here that have been added
+          // via a generate method that have not yet been saved to the scene, and therefore not included in updatedIds.
+          // if we ingore here drawSceneSplats will be called again twice, once with this splat now in updatedIds, which
+          // will then trigger another draw at which point the container is attached.
+        }
+      }
     });
 
     // add both new splats and those that haven't been drawn yet.
@@ -289,7 +299,7 @@ export class BloodNGuts {
    * @param {Token} token - the token to generate splats for.
    * @param {SplatFont} font - the font to use for splats.
    * @param {number} size - the size of splats.
-   * @param {number} density - the amount of splats.
+   * @param {number[]} distances - distances along the trail from 0 to 1.
    */
   public static generateTrailSplats(splatToken: SplatToken, font: SplatFont, size: number, distances: number[]): void {
     if (!distances) return;
@@ -362,6 +372,13 @@ export class BloodNGuts {
     const tokenCenter = splatToken.getCenter();
     const sight = computeSightFromPoint(tokenCenter, maxDistance);
     splatDataObj.maskPolygon = sight;
+
+    // const trailCenter = getPointOnCurve(splatToken.lastPos, controlPt, splatToken.currPos, 0.5);
+    // const moveTo = new PIXI.Point(trailCenter.x - splatToken.currPos.x, trailCenter.y - splatToken.currPos.y);
+    // const sightDist = distanceBetween(splatToken.lastPos, splatToken.currPos) / 2 + fontSize;
+    // const sight = computeSightFromPoint(trailCenter, sightDist);
+    // offset.x -= moveTo.x - 50;
+    // offset.y -= moveTo.y - 50;
 
     // since we don't want to add the mask to the container yet (as that will
     // screw up our alignment) we need to move it by editing the x,y points directly
