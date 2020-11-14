@@ -250,15 +250,15 @@ export const getRandomGlyph = (font: SplatFont): string => {
  * @param {PIXI.Point} pc - control point.
  * @param {PIXI.Point} p2 - end point.
  * @param {number} t - time in the curve (between 0 and 1).
- * @returns {number, number} - x,y position along the curve.
+ * @returns {PIXI.Point} - x,y position along the curve.
  */
-export function getPointOnCurve(p1: PIXI.Point, pc: PIXI.Point, p2: PIXI.Point, t: number): { x: number; y: number } {
+export function getPointOnCurve(p1: PIXI.Point, pc: PIXI.Point, p2: PIXI.Point, t: number): PIXI.Point {
   let x = (1 - t) * (1 - t) * p1.x + 2 * (1 - t) * t * pc.x + t * t * p2.x;
   let y = (1 - t) * (1 - t) * p1.y + 2 * (1 - t) * t * pc.y + t * t * p2.y;
 
   x = Math.round(x);
   y = Math.round(y);
-  return { x, y };
+  return new PIXI.Point(x, y);
 }
 
 /**
