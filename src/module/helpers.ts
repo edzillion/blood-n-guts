@@ -282,7 +282,7 @@ export function getDerivativeAt(p1: PIXI.Point, pc: PIXI.Point, p2: PIXI.Point, 
 }
 
 /**
- * Returns the distance between this and another Point.
+ * Returns the distance between two Points.
  * @function
  * @param {Point} pt1
  * @param {Point} pt2
