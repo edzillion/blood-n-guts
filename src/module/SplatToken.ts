@@ -121,7 +121,7 @@ export default class SplatToken {
    * @param updatedSplats - the latest token splat data.
    * @function
    */
-  public updateSplats(updatedSplats): void {
+  public updateSplats(updatedSplats: SplatDataObject[]): void {
     if (this.bloodColor === 'none' || JSON.stringify(updatedSplats) === JSON.stringify(this.tokenSplats)) return;
     this.tokenSplats = updatedSplats || [];
     this.draw();
@@ -485,7 +485,7 @@ export default class SplatToken {
    * @function
    * @param {string} - the id of the splat to remove.
    */
-  public removeSplat(id): void {
+  public removeSplat(id: string): void {
     this.tokenSplats = this.tokenSplats.filter((s) => s.id !== id);
   }
 
