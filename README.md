@@ -26,7 +26,7 @@ Blood 'n Guts is a module for FoundryVTT that draws blood splats on tokens and f
 
 ## Installation
 Paste the link to the `module.json` file into the 'Manifest URL' field in 'Install Module'.
-> `https://raw.githubusercontent.com/edzillion/blood-n-guts/dev/src/module.json`
+> `https://raw.githubusercontent.com/edzillion/blood-n-guts/master/src/module.json`
 
 Or download the latest zip file here: [https://github.com/edzillion/blood-n-guts/releases](https://github.com/edzillion/blood-n-guts/releases)
 
