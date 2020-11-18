@@ -2,6 +2,7 @@ import { AdvancedConfig } from './advancedConfig.js';
 import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import { log, LogLevel } from './logging';
+import { BloodNGuts } from '../blood-n-guts.js';
 
 /**
  * Registers settings.
@@ -21,19 +22,26 @@ export const registerSettings = (): void => {
     config: true,
     type: Number,
     choices: {
-      0: 'Shrieker',
-      1: 'Kobold',
-      2: 'Ogre',
-      3: 'Dracolich',
-      4: 'Hecatoncheires',
+      0: 'Disabled',
+      1: 'Shrieker',
+      2: 'Kobold',
+      3: 'Ogre',
+      4: 'Dracolich',
+      5: 'Hecatoncheires',
     },
     default: 0,
     onChange: (value) => {
+      if (value === '0') {
+        BloodNGuts.disabled = true;
+        BloodNGuts.wipeSceneSplats();
+        return;
+      } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
       // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
       const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.level[value]));
       for (const key in violenceLevel) {
         game.settings.set(MODULE_ID, key, violenceLevel[key]);
       }
+      BloodNGuts.drawSceneSplats(BloodNGuts.getTrimmedSceneSplats());
     },
   });
 
