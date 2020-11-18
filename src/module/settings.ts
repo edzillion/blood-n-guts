@@ -41,7 +41,12 @@ export const registerSettings = (): void => {
       for (const key in violenceLevel) {
         game.settings.set(MODULE_ID, key, violenceLevel[key]);
       }
-      BloodNGuts.drawSceneSplats(BloodNGuts.getTrimmedSceneSplats());
+      debugger;
+      //if the scenePool has increased in size we need to repopulate it
+      const s = duplicate(canvas.scene.getFlag(MODULE_ID, 'sceneSplats'));
+      const t = BloodNGuts.getTrimmedSceneSplats(s);
+      // trim to new ScenePool size and draw
+      BloodNGuts.drawSceneSplats(t);
     },
   });
 

@@ -43,7 +43,7 @@ export class BloodNGuts {
   /**
    * Loads all `SplatDataObject`s from scene flag `sceneSplats` trims them and draws them - this
    * will also add them back into the pool.
-   * @category GMOnly
+   * @category GMandPC
    * @function
    */
   private static loadScene(): void {
@@ -53,7 +53,8 @@ export class BloodNGuts {
 
     if (sceneSplats) {
       log(LogLevel.DEBUG, 'loadScene drawSceneSplats', canvas.scene.name);
-      BloodNGuts.drawSceneSplats(sceneSplats);
+      const trimmedSplats = this.getTrimmedSceneSplats(duplicate(sceneSplats));
+      BloodNGuts.drawSceneSplats(trimmedSplats);
     }
   }
 
@@ -65,51 +66,52 @@ export class BloodNGuts {
    * @returns {Promise<Entity>}
    */
   public static saveScene(): Promise<Entity> {
+    debugger;
     log(LogLevel.DEBUG, 'saveScene');
-    const sceneSplats = BloodNGuts.getTrimmedSceneSplats();
+    const sceneSplats = BloodNGuts.getTrimmedSceneSplats(BloodNGuts.scenePool.map((p) => p.data));
     return canvas.scene.setFlag(MODULE_ID, 'sceneSplats', sceneSplats);
   }
 
   /**
-   * Gets all splats from the `scenePool`, trims the excess over 'sceneSplatPoolSize' and fades the oldest.
+   * Takes an array of splats, trims the excess over 'sceneSplatPoolSize' and fades the oldest.
    * @category GMOnly
    * @function
+   * @param {SplatDataObject[]} - original splat array
    * @returns {SplatDataObject[]} - trimmed splat array
    */
-  public static getTrimmedSceneSplats(): SplatDataObject[] {
+  public static getTrimmedSceneSplats(splats: SplatDataObject[]): SplatDataObject[] {
     log(LogLevel.DEBUG, 'getTrimmedSceneSplats');
-    const allSplats = BloodNGuts.scenePool.map((p) => p.data);
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
-    if (allSplats.length > maxPoolSize) {
+    if (splats.length > maxPoolSize) {
       // remove the oldest splats
-      log(LogLevel.DEBUG, 'getTrimmedSceneSplats removing ', allSplats.length - maxPoolSize);
-      allSplats.splice(0, allSplats.length - maxPoolSize);
+      log(LogLevel.DEBUG, 'getTrimmedSceneSplats removing ', splats.length - maxPoolSize);
+      splats.splice(0, splats.length - maxPoolSize);
     }
 
-    const fadedPoolSize = allSplats.length - Math.round(maxPoolSize * 0.85);
+    const fadedPoolSize = splats.length - Math.round(maxPoolSize * 0.85);
     const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
-    log(LogLevel.DEBUG, 'getTrimmedSceneSplats sizes curr, max', allSplats.length, maxPoolSize);
+    log(LogLevel.DEBUG, 'getTrimmedSceneSplats sizes curr, max', splats.length, maxPoolSize);
 
     // 15% of splats will be set to fade. 1/3rd of those will be very faded
     if (fadedPoolSize > 0) {
       for (let i = 0; i < fadedPoolSize; i++) {
         const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
-        allSplats[i].alpha = alpha;
+        splats[i].alpha = alpha;
       }
     }
 
     log(
       LogLevel.DEBUG,
-      `getTrimmedSceneSplats sceneSplatPool:${allSplats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
+      `getTrimmedSceneSplats sceneSplatPool:${splats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
     );
-    const splatsToSave = allSplats.filter((s) => !s.tokenId);
-    return splatsToSave;
+    const trimmedSplats = splats.filter((s) => !s.tokenId);
+    return trimmedSplats;
   }
 
   /**
    * Draws all new `SplatDataObject`s and those that haven't got a .splatContainer yet to the canvas
    * and adds those to the scene pool.
-   * @category GMOnly
+   * @category GMandPC
    * @function
    * @param {[SplatDataObject]} splats - updated array of scene splats
    */
@@ -506,7 +508,8 @@ export class BloodNGuts {
       BloodNGuts.wipeSceneSplats();
       return;
     }
-    BloodNGuts.drawSceneSplats(changes.flags[MODULE_ID]?.sceneSplats);
+    const trimmedSplats = BloodNGuts.getTrimmedSceneSplats(duplicate(changes.flags[MODULE_ID]?.sceneSplats));
+    BloodNGuts.drawSceneSplats(trimmedSplats);
   }
 
   /**
