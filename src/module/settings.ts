@@ -2,6 +2,7 @@ import { AdvancedConfig } from './advancedConfig.js';
 import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import { log, LogLevel } from './logging';
+import { BloodNGuts } from '../blood-n-guts.js';
 
 /**
  * Registers settings.
@@ -21,26 +22,39 @@ export const registerSettings = (): void => {
     config: true,
     type: Number,
     choices: {
-      0: 'Shrieker',
-      1: 'Kobold',
-      2: 'Ogre',
-      3: 'Dracolich',
-      4: 'Hecatoncheires',
+      0: 'Disabled',
+      1: 'Shrieker',
+      2: 'Kobold',
+      3: 'Ogre',
+      4: 'Dracolich',
+      5: 'Hecatoncheires',
     },
     default: 0,
     onChange: (value) => {
+      if (value === '0') {
+        BloodNGuts.disabled = true;
+        BloodNGuts.wipeSceneSplats();
+        return;
+      } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
+      const level = value - 1;
       // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
-      const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.level[value]));
+      const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.level[level]));
       for (const key in violenceLevel) {
         game.settings.set(MODULE_ID, key, violenceLevel[key]);
       }
+
+      //if the scenePool has increased in size we need to repopulate it
+      const s = duplicate(canvas.scene.getFlag(MODULE_ID, 'sceneSplats'));
+      const t = BloodNGuts.getTrimmedSceneSplats(s);
+      // trim to new ScenePool size and draw
+      BloodNGuts.drawSceneSplats(t);
     },
   });
 
   game.settings.register(MODULE_ID, 'useBloodColor', {
     name: 'Blood Color',
     hint: 'If unchecked all blood will be red',
-    scope: 'client',
+    scope: 'world',
     config: true,
     type: Boolean,
     default: true,
@@ -52,7 +66,7 @@ export const registerSettings = (): void => {
   game.settings.register(MODULE_ID, 'halfHealthBloodied', {
     name: '50% Health = Bloodied',
     hint: 'Common house rule to show bleeding effects at 50% of max health',
-    scope: 'client',
+    scope: 'world',
     config: true,
     type: Boolean,
     default: false,
@@ -75,7 +89,7 @@ export const registerSettings = (): void => {
 
   // Settings in Advanced Configuration
   game.settings.register(MODULE_ID, 'floorSplatFont', {
-    scope: 'client',
+    scope: 'world',
     config: false,
     type: String,
     default: 'splatter',
@@ -85,7 +99,7 @@ export const registerSettings = (): void => {
   });
 
   game.settings.register(MODULE_ID, 'tokenSplatFont', {
-    scope: 'client',
+    scope: 'world',
     config: false,
     type: String,
     default: 'splatter',
@@ -95,7 +109,7 @@ export const registerSettings = (): void => {
   });
 
   game.settings.register(MODULE_ID, 'trailSplatFont', {
-    scope: 'client',
+    scope: 'world',
     config: false,
     type: String,
     default: 'WC Rhesus A Bta',
