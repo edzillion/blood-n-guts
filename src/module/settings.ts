@@ -54,10 +54,11 @@ export const registerSettings = (): void => {
   game.settings.register(MODULE_ID, 'useBloodColor', {
     name: 'Blood Color',
     hint: 'If unchecked all blood will be red',
-    scope: 'client',
+    scope: 'world',
     config: true,
     type: Boolean,
     default: true,
+    restricted: true,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: useBloodColor set to ' + value);
     },
@@ -66,10 +67,11 @@ export const registerSettings = (): void => {
   game.settings.register(MODULE_ID, 'halfHealthBloodied', {
     name: '50% Health = Bloodied',
     hint: 'Common house rule to show bleeding effects at 50% of max health',
-    scope: 'client',
+    scope: 'world',
     config: true,
     type: Boolean,
     default: false,
+    restricted: true,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: halfHealthBloodied set to ' + value);
       // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
@@ -89,7 +91,7 @@ export const registerSettings = (): void => {
 
   // Settings in Advanced Configuration
   game.settings.register(MODULE_ID, 'floorSplatFont', {
-    scope: 'client',
+    scope: 'world',
     config: false,
     type: String,
     default: 'splatter',
@@ -99,7 +101,7 @@ export const registerSettings = (): void => {
   });
 
   game.settings.register(MODULE_ID, 'tokenSplatFont', {
-    scope: 'client',
+    scope: 'world',
     config: false,
     type: String,
     default: 'splatter',
@@ -109,7 +111,7 @@ export const registerSettings = (): void => {
   });
 
   game.settings.register(MODULE_ID, 'trailSplatFont', {
-    scope: 'client',
+    scope: 'world',
     config: false,
     type: String,
     default: 'WC Rhesus A Bta',
