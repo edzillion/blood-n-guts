@@ -11,7 +11,7 @@
 * [Installation](#installation)
 * [Customization](#customization)
 * [Performance](#performance)
-* [Features](#features)
+* [Credits and Thanks](#credits-and-thanks)
 
 ## Overview
 
