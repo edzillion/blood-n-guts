@@ -1,3 +1,7 @@
+interface Window {
+  BloodNGuts: any;
+}
+
 interface SplatFont {
   name: string;
   availableGlyphs: Array<string>;

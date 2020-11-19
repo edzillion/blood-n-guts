@@ -567,6 +567,10 @@ Hooks.once('init', () => {
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
 });
 
+Hooks.once('ready', () => {
+  window.BloodNGuts = BloodNGuts;
+  Hooks.call('bloodNGutsReady');
+});
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
 Hooks.on('updateActor', (actor, changes) => {
