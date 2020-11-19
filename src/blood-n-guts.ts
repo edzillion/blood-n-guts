@@ -577,9 +577,24 @@ Hooks.on('updateActor', (actor, changes) => {
   if (!token) log(LogLevel.ERROR, 'updateActor token not found!');
   else BloodNGuts.updateTokenOrActorHandler(canvas.scene, token.data, changes);
 });
+
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
+
+Hooks.on('chatMessage', (_chatTab, commandString, _user) => {
+  const commands = commandString.split(' ');
+  if (commands[0] != '/blood') return;
+  switch (commands[1]) {
+    case 'clear':
+      if (game.user.isGM) BloodNGuts.wipeSceneFlags();
+      else BloodNGuts.wipeSceneSplats();
+      return false;
+    default:
+      log(LogLevel.ERROR, 'chatMessage, unknown command ' + commands[1]);
+      return false;
+  }
+});
 
 // TOKEN PROTOTYPE
 
