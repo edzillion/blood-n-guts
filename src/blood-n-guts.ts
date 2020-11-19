@@ -66,7 +66,6 @@ export class BloodNGuts {
    * @returns {Promise<Entity>}
    */
   public static saveScene(): Promise<Entity> {
-    debugger;
     log(LogLevel.DEBUG, 'saveScene');
     const sceneSplats = BloodNGuts.getTrimmedSceneSplats(BloodNGuts.scenePool.map((p) => p.data));
     return canvas.scene.setFlag(MODULE_ID, 'sceneSplats', sceneSplats);
