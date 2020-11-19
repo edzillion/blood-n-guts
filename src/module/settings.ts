@@ -36,12 +36,13 @@ export const registerSettings = (): void => {
         BloodNGuts.wipeSceneSplats();
         return;
       } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
+      const level = value - 1;
       // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
-      const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.level[value]));
+      const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.level[level]));
       for (const key in violenceLevel) {
         game.settings.set(MODULE_ID, key, violenceLevel[key]);
       }
-      debugger;
+
       //if the scenePool has increased in size we need to repopulate it
       const s = duplicate(canvas.scene.getFlag(MODULE_ID, 'sceneSplats'));
       const t = BloodNGuts.getTrimmedSceneSplats(s);
