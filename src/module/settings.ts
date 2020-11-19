@@ -58,7 +58,6 @@ export const registerSettings = (): void => {
     config: true,
     type: Boolean,
     default: true,
-    restricted: true,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: useBloodColor set to ' + value);
     },
@@ -71,7 +70,6 @@ export const registerSettings = (): void => {
     config: true,
     type: Boolean,
     default: false,
-    restricted: true,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: halfHealthBloodied set to ' + value);
       // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
