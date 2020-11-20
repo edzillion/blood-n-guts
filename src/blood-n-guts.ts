@@ -6,7 +6,7 @@
  * @author [edzillion]{@link https://github.com/edzillion}
  */
 
-import { mergeSettingsFiles, registerSettings } from './module/settings';
+import { mergeSettingsFiles, registerSettings, getCustomSplatFonts } from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
@@ -30,6 +30,7 @@ CONFIG[MODULE_ID] = { logLevel: 1 };
  */
 export class BloodNGuts {
   public static allFontsReady: Promise<any>;
+  public static allFonts: SplatFont[];
   public static splatTokens: Record<string, SplatToken>;
   public static scenePool: Array<SplatPoolObject>;
   public static disabled: boolean;
@@ -401,14 +402,14 @@ export class BloodNGuts {
    * @category GMOnly
    * @function
    * @param {HTMLElement} html - the HTMLElement to draw splats on.
-   * @param {SplatFont=splatter} font - the font to use for splats
+   * @param {SplatFont=tokenSplatFont} font - the font to use for splats
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
    * @param {string='blood'} bloodColor - splat color, can be a css color name or RBGA string e.g. '[255,255,0,0.5]'
    */
   public static drawDOMSplats(
     html: HTMLElement,
-    font: SplatFont = splatFonts.fonts.splatter,
+    font: SplatFont = BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
     size: number,
     density: number,
     bloodColor = 'blood',
@@ -565,6 +566,13 @@ Hooks.once('init', () => {
     (document as any).fonts.load(shorthand);
   }
 
+  getCustomSplatFonts.then((customSplatFonts: { fonts: SplatFont[] }) => {
+    for (const fontName in customSplatFonts.fonts) {
+      const shorthand = '12px ' + fontName;
+      (document as any).fonts.load(shorthand);
+    }
+    BloodNGuts.allFonts = Object.assign(splatFonts.fonts, customSplatFonts.fonts);
+  });
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
 });
 

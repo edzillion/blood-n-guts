@@ -1,8 +1,10 @@
 import { AdvancedConfig } from './advancedConfig.js';
 import { MODULE_ID } from '../constants';
-import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import { log, LogLevel } from './logging';
 import { BloodNGuts } from '../blood-n-guts.js';
+
+import * as bloodColorSettings from '../data/bloodColorSettings';
+import * as violenceLevelSettings from '../data/violenceLevelSettings';
 
 /**
  * Registers settings.
@@ -38,7 +40,7 @@ export const registerSettings = (): void => {
       } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
       const level = value - 1;
       // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
-      const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.level[level]));
+      const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.levels[level]));
       for (const key in violenceLevel) {
         game.settings.set(MODULE_ID, key, violenceLevel[key]);
       }
@@ -229,50 +231,30 @@ export const registerSettings = (): void => {
   });
 };
 
-let splatFontResolved;
+// Custom Settings
 
-export const splatFontsReady = new Promise((resolve, reject) => {
-  splatFontResolved = resolve;
+let splatFontsResolved;
+let bloodColorSettingsResolved;
+let violenceLevelSettingsResolved;
+
+export const getCustomSplatFonts = new Promise((resolve) => {
+  splatFontsResolved = resolve;
+});
+export const getMergedBloodColorSettings = new Promise((resolve) => {
+  bloodColorSettingsResolved = resolve;
+});
+export const getMergedViolenceLevelSettings = new Promise((resolve) => {
+  violenceLevelSettingsResolved = resolve;
 });
 
 export const mergeSettingsFiles = async (): Promise<any> => {
-  const settingsFileContents = [];
-  let settingsFilePaths: string[] = [];
-  let customFileNames: string[] = [];
+  const customFileNames = ['customSplatFonts.json', 'customBloodColorSettings.json', 'customViolenceLevels.json'];
   let filesToMerge: string[] = [];
-
-  await FilePicker.browse('data', 'modules/' + MODULE_ID + '/data/*')
-    .then((res) => {
-      settingsFilePaths = res.files;
-      const files = res.files.map((fullPath) => {
-        return fullPath.slice(fullPath.lastIndexOf('/') + 1);
-      });
-      customFileNames = files
-        .filter((filename) => filename.slice(-4) === 'json')
-        .map((filename) => {
-          return 'custom' + filename[0].toUpperCase() + filename.slice(1);
-        });
-    })
-    .catch((err) => {
-      log(LogLevel.ERROR, 'mergeSettingsFiles', err);
-    });
-
-  for (let i = 0; i < settingsFilePaths.length; i++) {
-    const filePath = settingsFilePaths[i];
-    const response = await fetch(filePath);
-    try {
-      const json = await response.json();
-      const filename = response.url.slice(response.url.lastIndexOf('/') + 1);
-      settingsFileContents[filename] = json;
-    } catch (err) {
-      log(LogLevel.ERROR, 'mergeSettingsFiles', err);
-    }
-  }
 
   // create folder if missing
   await FilePicker.createDirectory('data', MODULE_ID, {})
     .then((result) => {
-      log(LogLevel.INFO, `Creating ${result}`);
+      log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
     })
     .catch((err) => {
       if (!err.includes('EEXIST')) {
@@ -294,18 +276,39 @@ export const mergeSettingsFiles = async (): Promise<any> => {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     });
 
-  for (let i = 0; i < filesToMerge.length; i++) {
-    const filename = filesToMerge[i];
-    const origFilename = filename.slice('custom'.length)[0].toLowerCase() + filename.slice('custom'.length + 1);
-    const path = MODULE_ID + '/' + filename;
-    const response = await fetch(path);
+  if (filesToMerge.includes('customSplatFonts.json')) {
+    const response = await fetch(MODULE_ID + '/customSplatFonts.json');
     try {
-      const customSettingsJSON = await response.json();
-      Object.assign(settingsFileContents[origFilename], customSettingsJSON);
+      const customSplatFonts = await response.json();
+      for (const font in customSplatFonts) {
+        // turn into array to match splatFonts
+        customSplatFonts[font].availableGlyphs = [...customSplatFonts[font].availableGlyphs];
+      }
+      splatFontsResolved({ fonts: customSplatFonts });
     } catch (err) {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     }
-  }
+  } else splatFontsResolved();
 
-  splatFontResolved(settingsFileContents['splatFonts.json']);
+  if (filesToMerge.includes('customBloodColorSettings.json')) {
+    const response = await fetch(MODULE_ID + '/customBloodColorSettings.json');
+    try {
+      const customBloodColorSettings = await response.json();
+      const mergedBloodColorSettings = Object.assign(bloodColorSettings, customBloodColorSettings.colors);
+      bloodColorSettingsResolved({ colors: mergedBloodColorSettings });
+    } catch (err) {
+      log(LogLevel.ERROR, 'mergeSettingsFiles', err);
+    }
+  } else bloodColorSettingsResolved();
+
+  if (filesToMerge.includes('customViolenceLevelSettings.json')) {
+    const response = await fetch(MODULE_ID + '/customViolenceLevelSettings.json');
+    try {
+      const customViolenceLevelSettings = await response.json();
+      const mergedViolenceLevelSettings = Object.assign(violenceLevelSettings, customViolenceLevelSettings.levels);
+      violenceLevelSettingsResolved({ levels: mergedViolenceLevelSettings });
+    } catch (err) {
+      log(LogLevel.ERROR, 'mergeSettingsFiles', err);
+    }
+  } else violenceLevelSettingsResolved();
 };
