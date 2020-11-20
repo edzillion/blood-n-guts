@@ -192,11 +192,12 @@ export const registerSettings = (): void => {
     },
   });
 
-  getMergedViolenceLevelSettings.then((mergedViolenceLevels: any) => {
-    let index = 0;
-    const violenceLevelChoices = {};
-    for (const level in mergedViolenceLevels) violenceLevelChoices[String(index++)] = level;
-    debugger;
+  getMergedViolenceLevelArray.then((mergedViolenceLevels: any) => {
+    let index = 1;
+    const violenceLevelChoices = { '0': 'Disabled' };
+    mergedViolenceLevels.forEach((level) => {
+      violenceLevelChoices[String(index++)] = level.name;
+    });
     game.settings.register(MODULE_ID, 'violenceLevel', {
       name: game.i18n.localize('Violence Level'),
       hint: game.i18n.localize('Blood and gore level'),
@@ -205,24 +206,28 @@ export const registerSettings = (): void => {
       config: true,
       type: Number,
       choices: violenceLevelChoices,
-      default: 0,
+      default: 2,
       onChange: (value) => {
         if (value === '0') {
           BloodNGuts.disabled = true;
           BloodNGuts.wipeSceneSplats();
           return;
         } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
+
         // when violenceLevel is changed we load that violenceLevel from our merged levels
-        const violenceLevel = duplicate(mergedViolenceLevels[violenceLevelChoices[value]]);
+        const violenceLevel = duplicate(mergedViolenceLevels[--value]);
+        delete violenceLevel.name;
         for (const key in violenceLevel) {
           game.settings.set(MODULE_ID, key, violenceLevel[key]);
         }
 
         //if the scenePool has increased in size we need to repopulate it
-        const s = duplicate(canvas.scene.getFlag(MODULE_ID, 'sceneSplats'));
-        const t = BloodNGuts.getTrimmedSceneSplats(s);
-        // trim to new ScenePool size and draw
-        BloodNGuts.drawSceneSplats(t);
+        const sceneSplats = duplicate(canvas.scene.getFlag(MODULE_ID, 'sceneSplats'));
+        if (sceneSplats && sceneSplats.length) {
+          const trimmedSceneSplats = BloodNGuts.getTrimmedSceneSplats(sceneSplats);
+          // trim to new ScenePool size and draw
+          BloodNGuts.drawSceneSplats(trimmedSceneSplats);
+        }
       },
     });
   });
@@ -240,12 +245,16 @@ export const getCustomSplatFonts = new Promise((resolve) => {
 export const getMergedBloodColorSettings = new Promise((resolve) => {
   bloodColorSettingsResolved = resolve;
 });
-export const getMergedViolenceLevelSettings = new Promise((resolve) => {
+export const getMergedViolenceLevelArray = new Promise((resolve) => {
   violenceLevelSettingsResolved = resolve;
 });
 
 export const mergeSettingsFiles = async (): Promise<any> => {
-  const customFileNames = ['customSplatFonts.json', 'customBloodColorSettings.json', 'customViolenceLevels.json'];
+  const customFileNames = [
+    'customSplatFonts.json',
+    'customBloodColorSettings.json',
+    'customViolenceLevelSettings.json',
+  ];
   let filesToMerge: string[] = [];
 
   // create folder if missing
@@ -291,7 +300,7 @@ export const mergeSettingsFiles = async (): Promise<any> => {
     const response = await fetch(MODULE_ID + '/customBloodColorSettings.json');
     try {
       const customBloodColorSettings = await response.json();
-      const mergedBloodColorSettings = Object.assign(bloodColorSettings, customBloodColorSettings.colors);
+      const mergedBloodColorSettings = Object.assign(bloodColorSettings.colors, customBloodColorSettings);
       bloodColorSettingsResolved(mergedBloodColorSettings);
     } catch (err) {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
@@ -302,12 +311,22 @@ export const mergeSettingsFiles = async (): Promise<any> => {
     const response = await fetch(MODULE_ID + '/customViolenceLevelSettings.json');
     try {
       const customViolenceLevelSettings = await response.json();
-      const mergedViolenceLevelSettings = Object.assign(violenceLevelSettings, customViolenceLevelSettings.levels);
-      violenceLevelSettingsResolved(mergedViolenceLevelSettings);
+      const mergedViolenceLevelSettings = Object.assign(violenceLevelSettings.levels, customViolenceLevelSettings);
+      const mergedViolenceLevelArray = [];
+      for (const level in mergedViolenceLevelSettings) {
+        mergedViolenceLevelSettings[level].name = level;
+        mergedViolenceLevelArray.push(mergedViolenceLevelSettings[level]);
+      }
+      violenceLevelSettingsResolved(mergedViolenceLevelArray);
     } catch (err) {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     }
   } else {
-    violenceLevelSettingsResolved(violenceLevelSettings.levels);
+    const mergedViolenceLevelArray = [];
+    for (const level in violenceLevelSettings.levels) {
+      violenceLevelSettings.levels[level].name = level;
+      mergedViolenceLevelArray.push(violenceLevelSettings.levels[level]);
+    }
+    violenceLevelSettingsResolved(mergedViolenceLevelArray);
   }
 };

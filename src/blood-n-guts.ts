@@ -10,7 +10,7 @@ import {
   mergeSettingsFiles,
   registerSettings,
   getCustomSplatFonts,
-  getMergedViolenceLevelSettings,
+  getMergedViolenceLevelArray,
 } from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
@@ -572,10 +572,12 @@ Hooks.once('init', () => {
   }
 
   getCustomSplatFonts.then((customSplatFonts: { fonts: SplatFont[] }) => {
-    for (const fontName in customSplatFonts.fonts) {
-      const shorthand = '12px ' + fontName;
-      (document as any).fonts.load(shorthand);
-    }
+    if (customSplatFonts) {
+      for (const fontName in customSplatFonts.fonts) {
+        const shorthand = '12px ' + fontName;
+        (document as any).fonts.load(shorthand);
+      }
+    } else customSplatFonts = { fonts: [] };
     BloodNGuts.allFonts = Object.assign(splatFonts.fonts, customSplatFonts.fonts);
   });
   BloodNGuts.allFontsReady = (document as any).fonts.ready;

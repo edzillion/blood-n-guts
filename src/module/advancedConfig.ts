@@ -2,7 +2,7 @@ import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
 import { getRGBA } from './helpers';
-import { getMergedViolenceLevelSettings } from './settings';
+import { getMergedViolenceLevelArray } from './settings';
 
 /**
  * FormApplication window for advanced configuration options.
@@ -33,9 +33,11 @@ export class AdvancedConfig extends FormApplication {
 
   async getData(): Promise<any> {
     const dataObject = {};
-    const level = game.settings.get(MODULE_ID, 'violenceLevel');
-    const mergedViolenceLevels = await getMergedViolenceLevelSettings;
-    const violenceLevel = mergedViolenceLevels[level];
+    let level: number = game.settings.get(MODULE_ID, 'violenceLevel');
+    const mergedViolenceLevels = await getMergedViolenceLevelArray;
+    // level is one more than it should be because in settings disabled is 0
+    const violenceLevel = mergedViolenceLevels[--level];
+    delete violenceLevel.name;
     for (const key in violenceLevel) {
       dataObject[key] = game.settings.get(MODULE_ID, key);
     }
