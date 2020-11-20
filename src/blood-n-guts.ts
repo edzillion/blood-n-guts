@@ -11,6 +11,7 @@ import {
   registerSettings,
   getCustomSplatFonts,
   getMergedViolenceLevelArray,
+  getMergedBloodColorSettings,
 } from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
@@ -634,6 +635,7 @@ Token.prototype.draw = (function () {
         await BloodNGuts.splatTokens[this.id].createMask();
       }
     } else {
+      await getMergedBloodColorSettings;
       splatToken = new SplatToken(this);
       BloodNGuts.splatTokens[this.id] = splatToken;
       await BloodNGuts.splatTokens[this.id].createMask();
