@@ -3,6 +3,8 @@ import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import { log, LogLevel } from './logging';
 import { BloodNGuts } from '../blood-n-guts.js';
+//import { promises } from 'fs';
+import * as path from 'path';
 
 /**
  * Registers settings.
@@ -227,4 +229,10 @@ export const registerSettings = (): void => {
       log(LogLevel.DEBUG, 'Settings: sceneSplatPoolSize set to ' + value);
     },
   });
+};
+
+export const mergeSettingsFiles = async (): Promise<any> => {
+  const response = await fetch('/modules/' + MODULE_ID + '/module.json');
+  debugger;
+  const data = await response.json();
 };
