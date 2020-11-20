@@ -16,43 +16,6 @@ import * as violenceLevelSettings from '../data/violenceLevelSettings';
  * @function
  */
 export const registerSettings = (): void => {
-  game.settings.register(MODULE_ID, 'violenceLevel', {
-    name: game.i18n.localize('Violence Level'),
-    hint: game.i18n.localize('Blood and gore level'),
-
-    scope: 'client',
-    config: true,
-    type: Number,
-    choices: {
-      0: 'Disabled',
-      1: 'Shrieker',
-      2: 'Kobold',
-      3: 'Ogre',
-      4: 'Dracolich',
-      5: 'Hecatoncheires',
-    },
-    default: 0,
-    onChange: (value) => {
-      if (value === '0') {
-        BloodNGuts.disabled = true;
-        BloodNGuts.wipeSceneSplats();
-        return;
-      } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
-      const level = value - 1;
-      // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
-      const violenceLevel = JSON.parse(JSON.stringify(violenceLevelSettings.levels[level]));
-      for (const key in violenceLevel) {
-        game.settings.set(MODULE_ID, key, violenceLevel[key]);
-      }
-
-      //if the scenePool has increased in size we need to repopulate it
-      const s = duplicate(canvas.scene.getFlag(MODULE_ID, 'sceneSplats'));
-      const t = BloodNGuts.getTrimmedSceneSplats(s);
-      // trim to new ScenePool size and draw
-      BloodNGuts.drawSceneSplats(t);
-    },
-  });
-
   game.settings.register(MODULE_ID, 'useBloodColor', {
     name: 'Blood Color',
     hint: 'If unchecked all blood will be red',
@@ -74,7 +37,6 @@ export const registerSettings = (): void => {
     default: false,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: halfHealthBloodied set to ' + value);
-      // when violenceLevel is changed we load that violenceLevel from '../data/violenceLevelSettings'
       game.settings.set(MODULE_ID, 'healthThreshold', 0.51);
       game.settings.set(MODULE_ID, 'damageThreshold', 0);
     },
@@ -229,6 +191,41 @@ export const registerSettings = (): void => {
       log(LogLevel.DEBUG, 'Settings: sceneSplatPoolSize set to ' + value);
     },
   });
+
+  getMergedViolenceLevelSettings.then((mergedViolenceLevels: any) => {
+    let index = 0;
+    const violenceLevelChoices = {};
+    for (const level in mergedViolenceLevels) violenceLevelChoices[String(index++)] = level;
+    debugger;
+    game.settings.register(MODULE_ID, 'violenceLevel', {
+      name: game.i18n.localize('Violence Level'),
+      hint: game.i18n.localize('Blood and gore level'),
+
+      scope: 'client',
+      config: true,
+      type: Number,
+      choices: violenceLevelChoices,
+      default: 0,
+      onChange: (value) => {
+        if (value === '0') {
+          BloodNGuts.disabled = true;
+          BloodNGuts.wipeSceneSplats();
+          return;
+        } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
+        // when violenceLevel is changed we load that violenceLevel from our merged levels
+        const violenceLevel = duplicate(mergedViolenceLevels[violenceLevelChoices[value]]);
+        for (const key in violenceLevel) {
+          game.settings.set(MODULE_ID, key, violenceLevel[key]);
+        }
+
+        //if the scenePool has increased in size we need to repopulate it
+        const s = duplicate(canvas.scene.getFlag(MODULE_ID, 'sceneSplats'));
+        const t = BloodNGuts.getTrimmedSceneSplats(s);
+        // trim to new ScenePool size and draw
+        BloodNGuts.drawSceneSplats(t);
+      },
+    });
+  });
 };
 
 // Custom Settings
@@ -295,20 +292,22 @@ export const mergeSettingsFiles = async (): Promise<any> => {
     try {
       const customBloodColorSettings = await response.json();
       const mergedBloodColorSettings = Object.assign(bloodColorSettings, customBloodColorSettings.colors);
-      bloodColorSettingsResolved({ colors: mergedBloodColorSettings });
+      bloodColorSettingsResolved(mergedBloodColorSettings);
     } catch (err) {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     }
-  } else bloodColorSettingsResolved();
+  } else bloodColorSettingsResolved(bloodColorSettings.colors);
 
   if (filesToMerge.includes('customViolenceLevelSettings.json')) {
     const response = await fetch(MODULE_ID + '/customViolenceLevelSettings.json');
     try {
       const customViolenceLevelSettings = await response.json();
       const mergedViolenceLevelSettings = Object.assign(violenceLevelSettings, customViolenceLevelSettings.levels);
-      violenceLevelSettingsResolved({ levels: mergedViolenceLevelSettings });
+      violenceLevelSettingsResolved(mergedViolenceLevelSettings);
     } catch (err) {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     }
-  } else violenceLevelSettingsResolved();
+  } else {
+    violenceLevelSettingsResolved(violenceLevelSettings.levels);
+  }
 };

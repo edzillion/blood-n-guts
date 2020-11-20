@@ -1,8 +1,8 @@
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
-import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import { BloodNGuts } from '../blood-n-guts';
 import { getRGBA } from './helpers';
+import { getMergedViolenceLevelSettings } from './settings';
 
 /**
  * FormApplication window for advanced configuration options.
@@ -34,7 +34,8 @@ export class AdvancedConfig extends FormApplication {
   async getData(): Promise<any> {
     const dataObject = {};
     const level = game.settings.get(MODULE_ID, 'violenceLevel');
-    const violenceLevel = violenceLevelSettings.levels[level];
+    const mergedViolenceLevels = await getMergedViolenceLevelSettings;
+    const violenceLevel = mergedViolenceLevels[level];
     for (const key in violenceLevel) {
       dataObject[key] = game.settings.get(MODULE_ID, key);
     }

@@ -6,7 +6,12 @@
  * @author [edzillion]{@link https://github.com/edzillion}
  */
 
-import { mergeSettingsFiles, registerSettings, getCustomSplatFonts } from './module/settings';
+import {
+  mergeSettingsFiles,
+  registerSettings,
+  getCustomSplatFonts,
+  getMergedViolenceLevelSettings,
+} from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
@@ -558,8 +563,8 @@ Hooks.once('init', () => {
   // Assign custom classes and constants here
   BloodNGuts.initialize();
   // Register custom module settings
-  registerSettings();
   mergeSettingsFiles();
+  registerSettings();
 
   for (const fontName in splatFonts.fonts) {
     const shorthand = '12px ' + fontName;
