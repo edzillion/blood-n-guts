@@ -134,7 +134,7 @@ export const lookupTokenBloodColor = (token: Token): string => {
     return getRGBA('blood');
   }
 
-  const bloodColor = bloodColorSettings.color[creatureType.toLowerCase()];
+  const bloodColor = bloodColorSettings.colors[creatureType.toLowerCase()];
   if (!bloodColor) return getRGBA('blood');
   if (bloodColor === 'none') return 'none';
 
