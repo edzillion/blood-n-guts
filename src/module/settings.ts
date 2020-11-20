@@ -3,8 +3,6 @@ import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import { log, LogLevel } from './logging';
 import { BloodNGuts } from '../blood-n-guts.js';
-//import { promises } from 'fs';
-import * as path from 'path';
 
 /**
  * Registers settings.
@@ -231,8 +229,83 @@ export const registerSettings = (): void => {
   });
 };
 
+let splatFontResolved;
+
+export const splatFontsReady = new Promise((resolve, reject) => {
+  splatFontResolved = resolve;
+});
+
 export const mergeSettingsFiles = async (): Promise<any> => {
-  const response = await fetch('/modules/' + MODULE_ID + '/module.json');
-  debugger;
-  const data = await response.json();
+  const settingsFileContents = [];
+  let settingsFilePaths: string[] = [];
+  let customFileNames: string[] = [];
+  let filesToMerge: string[] = [];
+
+  await FilePicker.browse('data', 'modules/' + MODULE_ID + '/data/*')
+    .then((res) => {
+      settingsFilePaths = res.files;
+      const files = res.files.map((fullPath) => {
+        return fullPath.slice(fullPath.lastIndexOf('/') + 1);
+      });
+      customFileNames = files
+        .filter((filename) => filename.slice(-4) === 'json')
+        .map((filename) => {
+          return 'custom' + filename[0].toUpperCase() + filename.slice(1);
+        });
+    })
+    .catch((err) => {
+      log(LogLevel.ERROR, 'mergeSettingsFiles', err);
+    });
+
+  for (let i = 0; i < settingsFilePaths.length; i++) {
+    const filePath = settingsFilePaths[i];
+    const response = await fetch(filePath);
+    try {
+      const json = await response.json();
+      const filename = response.url.slice(response.url.lastIndexOf('/') + 1);
+      settingsFileContents[filename] = json;
+    } catch (err) {
+      log(LogLevel.ERROR, 'mergeSettingsFiles', err);
+    }
+  }
+
+  // create folder if missing
+  await FilePicker.createDirectory('data', MODULE_ID, {})
+    .then((result) => {
+      log(LogLevel.INFO, `Creating ${result}`);
+    })
+    .catch((err) => {
+      if (!err.includes('EEXIST')) {
+        log(LogLevel.ERROR, 'mergeSettingsFiles', err);
+      }
+    });
+
+  await FilePicker.browse('data', MODULE_ID + '/*', {})
+    .then((res) => {
+      const extantFiles = res.files.map((fullPath) => fullPath.slice(fullPath.lastIndexOf('/') + 1));
+      const filesToCreate = customFileNames.filter((filename) => !extantFiles.includes(filename));
+      filesToCreate.forEach((filename) => {
+        const file = new File(['{}'], filename);
+        FilePicker.upload('data', MODULE_ID + '/', file, {});
+      });
+      filesToMerge = customFileNames.filter((filename) => !filesToCreate.includes(filename));
+    })
+    .catch((err) => {
+      log(LogLevel.ERROR, 'mergeSettingsFiles', err);
+    });
+
+  for (let i = 0; i < filesToMerge.length; i++) {
+    const filename = filesToMerge[i];
+    const origFilename = filename.slice('custom'.length)[0].toLowerCase() + filename.slice('custom'.length + 1);
+    const path = MODULE_ID + '/' + filename;
+    const response = await fetch(path);
+    try {
+      const customSettingsJSON = await response.json();
+      Object.assign(settingsFileContents[origFilename], customSettingsJSON);
+    } catch (err) {
+      log(LogLevel.ERROR, 'mergeSettingsFiles', err);
+    }
+  }
+
+  splatFontResolved(settingsFileContents['splatFonts.json']);
 };
