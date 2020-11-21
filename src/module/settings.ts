@@ -340,7 +340,11 @@ export const mergeSettingsFiles = async (): Promise<void> => {
     const response = await fetch(MODULE_ID + '/customBloodColorSettings.json');
     try {
       const customBloodColorSettings = await response.json();
-      const mergedBloodColorSettings = Object.assign(bloodColorSettings.colors, customBloodColorSettings);
+      const santisedCustomSettings = {};
+      for (const key in customBloodColorSettings) {
+        santisedCustomSettings[key.toLowerCase()] = customBloodColorSettings[key];
+      }
+      const mergedBloodColorSettings = Object.assign(bloodColorSettings.colors, santisedCustomSettings);
       bloodColorSettingsResolved(mergedBloodColorSettings);
     } catch (err) {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
