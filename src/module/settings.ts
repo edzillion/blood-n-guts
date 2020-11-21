@@ -239,17 +239,44 @@ let splatFontsResolved;
 let bloodColorSettingsResolved;
 let violenceLevelSettingsResolved;
 
+/**
+ * Promise resolving after custom splat fonts are loaded from disk.
+ * @function
+ * @category GMOnly
+ * @returns {Promise<any>} - promise resolving to only the custom splat fonts.
+ */
 export const getCustomSplatFonts = new Promise((resolve) => {
   splatFontsResolved = resolve;
 });
+
+/**
+ * Promise resolving after custom blood colors are loaded from disk.
+ * @function
+ * @category GMOnly
+ * @returns {Promise<any>} - promise resolving to custom and normal colors merged.
+ */
 export const getMergedBloodColorSettings = new Promise((resolve) => {
   bloodColorSettingsResolved = resolve;
 });
+
+/**
+ * Promise resolving after custom violence levels are loaded from disk.
+ * @function
+ * @category GMOnly
+ * @returns {Promise<SplatFont[]>} - promise resolving to custom and normal violence levels merged.
+ */
 export const getMergedViolenceLevelArray = new Promise((resolve) => {
   violenceLevelSettingsResolved = resolve;
 });
 
-export const mergeSettingsFiles = async (): Promise<any> => {
+/**
+ * Initiate the loading and merging of custom settings files from the 'Data/blood-n-guts/' folder.
+ * @function
+ * @async
+ * @category GMOnly
+ * @returns {Promise<void>}
+ */
+export const mergeSettingsFiles = async (): Promise<void> => {
   const customFileNames = [
     'customSplatFonts.json',
     'customBloodColorSettings.json',
@@ -279,6 +306,7 @@ export const mergeSettingsFiles = async (): Promise<any> => {
       }
     });
 
+  // check if we need to create the custom settings files, if we do then they obviously do not need to be merged.
   await FilePicker.browse('data', MODULE_ID + '/*', {})
     .then((res) => {
       const extantFiles = res.files.map((fullPath) => fullPath.slice(fullPath.lastIndexOf('/') + 1));
@@ -293,6 +321,7 @@ export const mergeSettingsFiles = async (): Promise<any> => {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     });
 
+  // somewhat different processes depending on custom settings type
   if (filesToMerge.includes('customSplatFonts.json')) {
     const response = await fetch(MODULE_ID + '/customSplatFonts.json');
     try {
