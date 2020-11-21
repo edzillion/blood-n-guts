@@ -110,6 +110,7 @@ export const getRandomBoxMuller = (): number => {
  * is set to true. If the token is a PC then look up race, if it's an NPC then look up type for it's
  * associated color which is read from `data/bloodColorSettings.js` and `Data/blood-n-guts/customBloodColorSettings`.
  * @function
+ * @async
  * @category helpers
  * @param {Token} token - the token to lookup color for.
  * @returns {Promise<string>} - color in rgba format, e.g. '[125, 125, 7, 0.7]'.

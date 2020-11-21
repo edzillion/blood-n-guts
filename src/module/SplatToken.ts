@@ -49,6 +49,13 @@ export default class SplatToken {
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
   }
 
+  /**
+   * Async constructor adjunct to await looking up token blood color and then create mask.
+   * @category GMandPC
+   * @function
+   * @async
+   * @returns {Promise<SplatToken>} - the created SplatToken.
+   */
   public async create(): Promise<SplatToken> {
     this.bloodColor = await lookupTokenBloodColor(this.token);
     if (this.bloodColor === 'none') return this;
