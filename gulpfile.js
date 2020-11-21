@@ -162,11 +162,12 @@ function buildSASS() {
  * Copy static files
  */
 async function copyFiles() {
-	const statics = [
-		'lang',
+	const statics = [		
+		'data',
 		'fonts',
-		'assets',
-		'templates',
+		'lang',			
+		'module',			
+		'templates',		
 		'module.json',
 		'system.json',
 		'template.json',
@@ -213,12 +214,14 @@ async function clean() {
 	// If the project uses TypeScript
 	if (fs.existsSync(path.join('src', `${name}.ts`))) {
 		files.push(
-			'lang',
-			'templates',
-			'assets',
-			'module',
-			'vendor',
+			'data',
+			'fonts',
+			'lang',			
+			'module',			
+			'templates',				
 			`${name}.js`,
+			`constants.js`,
+			`${name}.css`,
 			'module.json',
 			'system.json',
 			'template.json'

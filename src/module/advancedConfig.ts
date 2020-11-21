@@ -1,9 +1,8 @@
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
-import * as violenceLevelSettings from '../data/violenceLevelSettings';
-import * as splatFonts from '../data/splatFonts';
 import { BloodNGuts } from '../blood-n-guts';
 import { getRGBA } from './helpers';
+import { getMergedViolenceLevelArray } from './settings';
 
 /**
  * FormApplication window for advanced configuration options.
@@ -34,12 +33,15 @@ export class AdvancedConfig extends FormApplication {
 
   async getData(): Promise<any> {
     const dataObject = {};
-    const level = game.settings.get(MODULE_ID, 'violenceLevel');
-    const violenceLevel = violenceLevelSettings.level[level];
+    let level: number = game.settings.get(MODULE_ID, 'violenceLevel');
+    const mergedViolenceLevels = await getMergedViolenceLevelArray;
+    // level is one more than it should be because in settings disabled is 0
+    const violenceLevel = mergedViolenceLevels[--level];
+    delete violenceLevel.name;
     for (const key in violenceLevel) {
       dataObject[key] = game.settings.get(MODULE_ID, key);
     }
-    dataObject['fonts'] = splatFonts.fonts;
+    dataObject['fonts'] = BloodNGuts.allFonts;
     dataObject['floorSplatFont'] = game.settings.get(MODULE_ID, 'floorSplatFont');
     dataObject['tokenSplatFont'] = game.settings.get(MODULE_ID, 'tokenSplatFont');
     dataObject['trailSplatFont'] = game.settings.get(MODULE_ID, 'trailSplatFont');
@@ -67,7 +69,7 @@ export class AdvancedConfig extends FormApplication {
       log(LogLevel.DEBUG, 'splatButton: BloodNGuts.wipeSceneFlags()');
       BloodNGuts.drawDOMSplats(
         appWindow[0],
-        splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
+        BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
         250,
         4,
         getRGBA('blood'),

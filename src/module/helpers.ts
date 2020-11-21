@@ -1,6 +1,7 @@
 import { log, LogLevel } from './logging';
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import { MODULE_ID } from '../constants';
+import { getMergedBloodColorSettings } from './settings';
 
 const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
 
@@ -107,56 +108,60 @@ export const getRandomBoxMuller = (): number => {
 /**
  * Gets the color associated with a `Token`. Only used if `ClientSetting` `blood-n-guts.useBloodColor'
  * is set to true. If the token is a PC then look up race, if it's an NPC then look up type for it's
- * associated color which is read from `data/bloodColorSettings.js`.
+ * associated color which is read from `data/bloodColorSettings.js` and `Data/blood-n-guts/customBloodColorSettings`.
  * @function
  * @category helpers
  * @param {Token} token - the token to lookup color for.
- * @returns {string} - color in rgba format, e.g. '[125, 125, 7, 0.7]'.
+ * @returns {Promise<string>} - color in rgba format, e.g. '[125, 125, 7, 0.7]'.
  */
-export const lookupTokenBloodColor = (token: Token): string => {
-  const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
-  log(LogLevel.INFO, 'lookupTokenBloodColor enabled?: ' + bloodColorEnabled);
-  if (!token.actor || !token.actor.data) {
-    log(LogLevel.ERROR, 'lookupTokenBloodColor missing actor data for token!', token);
-    return getRGBA('blood');
-  } else if (!bloodColorEnabled) return getRGBA('blood'); // if useBloodColor is disabled then all blood is blood red
+export const lookupTokenBloodColor = (token: Token): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
+    log(LogLevel.INFO, 'lookupTokenBloodColor enabled?: ' + bloodColorEnabled);
+    if (!token.actor || !token.actor.data) {
+      log(LogLevel.ERROR, 'lookupTokenBloodColor missing actor data for token!', token);
+      resolve(getRGBA('blood'));
+    } else if (!bloodColorEnabled) resolve(getRGBA('blood')); // if useBloodColor is disabled then all blood is blood red
 
-  const actorType: string = token.actor.data.type;
-  let creatureType: string;
-  if (actorType === 'character') {
-    creatureType = token.actor.data.data.details.ancestry?.value || token.actor.data.data.details.race;
-  } else if (actorType === 'npc') {
-    creatureType = token.actor.data.data.details.type || token.actor.data.data.details.creatureType;
-  }
-  log(LogLevel.INFO, 'lookupTokenBloodColor: ', token.name, actorType, creatureType);
-  if (!creatureType) {
-    log(LogLevel.ERROR, 'lookupTokenBloodColor missing creatureType', token);
-    return getRGBA('blood');
-  }
+    const actorType: string = token.actor.data.type;
+    let creatureType: string;
+    if (actorType === 'character') {
+      creatureType = token.actor.data.data.details.ancestry?.value || token.actor.data.data.details.race;
+    } else if (actorType === 'npc') {
+      creatureType = token.actor.data.data.details.type || token.actor.data.data.details.creatureType;
+    }
+    log(LogLevel.INFO, 'lookupTokenBloodColor: ', token.name, actorType, creatureType);
+    if (!creatureType) {
+      log(LogLevel.ERROR, 'lookupTokenBloodColor missing creatureType', token);
+      resolve(getRGBA('blood'));
+    }
 
-  const bloodColor = bloodColorSettings.color[creatureType.toLowerCase()];
-  if (!bloodColor) return getRGBA('blood');
-  if (bloodColor === 'none') return 'none';
+    return getMergedBloodColorSettings.then((mergedBloodColorSettings) => {
+      const bloodColor = mergedBloodColorSettings[creatureType.toLowerCase()];
+      if (!bloodColor) resolve(getRGBA('blood'));
+      if (bloodColor === 'none') resolve('none');
 
-  // bloodSettings can return either an rbga string, a color string or 'name' which looks up the
-  // color based on it's name. e.g. 'Purple Ooze'
-  let rgba: string;
-  if (bloodColor === 'name') {
-    rgba = getActorColorByName(token.actor);
-    log(LogLevel.DEBUG, 'lookupTokenBloodColor name:', bloodColor, rgba);
-  } else if (rgbaOnlyRegex.test(bloodColor)) {
-    rgba = bloodColor;
-    log(LogLevel.DEBUG, 'lookupTokenBloodColor rgbaOnlyRegex:', bloodColor, rgba);
-  } else if (getRGBA(bloodColor)) {
-    rgba = getRGBA(bloodColor);
-    log(LogLevel.DEBUG, 'lookupTokenBloodColor getRGBA:', bloodColor, rgba);
-  } else {
-    log(LogLevel.ERROR, 'lookupTokenBloodColor color not recognized!', bloodColor, rgba);
-    rgba = getRGBA('blood');
-  }
+      // bloodSettings can return either an rbga string, a color string or 'name' which looks up the
+      // color based on it's name. e.g. 'Purple Ooze'
+      let rgba: string;
+      if (bloodColor === 'name') {
+        rgba = getActorColorByName(token.actor);
+        log(LogLevel.DEBUG, 'lookupTokenBloodColor name:', bloodColor, rgba);
+      } else if (rgbaOnlyRegex.test(bloodColor)) {
+        rgba = bloodColor;
+        log(LogLevel.DEBUG, 'lookupTokenBloodColor rgbaOnlyRegex:', bloodColor, rgba);
+      } else if (getRGBA(bloodColor)) {
+        rgba = getRGBA(bloodColor);
+        log(LogLevel.DEBUG, 'lookupTokenBloodColor getRGBA:', bloodColor, rgba);
+      } else {
+        log(LogLevel.ERROR, 'lookupTokenBloodColor color not recognized!', bloodColor, rgba);
+        rgba = getRGBA('blood');
+      }
 
-  log(LogLevel.INFO, 'lookupTokenBloodColor: ' + rgba);
-  return rgba;
+      log(LogLevel.INFO, 'lookupTokenBloodColor: ' + rgba);
+      resolve(rgba);
+    });
+  });
 };
 
 /**

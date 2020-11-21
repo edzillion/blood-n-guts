@@ -1,4 +1,4 @@
-export const color = {
+export const colors = {
   abberation: `rgba(5, 5, 175, 0.7)`,
   beast: 'blood',
   dwarf: 'blood',
