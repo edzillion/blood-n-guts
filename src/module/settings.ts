@@ -25,6 +25,8 @@ export const registerSettings = (): void => {
     default: true,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: useBloodColor set to ' + value);
+      if (!canvas.scene.active)
+        ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
     },
   });
 
@@ -39,6 +41,8 @@ export const registerSettings = (): void => {
       log(LogLevel.DEBUG, 'Settings: halfHealthBloodied set to ' + value);
       game.settings.set(MODULE_ID, 'healthThreshold', 0.51);
       game.settings.set(MODULE_ID, 'damageThreshold', 0);
+      if (!canvas.scene.active)
+        ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
     },
   });
 
@@ -210,7 +214,7 @@ export const registerSettings = (): void => {
       onChange: (value) => {
         if (value === '0') {
           BloodNGuts.disabled = true;
-          BloodNGuts.wipeSceneSplats();
+          BloodNGuts.wipeAllSplats();
           return;
         } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
 
@@ -221,6 +225,10 @@ export const registerSettings = (): void => {
           game.settings.set(MODULE_ID, key, violenceLevel[key]);
         }
 
+        if (!canvas.scene.active) {
+          ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
+          return;
+        }
         //if the scenePool has increased in size we need to repopulate it
         const sceneSplats = duplicate(canvas.scene.getFlag(MODULE_ID, 'sceneSplats'));
         if (sceneSplats && sceneSplats.length) {
