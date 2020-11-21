@@ -163,10 +163,8 @@ function buildSASS() {
  */
 async function copyFiles() {
 	const statics = [		
-		'data',
 		'fonts',
 		'lang',			
-		'module',			
 		'templates',		
 		'module.json',
 		'system.json',
@@ -448,6 +446,7 @@ function updateManifest(cb) {
 		manifest.file.url = repoURL;
 		manifest.file.manifest = `${rawURL}/master/${manifestRoot}/${manifest.name}`;
 		manifest.file.download = result;
+		manifest.file.changelog = `${repoURL}/blob/v${manifest.file.version}/changelog.md`
 
 		const prettyProjectJson = stringify(manifest.file, {
 			maxLength: 35,
