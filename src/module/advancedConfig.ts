@@ -1,9 +1,8 @@
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
-import * as violenceLevelSettings from '../data/violenceLevelSettings';
-import * as splatFonts from '../data/splatFonts';
 import { BloodNGuts } from '../blood-n-guts';
 import { getRGBA } from './helpers';
+import { getMergedViolenceLevelArray } from './settings';
 
 /**
  * FormApplication window for advanced configuration options.
@@ -34,12 +33,15 @@ export class AdvancedConfig extends FormApplication {
 
   async getData(): Promise<any> {
     const dataObject = {};
-    const level = game.settings.get(MODULE_ID, 'violenceLevel');
-    const violenceLevel = violenceLevelSettings.level[level];
+    let level: number = game.settings.get(MODULE_ID, 'violenceLevel');
+    const mergedViolenceLevels = await getMergedViolenceLevelArray;
+    // level is one more than it should be because in settings disabled is 0
+    const violenceLevel = mergedViolenceLevels[--level];
+    delete violenceLevel.name;
     for (const key in violenceLevel) {
       dataObject[key] = game.settings.get(MODULE_ID, key);
     }
-    dataObject['fonts'] = splatFonts.fonts;
+    dataObject['fonts'] = BloodNGuts.allFonts;
     dataObject['floorSplatFont'] = game.settings.get(MODULE_ID, 'floorSplatFont');
     dataObject['tokenSplatFont'] = game.settings.get(MODULE_ID, 'tokenSplatFont');
     dataObject['trailSplatFont'] = game.settings.get(MODULE_ID, 'trailSplatFont');
@@ -55,8 +57,8 @@ export class AdvancedConfig extends FormApplication {
     const wipeButton = html.find('.advanced-config-wipe-scene-splats');
     if (canvas.scene.active) {
       wipeButton.click(() => {
-        log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeSceneFlags()');
-        BloodNGuts.wipeSceneFlags();
+        log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeAllFlags()');
+        BloodNGuts.wipeAllFlags();
         $('.splat-container').remove();
       });
     } else wipeButton.attr('disabled', 'true');
@@ -64,10 +66,10 @@ export class AdvancedConfig extends FormApplication {
     const splatButton = html.find('.advanced-config-splat-window');
     const appWindow = html.closest('.app.window-app.form#blood-n-guts');
     splatButton.click(() => {
-      log(LogLevel.DEBUG, 'splatButton: BloodNGuts.wipeSceneFlags()');
+      log(LogLevel.DEBUG, 'splatButton: BloodNGuts.drawDOMSplats()');
       BloodNGuts.drawDOMSplats(
         appWindow[0],
-        splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
+        BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
         250,
         4,
         getRGBA('blood'),

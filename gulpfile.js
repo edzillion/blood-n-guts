@@ -162,11 +162,10 @@ function buildSASS() {
  * Copy static files
  */
 async function copyFiles() {
-	const statics = [
-		'lang',
+	const statics = [		
 		'fonts',
-		'assets',
-		'templates',
+		'lang',			
+		'templates',		
 		'module.json',
 		'system.json',
 		'template.json',
@@ -213,12 +212,14 @@ async function clean() {
 	// If the project uses TypeScript
 	if (fs.existsSync(path.join('src', `${name}.ts`))) {
 		files.push(
-			'lang',
-			'templates',
-			'assets',
-			'module',
-			'vendor',
+			'data',
+			'fonts',
+			'lang',			
+			'module',			
+			'templates',				
 			`${name}.js`,
+			`constants.js`,
+			`${name}.css`,
 			'module.json',
 			'system.json',
 			'template.json'
@@ -445,6 +446,7 @@ function updateManifest(cb) {
 		manifest.file.url = repoURL;
 		manifest.file.manifest = `${rawURL}/master/${manifestRoot}/${manifest.name}`;
 		manifest.file.download = result;
+		manifest.file.changelog = `${repoURL}/blob/v${manifest.file.version}/changelog.md`
 
 		const prettyProjectJson = stringify(manifest.file, {
 			maxLength: 35,

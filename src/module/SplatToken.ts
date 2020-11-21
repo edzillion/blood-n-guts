@@ -10,7 +10,6 @@ import {
   getUID,
   distanceBetween,
 } from './helpers';
-import * as splatFonts from '../data/splatFonts';
 
 /**
  * Extends `Token` and adds a layer to display token splats.
@@ -38,8 +37,6 @@ export default class SplatToken {
   private bleedingDistance: number;
 
   constructor(token: Token) {
-    this.bloodColor = lookupTokenBloodColor(token);
-    if (this.bloodColor === 'none') return;
     // @ts-ignore
     this.id = token.id || token.actor.data._id;
     log(LogLevel.INFO, 'SplatToken constructor for ' + this.id);
@@ -50,7 +47,22 @@ export default class SplatToken {
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
     this.bleedingDistance = 0;
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
+  }
+
+  /**
+   * Async constructor adjunct to await looking up token blood color and then create mask.
+   * @category GMandPC
+   * @function
+   * @async
+   * @returns {Promise<SplatToken>} - the created SplatToken.
+   */
+  public async create(): Promise<SplatToken> {
+    this.bloodColor = await lookupTokenBloodColor(this.token);
+    if (this.bloodColor === 'none') return this;
+
     this.container = new PIXI.Container();
+    await this.createMask();
+    return this;
   }
 
   /**
@@ -220,7 +232,7 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler damageScale > 0:' + this.id + ' - bleeding:true');
     BloodNGuts.generateFloorSplats(
       this,
-      splatFonts.fonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
+      BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
       game.settings.get(MODULE_ID, 'floorSplatSize'),
       Math.round(density),
     );
@@ -251,7 +263,7 @@ export default class SplatToken {
     }
     BloodNGuts.generateTrailSplats(
       this,
-      splatFonts.fonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
+      BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
       game.settings.get(MODULE_ID, 'trailSplatSize'),
       distances,
     );
@@ -269,7 +281,7 @@ export default class SplatToken {
     const density = game.settings.get(MODULE_ID, 'tokenSplatDensity');
     if (density === 0) return;
 
-    const font = splatFonts.fonts[game.settings.get(MODULE_ID, 'tokenSplatFont')];
+    const font = BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')];
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(
@@ -458,7 +470,7 @@ export default class SplatToken {
    * @category GMandPC
    * @function
    */
-  private wipeSplats(): void {
+  public wipeSplats(): void {
     let counter = 0;
     // delete everything except the sprite mask
     while (this.container?.children?.length > 1) {
@@ -473,10 +485,10 @@ export default class SplatToken {
    * @category GMOnly
    * @function
    */
-  public wipeFlags(): void {
+  public async wipeFlags(): Promise<PlaceableObject> {
     this.wipeSplats();
-    if (this.token) this.token.setFlag(MODULE_ID, 'splats', null);
     this.tokenSplats = [];
+    if (this.token) return this.token.setFlag(MODULE_ID, 'splats', null);
   }
 
   /**

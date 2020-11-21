@@ -6,7 +6,7 @@
  * @author [edzillion]{@link https://github.com/edzillion}
  */
 
-import { registerSettings } from './module/settings';
+import { mergeSettingsFiles, registerSettings, getCustomSplatFonts } from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
@@ -30,6 +30,7 @@ CONFIG[MODULE_ID] = { logLevel: 1 };
  */
 export class BloodNGuts {
   public static allFontsReady: Promise<any>;
+  public static allFonts: SplatFont[];
   public static splatTokens: Record<string, SplatToken>;
   public static scenePool: Array<SplatPoolObject>;
   public static disabled: boolean;
@@ -192,6 +193,28 @@ export class BloodNGuts {
   }
 
   /**
+   * Wipes all scene and token flags.
+   * @category GMOnly
+   * @function
+   */
+  public static async wipeAllFlags(): Promise<void> {
+    log(LogLevel.INFO, 'wipeAllFlags');
+    await BloodNGuts.wipeSceneFlags();
+    await BloodNGuts.wipeTokenFlags();
+  }
+
+  /**
+   * Wipes all scene and token splats.
+   * @category GMOnly
+   * @function
+   */
+  public static async wipeAllSplats(): Promise<void> {
+    log(LogLevel.INFO, 'wipeAllSplats');
+    BloodNGuts.wipeSceneSplats();
+    BloodNGuts.wipeTokenSplats();
+  }
+
+  /**
    * Wipes all splats data from scene flags.
    * @category GMOnly
    * @function
@@ -199,7 +222,6 @@ export class BloodNGuts {
   public static async wipeSceneFlags(): Promise<void> {
     log(LogLevel.INFO, 'wipeSceneFlags');
     await canvas.scene.setFlag(MODULE_ID, 'sceneSplats', null);
-    for (const tokenId in BloodNGuts.splatTokens) BloodNGuts.splatTokens[tokenId].wipeFlags();
   }
 
   /**
@@ -216,6 +238,28 @@ export class BloodNGuts {
     });
 
     BloodNGuts.scenePool = [];
+  }
+
+  /**
+   * Wipes all splats data from token flags.
+   * @category GMOnly
+   * @function
+   */
+  public static async wipeTokenFlags(): Promise<void> {
+    log(LogLevel.INFO, 'wipeTokenFlags');
+    const promises: Promise<PlaceableObject>[] = [];
+    for (const tokenId in BloodNGuts.splatTokens) promises.push(BloodNGuts.splatTokens[tokenId].wipeFlags());
+    await Promise.all(promises);
+  }
+
+  /**
+   * Wipes all token splats from the current scene.
+   * @category GMandPC
+   * @function
+   */
+  public static wipeTokenSplats(): void {
+    log(LogLevel.INFO, 'wipeTokenSplats');
+    for (const tokenId in BloodNGuts.splatTokens) BloodNGuts.splatTokens[tokenId].wipeSplats();
   }
 
   // GENERATORS
@@ -401,14 +445,14 @@ export class BloodNGuts {
    * @category GMOnly
    * @function
    * @param {HTMLElement} html - the HTMLElement to draw splats on.
-   * @param {SplatFont=splatter} font - the font to use for splats
+   * @param {SplatFont=tokenSplatFont} font - the font to use for splats
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
    * @param {string='blood'} bloodColor - splat color, can be a css color name or RBGA string e.g. '[255,255,0,0.5]'
    */
   public static drawDOMSplats(
     html: HTMLElement,
-    font: SplatFont = splatFonts.fonts.splatter,
+    font: SplatFont = BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
     size: number,
     density: number,
     bloodColor = 'blood',
@@ -520,7 +564,7 @@ export class BloodNGuts {
    */
   public static deleteTokenHandler(scene, token): void {
     if (!scene.active || !game.user.isGM) return;
-    log(LogLevel.INFO, 'deleteTokenHandler', token);
+    log(LogLevel.INFO, 'deleteTokenHandler', token._id);
     if (BloodNGuts.splatTokens[token._id]) delete BloodNGuts.splatTokens[token._id];
     BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.data.tokenId != token._id);
   }
@@ -543,7 +587,7 @@ export class BloodNGuts {
         icon: 'fas fa-tint-slash',
         active: true,
         visible: true,
-        onClick: BloodNGuts.wipeSceneFlags,
+        onClick: BloodNGuts.wipeAllFlags,
       });
     }
   }
@@ -557,6 +601,7 @@ Hooks.once('init', () => {
   // Assign custom classes and constants here
   BloodNGuts.initialize();
   // Register custom module settings
+  mergeSettingsFiles();
   registerSettings();
 
   for (const fontName in splatFonts.fonts) {
@@ -564,9 +609,22 @@ Hooks.once('init', () => {
     (document as any).fonts.load(shorthand);
   }
 
+  getCustomSplatFonts.then((customSplatFonts: { fonts: SplatFont[] }) => {
+    if (customSplatFonts) {
+      for (const fontName in customSplatFonts.fonts) {
+        const shorthand = '12px ' + fontName;
+        (document as any).fonts.load(shorthand);
+      }
+    } else customSplatFonts = { fonts: [] };
+    BloodNGuts.allFonts = Object.assign(splatFonts.fonts, customSplatFonts.fonts);
+  });
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
 });
 
+Hooks.once('ready', () => {
+  window.BloodNGuts = BloodNGuts;
+  Hooks.call('bloodNGutsReady');
+});
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
 Hooks.on('updateActor', (actor, changes) => {
@@ -587,8 +645,8 @@ Hooks.on('chatMessage', (_chatTab, commandString, _user) => {
   if (commands[0] != '/blood') return;
   switch (commands[1]) {
     case 'clear':
-      if (game.user.isGM) BloodNGuts.wipeSceneFlags();
-      else BloodNGuts.wipeSceneSplats();
+      if (game.user.isGM) BloodNGuts.wipeAllFlags();
+      else BloodNGuts.wipeAllSplats();
       return false;
     default:
       log(LogLevel.ERROR, 'chatMessage, unknown command ' + commands[1]);
@@ -614,11 +672,9 @@ Token.prototype.draw = (function () {
         await BloodNGuts.splatTokens[this.id].createMask();
       }
     } else {
-      splatToken = new SplatToken(this);
+      splatToken = await new SplatToken(this).create();
       BloodNGuts.splatTokens[this.id] = splatToken;
-      await BloodNGuts.splatTokens[this.id].createMask();
-
-      if (game.user.isGM && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
+      if (game.user.isGM && splatToken.bloodColor !== 'none' && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
         // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
         splatToken.preSplat();
       }

@@ -1,5 +1,5 @@
-export const level = [
-  {
+export const levels = {
+  Shrieker: {
     trailSplatDensity: 0.3,
     floorSplatDensity: 1,
     tokenSplatDensity: 1,
@@ -12,7 +12,7 @@ export const level = [
     deathMultiplier: 1.5,
     sceneSplatPoolSize: 20,
   },
-  {
+  Kobold: {
     trailSplatDensity: 0.5,
     floorSplatDensity: 1,
     tokenSplatDensity: 1,
@@ -25,7 +25,7 @@ export const level = [
     deathMultiplier: 1.75,
     sceneSplatPoolSize: 35,
   },
-  {
+  Ogre: {
     trailSplatDensity: 2,
     floorSplatDensity: 2,
     tokenSplatDensity: 2,
@@ -38,7 +38,7 @@ export const level = [
     deathMultiplier: 2,
     sceneSplatPoolSize: 50,
   },
-  {
+  Dracolich: {
     trailSplatDensity: 3,
     floorSplatDensity: 3,
     tokenSplatDensity: 3,
@@ -51,7 +51,7 @@ export const level = [
     deathMultiplier: 2.4,
     sceneSplatPoolSize: 75,
   },
-  {
+  Hecatoncheires: {
     trailSplatDensity: 5,
     floorSplatDensity: 5,
     tokenSplatDensity: 3,
@@ -59,9 +59,9 @@ export const level = [
     floorSplatSize: 175,
     tokenSplatSize: 125,
     splatSpread: 2.5,
-    healthThreshold: 1.0,
-    damageThreshold: 0.0,
+    healthThreshold: 1,
+    damageThreshold: 0,
     deathMultiplier: 3,
     sceneSplatPoolSize: 150,
   },
-];
+};

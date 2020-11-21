@@ -1,6 +1,7 @@
 import { log, LogLevel } from './logging';
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import { MODULE_ID } from '../constants';
+import { getMergedBloodColorSettings } from './settings';
 
 const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?:\.\d+)?)\)/gi;
 
@@ -107,13 +108,14 @@ export const getRandomBoxMuller = (): number => {
 /**
  * Gets the color associated with a `Token`. Only used if `ClientSetting` `blood-n-guts.useBloodColor'
  * is set to true. If the token is a PC then look up race, if it's an NPC then look up type for it's
- * associated color which is read from `data/bloodColorSettings.js`.
+ * associated color which is read from `data/bloodColorSettings.js` and `Data/blood-n-guts/customBloodColorSettings`.
  * @function
+ * @async
  * @category helpers
  * @param {Token} token - the token to lookup color for.
- * @returns {string} - color in rgba format, e.g. '[125, 125, 7, 0.7]'.
+ * @returns {Promise<string>} - color in rgba format, e.g. '[125, 125, 7, 0.7]'.
  */
-export const lookupTokenBloodColor = (token: Token): string => {
+export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
   log(LogLevel.INFO, 'lookupTokenBloodColor enabled?: ' + bloodColorEnabled);
   if (!token.actor || !token.actor.data) {
@@ -128,13 +130,16 @@ export const lookupTokenBloodColor = (token: Token): string => {
   } else if (actorType === 'npc') {
     creatureType = token.actor.data.data.details.type || token.actor.data.data.details.creatureType;
   }
+
   log(LogLevel.INFO, 'lookupTokenBloodColor: ', token.name, actorType, creatureType);
   if (!creatureType) {
     log(LogLevel.ERROR, 'lookupTokenBloodColor missing creatureType', token);
     return getRGBA('blood');
   }
 
-  const bloodColor = bloodColorSettings.color[creatureType.toLowerCase()];
+  const mergedBloodColorSettings = await getMergedBloodColorSettings;
+  const bloodColor = mergedBloodColorSettings[creatureType.toLowerCase()];
+
   if (!bloodColor) return getRGBA('blood');
   if (bloodColor === 'none') return 'none';
 

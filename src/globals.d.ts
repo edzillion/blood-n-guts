@@ -1,9 +1,14 @@
+interface Window {
+  BloodNGuts: any;
+}
+
 interface SplatFont {
   name: string;
   availableGlyphs: Array<string>;
 }
 
 interface ViolenceLevel {
+  name?: string;
   trailSplatDensity: number;
   floorSplatDensity: number;
   tokenSplatDensity: number;
