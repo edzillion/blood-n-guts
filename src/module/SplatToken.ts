@@ -37,21 +37,32 @@ export default class SplatToken {
   private bleedingDistance: number;
 
   constructor(token: Token) {
-    lookupTokenBloodColor(token).then((bloodColor: string) => {
-      this.bloodColor = bloodColor;
-      if (this.bloodColor === 'none') return;
-      // @ts-ignore
-      this.id = token.id || token.actor.data._id;
-      log(LogLevel.INFO, 'SplatToken constructor for ' + this.id);
-      this.token = token;
-      this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
-      this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
-      this.saveState(token);
-      this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
-      this.bleedingDistance = 0;
-      this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
-      this.container = new PIXI.Container();
-    });
+    // @ts-ignore
+    this.id = token.id || token.actor.data._id;
+    log(LogLevel.INFO, 'SplatToken constructor for ' + this.id);
+    this.token = token;
+    this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
+    this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
+    this.saveState(token);
+    this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
+    this.bleedingDistance = 0;
+    this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
+  }
+
+  /**
+   * Async constructor adjunct to await looking up token blood color and then create mask.
+   * @category GMandPC
+   * @function
+   * @async
+   * @returns {Promise<SplatToken>} - the created SplatToken.
+   */
+  public async create(): Promise<SplatToken> {
+    this.bloodColor = await lookupTokenBloodColor(this.token);
+    if (this.bloodColor === 'none') return this;
+
+    this.container = new PIXI.Container();
+    await this.createMask();
+    return this;
   }
 
   /**
@@ -459,7 +470,7 @@ export default class SplatToken {
    * @category GMandPC
    * @function
    */
-  private wipeSplats(): void {
+  public wipeSplats(): void {
     let counter = 0;
     // delete everything except the sprite mask
     while (this.container?.children?.length > 1) {
@@ -474,10 +485,10 @@ export default class SplatToken {
    * @category GMOnly
    * @function
    */
-  public wipeFlags(): void {
+  public async wipeFlags(): Promise<PlaceableObject> {
     this.wipeSplats();
-    if (this.token) this.token.setFlag(MODULE_ID, 'splats', null);
     this.tokenSplats = [];
+    if (this.token) return this.token.setFlag(MODULE_ID, 'splats', null);
   }
 
   /**
