@@ -393,7 +393,25 @@ export class BloodNGuts {
     controlPt.x += splatToken.direction.y * rand;
     controlPt.y += splatToken.direction.x * rand;
 
-    log(LogLevel.DEBUG, 'generateTrailSplats', splatToken.lastPos, controlPt, splatToken.currPos, rand);
+    // randomise endPt of curve
+    const towardsOffset = Math.abs(getRandomBoxMuller() * canvas.grid.size - canvas.grid.size / 2);
+    const lateralOffset = getRandomBoxMuller() * towardsOffset - towardsOffset / 2;
+
+    const endPt = new PIXI.Point(
+      splatToken.currPos.x - splatToken.direction.x * towardsOffset,
+      splatToken.currPos.y - splatToken.direction.y * towardsOffset,
+    );
+    if (splatToken.direction.x === 0 || splatToken.direction.y == 0) {
+      endPt.x += lateralOffset * splatToken.direction.y;
+      endPt.y += lateralOffset * splatToken.direction.x;
+    } else {
+      endPt.x += lateralOffset * splatToken.direction.x;
+      endPt.y += lateralOffset * -splatToken.direction.y;
+    }
+    endPt.x = Math.round(endPt.x);
+    endPt.y = Math.round(endPt.y);
+
+    log(LogLevel.DEBUG, 'generateTrailSplats', splatToken.lastPos, controlPt, endPt, rand);
 
     // get random glyphs and the interval between each splat
     // amount is based on density and severity
