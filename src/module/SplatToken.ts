@@ -37,21 +37,25 @@ export default class SplatToken {
   private bleedingDistance: number;
 
   constructor(token: Token) {
-    lookupTokenBloodColor(token).then((bloodColor: string) => {
-      this.bloodColor = bloodColor;
-      if (this.bloodColor === 'none') return;
-      // @ts-ignore
-      this.id = token.id || token.actor.data._id;
-      log(LogLevel.INFO, 'SplatToken constructor for ' + this.id);
-      this.token = token;
-      this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
-      this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
-      this.saveState(token);
-      this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
-      this.bleedingDistance = 0;
-      this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
-      this.container = new PIXI.Container();
-    });
+    // @ts-ignore
+    this.id = token.id || token.actor.data._id;
+    log(LogLevel.INFO, 'SplatToken constructor for ' + this.id);
+    this.token = token;
+    this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
+    this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
+    this.saveState(token);
+    this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
+    this.bleedingDistance = 0;
+    this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
+  }
+
+  public async create(): Promise<SplatToken> {
+    this.bloodColor = await lookupTokenBloodColor(this.token);
+    if (this.bloodColor === 'none') return this;
+
+    this.container = new PIXI.Container();
+    await this.createMask();
+    return this;
   }
 
   /**

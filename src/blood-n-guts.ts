@@ -527,7 +527,7 @@ export class BloodNGuts {
    */
   public static deleteTokenHandler(scene, token): void {
     if (!scene.active || !game.user.isGM) return;
-    log(LogLevel.INFO, 'deleteTokenHandler', token);
+    log(LogLevel.INFO, 'deleteTokenHandler', token._id);
     if (BloodNGuts.splatTokens[token._id]) delete BloodNGuts.splatTokens[token._id];
     BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.data.tokenId != token._id);
   }
@@ -635,12 +635,9 @@ Token.prototype.draw = (function () {
         await BloodNGuts.splatTokens[this.id].createMask();
       }
     } else {
-      await getMergedBloodColorSettings;
-      splatToken = new SplatToken(this);
+      splatToken = await new SplatToken(this).create();
       BloodNGuts.splatTokens[this.id] = splatToken;
-      await BloodNGuts.splatTokens[this.id].createMask();
-
-      if (game.user.isGM && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
+      if (game.user.isGM && splatToken.bloodColor !== 'none' && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
         // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
         splatToken.preSplat();
       }
