@@ -470,7 +470,7 @@ export default class SplatToken {
    * @category GMandPC
    * @function
    */
-  private wipeSplats(): void {
+  public wipeSplats(): void {
     let counter = 0;
     // delete everything except the sprite mask
     while (this.container?.children?.length > 1) {
@@ -485,10 +485,10 @@ export default class SplatToken {
    * @category GMOnly
    * @function
    */
-  public wipeFlags(): void {
+  public async wipeFlags(): Promise<PlaceableObject> {
     this.wipeSplats();
-    if (this.token) this.token.setFlag(MODULE_ID, 'splats', null);
     this.tokenSplats = [];
+    if (this.token) return this.token.setFlag(MODULE_ID, 'splats', null);
   }
 
   /**

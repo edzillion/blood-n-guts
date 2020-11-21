@@ -57,8 +57,8 @@ export class AdvancedConfig extends FormApplication {
     const wipeButton = html.find('.advanced-config-wipe-scene-splats');
     if (canvas.scene.active) {
       wipeButton.click(() => {
-        log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeSceneFlags()');
-        BloodNGuts.wipeSceneFlags();
+        log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeAllFlags()');
+        BloodNGuts.wipeAllFlags();
         $('.splat-container').remove();
       });
     } else wipeButton.attr('disabled', 'true');
@@ -66,7 +66,7 @@ export class AdvancedConfig extends FormApplication {
     const splatButton = html.find('.advanced-config-splat-window');
     const appWindow = html.closest('.app.window-app.form#blood-n-guts');
     splatButton.click(() => {
-      log(LogLevel.DEBUG, 'splatButton: BloodNGuts.wipeSceneFlags()');
+      log(LogLevel.DEBUG, 'splatButton: BloodNGuts.drawDOMSplats()');
       BloodNGuts.drawDOMSplats(
         appWindow[0],
         BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
