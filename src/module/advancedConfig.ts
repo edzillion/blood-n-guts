@@ -81,5 +81,7 @@ export class AdvancedConfig extends FormApplication {
     for (const setting in formData) {
       game.settings.set(MODULE_ID, setting, formData[setting]);
     }
+    if (!canvas.scene.active)
+      ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
   }
 }

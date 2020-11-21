@@ -199,6 +199,10 @@ export class BloodNGuts {
    */
   public static async wipeAllFlags(): Promise<void> {
     log(LogLevel.INFO, 'wipeAllFlags');
+    if (!canvas.scene.active) {
+      ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
+      return;
+    }
     await BloodNGuts.wipeSceneFlags();
     await BloodNGuts.wipeTokenFlags();
   }
@@ -210,6 +214,10 @@ export class BloodNGuts {
    */
   public static async wipeAllSplats(): Promise<void> {
     log(LogLevel.INFO, 'wipeAllSplats');
+    if (!canvas.scene.active) {
+      ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
+      return;
+    }
     BloodNGuts.wipeSceneSplats();
     BloodNGuts.wipeTokenSplats();
   }
