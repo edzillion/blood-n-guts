@@ -257,8 +257,19 @@ export const mergeSettingsFiles = async (): Promise<any> => {
   ];
   let filesToMerge: string[] = [];
 
-  // create folder if missing
+  // create main folder if missing
   await FilePicker.createDirectory('data', MODULE_ID, {})
+    .then((result) => {
+      log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
+    })
+    .catch((err) => {
+      if (!err.includes('EEXIST')) {
+        log(LogLevel.ERROR, 'mergeSettingsFiles', err);
+      }
+    });
+
+  // create fonts folder if missing
+  await FilePicker.createDirectory('data', MODULE_ID + '/fonts', {})
     .then((result) => {
       log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
     })
