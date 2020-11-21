@@ -33,10 +33,9 @@ export class AdvancedConfig extends FormApplication {
 
   async getData(): Promise<any> {
     const dataObject = {};
-    let level: number = game.settings.get(MODULE_ID, 'violenceLevel');
+    const level: number = game.settings.get(MODULE_ID, 'violenceLevel');
     const mergedViolenceLevels = await getMergedViolenceLevelArray;
-    // level is one more than it should be because in settings disabled is 0
-    const violenceLevel = mergedViolenceLevels[--level];
+    const violenceLevel = mergedViolenceLevels[level];
     delete violenceLevel.name;
     for (const key in violenceLevel) {
       dataObject[key] = game.settings.get(MODULE_ID, key);

@@ -197,8 +197,8 @@ export const registerSettings = (): void => {
   });
 
   getMergedViolenceLevelArray.then((mergedViolenceLevels: any) => {
-    let index = 1;
-    const violenceLevelChoices = { '0': 'Disabled' };
+    let index = 0;
+    const violenceLevelChoices = {};
     mergedViolenceLevels.forEach((level) => {
       violenceLevelChoices[String(index++)] = level.name;
     });
@@ -212,18 +212,18 @@ export const registerSettings = (): void => {
       choices: violenceLevelChoices,
       default: 2,
       onChange: (value) => {
+        // when violenceLevel is changed we load that violenceLevel from our merged levels
+        const violenceLevel = duplicate(mergedViolenceLevels[value]);
+        delete violenceLevel.name;
+        for (const key in violenceLevel) {
+          game.settings.set(MODULE_ID, key, violenceLevel[key]);
+        }
+
         if (value === '0') {
           BloodNGuts.disabled = true;
           BloodNGuts.wipeAllSplats();
           return;
         } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
-
-        // when violenceLevel is changed we load that violenceLevel from our merged levels
-        const violenceLevel = duplicate(mergedViolenceLevels[--value]);
-        delete violenceLevel.name;
-        for (const key in violenceLevel) {
-          game.settings.set(MODULE_ID, key, violenceLevel[key]);
-        }
 
         if (!canvas.scene.active) {
           ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');

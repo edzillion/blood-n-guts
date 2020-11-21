@@ -1,4 +1,17 @@
 export const levels = {
+  Disabled: {
+    trailSplatDensity: 0,
+    floorSplatDensity: 0,
+    tokenSplatDensity: 0,
+    trailSplatSize: 0,
+    floorSplatSize: 0,
+    tokenSplatSize: 0,
+    splatSpread: 0,
+    healthThreshold: 0,
+    damageThreshold: 0,
+    deathMultiplier: 0,
+    sceneSplatPoolSize: 0,
+  },
   Shrieker: {
     trailSplatDensity: 0.3,
     floorSplatDensity: 1,
