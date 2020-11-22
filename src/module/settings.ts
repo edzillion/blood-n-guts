@@ -230,11 +230,14 @@ export const registerSettings = (): void => {
           return;
         }
         //if the scenePool has increased in size we need to repopulate it
-        const sceneSplats = duplicate(canvas.scene.getFlag(MODULE_ID, 'sceneSplats'));
-        if (sceneSplats && sceneSplats.length) {
-          const trimmedSceneSplats = BloodNGuts.getTrimmedSceneSplats(sceneSplats);
-          // trim to new ScenePool size and draw
-          BloodNGuts.drawSceneSplats(trimmedSceneSplats);
+        const sceneSplatsFlag = canvas.scene.getFlag(MODULE_ID, 'sceneSplats');
+        if (sceneSplatsFlag) {
+          const sceneSplats = duplicate(sceneSplatsFlag);
+          if (sceneSplats && sceneSplats.length) {
+            const trimmedSceneSplats = BloodNGuts.getTrimmedSceneSplats(sceneSplats);
+            // trim to new ScenePool size and draw
+            BloodNGuts.drawSceneSplats(trimmedSceneSplats);
+          }
         }
       },
     });
