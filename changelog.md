@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.6.10]
+
+### BUGS
+
+- Scene transition stuff was left out of last build, added now.
+
 ## [0.6.9]
 
 ### FEATURES
