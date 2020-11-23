@@ -57,3 +57,11 @@
   position: absolute;
   pointer-events: none;
 };
+
+input[type="color"]::-moz-color-swatch {
+  opacity: 1;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  opacity: 1;
+}

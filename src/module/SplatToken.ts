@@ -21,7 +21,10 @@ export default class SplatToken {
   public y: number;
   public hp: number;
   public maxHP: number;
+
   public bloodColor: string;
+  public violenceLevel: number;
+
   public spriteWidth: number;
   public spriteHeight: number;
   public direction: PIXI.Point;
@@ -47,6 +50,7 @@ export default class SplatToken {
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
     this.bleedingDistance = 0;
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
+    this.violenceLevel = this.token.getFlag(MODULE_ID, 'violenceLevel') || -1;
   }
 
   /**
@@ -57,8 +61,12 @@ export default class SplatToken {
    * @returns {Promise<SplatToken>} - the created SplatToken.
    */
   public async create(): Promise<SplatToken> {
-    this.bloodColor = await lookupTokenBloodColor(this.token);
-    if (this.bloodColor === 'none') return this;
+    this.bloodColor = this.token.getFlag(MODULE_ID, 'bloodColor');
+    if (!this.bloodColor) this.bloodColor = await lookupTokenBloodColor(this.token);
+    if (this.bloodColor === 'none') {
+      this.violenceLevel = 0;
+      return this;
+    } else this.bloodColor = hexToRGBAString(parseInt(this.bloodColor.slice(1), 16), 0.7);
 
     this.container = new PIXI.Container();
     await this.createMask();
@@ -144,9 +152,18 @@ export default class SplatToken {
    * @category GMOnly
    * @param changes - the latest token changes.
    * @function
-   * @returns {boolean} - whether there have been changes or not
+   * @returns {boolean} - whether there have been changes to the scene or not
    */
   public updateChanges(changes): boolean {
+    if (changes.flags) {
+      if (changes.flags[MODULE_ID]?.bloodColor) {
+        this.bloodColor = hexToRGBAString(parseInt(changes.flags[MODULE_ID].bloodColor.slice(1), 16), 0.7);
+      }
+      if (changes.flags[MODULE_ID]?.violenceLevel) {
+        this.violenceLevel = changes.flags[MODULE_ID].violenceLevel;
+      }
+    }
+
     if (
       this.bloodColor === 'none' ||
       (changes.rotation === undefined &&
@@ -155,6 +172,7 @@ export default class SplatToken {
         changes.actorData?.data?.attributes?.hp === undefined)
     )
       return false;
+
     const updates = { bleedingSeverity: null, splats: null };
     [this.hitSeverity, updates.bleedingSeverity] = this.getUpdatedDamage(changes);
     if (updates.bleedingSeverity !== null) this.bleedingSeverity = updates.bleedingSeverity;

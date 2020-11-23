@@ -1,0 +1,14 @@
+<div class="form-group">
+  <label>Blood Color</label>
+  <div class="form-fields">      
+      <input type="color" id="bloodColorPicker" name="flags.blood-n-guts.bloodColor" value="{{currentColor}}" data-edit="flags.blood-n-guts.bloodColor"/>
+  </div>
+</div >
+<div class="form-group">
+  <label>Violence Level</label>
+  <div class="form-fields">
+      <select name="flags.blood-n-guts.violenceLevel" class="token-config-select-violence-level" data-dtype="Number"/>
+          {{ selectOptions levelNames selected=currentLevel localize=false }}
+      </select>
+  </div>
+</div >

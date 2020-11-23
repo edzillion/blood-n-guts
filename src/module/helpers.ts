@@ -203,6 +203,23 @@ export const getUID = (typeCode?: string): string => {
   return [prefix, typeCode, d, r].join('_');
 };
 
+export const changeColorPickerOpacityHack = (opacity) => {
+  for (let i = 0; i < document.styleSheets.length; i++) {
+    const sheet = document.styleSheets[i];
+    // @ts-ignore
+    if (sheet.ownerNode?.attributes?.href?.value === 'modules/blood-n-guts/blood-n-guts.css') {
+      for (let j = 0; j < sheet.rules.length; j++) {
+        const rule = sheet.rules[j];
+        // @ts-ignore
+        if (rule.selectorText === '::-moz-color-swatch' || rule.selectorText === '::-webkit-color-swatch') {
+          // @ts-ignore
+          if (rule.style.opacity != opacity) rule.style.opacity = opacity;
+        }
+      }
+    }
+  }
+};
+
 /**
  * Debug helper to draw a rectangle border around a container.
  * @category helpers

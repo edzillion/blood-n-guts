@@ -6,7 +6,12 @@
  * @author [edzillion]{@link https://github.com/edzillion}
  */
 
-import { mergeSettingsFiles, registerSettings, getCustomSplatFonts } from './module/settings';
+import {
+  mergeSettingsFiles,
+  registerSettings,
+  getCustomSplatFonts,
+  getMergedViolenceLevelArray,
+} from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
@@ -16,6 +21,7 @@ import {
   getPointOnCurve,
   getUID,
   getRGBA,
+  changeColorPickerOpacityHack,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
@@ -715,3 +721,162 @@ Token.prototype.draw = (function () {
     }
   };
 })();
+
+// Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQuery) {
+//   log(LogLevel.INFO, 'renderTokenConfig');
+
+//   // @ts-ignore
+//   //let checked = followingTokenId && tokenConfig.token.id === followingTokenId ? 'checked' : '';
+//   // @ts-ignore
+//   let gmFollowChecked = gmFollowingTokenId && tokenConfig.token.id === gmFollowingTokenId ? 'checked' : '';
+//   const d = document.createElement('div');
+//   d.className = 'form-group';
+//   d.innerHTML = `<label>Lock Camera on this Token:</label>
+// 	<input type="checkbox" class="lockCamera" name="lockCamera" data-dtype="Boolean" ${checked} />`;
+//   const f = html.find(`.tab[data-tab='character']`);
+//   f.append(d);
+
+//   if (game.user.isGM) {
+//     const d2 = document.createElement('div');
+//     const isDisabled = checked != 'checked' ? 'disabled' : '';
+//     d2.className = 'form-group';
+//     d2.innerHTML = `<label>[GM Only] Lock all players on this token:</label>
+// 		<input type="checkbox" class="gmLockCamera" name="gmLockCamera" data-dtype="Boolean" ${gmFollowChecked} ${isDisabled}/>`;
+//     f.append(d2);
+//   }
+
+//   html.find('.lockCamera').on('change', () => {
+//     if (checked) {
+//       // @ts-ignore
+//       log(LogLevel.DEBUG, tokenConfig.token.name, 'stop cam follow');
+//       followingTokenId = '';
+//       if (game.user.isGM) {
+//         canvas.scene.setFlag(MODULE_ID, 'gmFollowingTokenId', null);
+//         html.find('.gmLockCamera').prop('disabled', true);
+//         html.find('.gmLockCamera').prop('checked', false);
+//       }
+//       checked = '';
+//     } else {
+//       // @ts-ignore
+//       log(LogLevel.DEBUG, tokenConfig.token.name, 'cam follow');
+//       // @ts-ignore
+//       followingTokenId = tokenConfig.token.id;
+//       if (game.user.isGM) html.find('.gmLockCamera').prop('disabled', false);
+//       checked = 'checked';
+//     }
+//   });
+//   html.find('.gmLockCamera').on('change', () => {
+//     if (gmFollowChecked) {
+//       // @ts-ignore
+//       log(LogLevel.DEBUG, tokenConfig.token.name, 'stop cam follow GM');
+//       canvas.scene.setFlag(MODULE_ID, 'gmFollowingTokenId', null);
+//       gmFollowChecked = '';
+//     } else {
+//       // @ts-ignore
+//       log(LogLevel.DEBUG, tokenConfig.token.name, 'cam follow GM');
+//       // @ts-ignore
+//       canvas.scene.setFlag(MODULE_ID, 'gmFollowingTokenId', tokenConfig.token.id);
+//       gmFollowChecked = 'checked';
+//     }
+//   });
+//   //recalculate the height now that we've added elements
+//   tokenConfig.setPosition({ height: 'auto' });
+// });
+
+Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQuery) {
+  log(LogLevel.INFO, 'renderTokenConfig');
+  // let tokenBloodColor: string;
+  // let tokenViolenceLevel: number;
+  // const updateObject = {};
+
+  // @ts-ignore
+  const splatToken = BloodNGuts.splatTokens[tokenConfig.token.id];
+  if (!splatToken) return;
+
+  const imageTab = html.find('.tab[data-tab="image"]');
+  debugger;
+  const allLevels: any = await getMergedViolenceLevelArray;
+  const levelNames = allLevels.map((lvl) => lvl.name);
+  debugger;
+  const currentLevel = splatToken.violenceLevel;
+  levelNames[-1] = '';
+  //if (currentLevel === -1) currentLevel = null;
+  let currentColor: string | number;
+  console.log('splatToken.bloodColor', splatToken.bloodColor);
+  if (splatToken.violenceLevel === 0) {
+    currentColor = '';
+  } else {
+    const arr = splatToken.bloodColor
+      .slice(splatToken.bloodColor.indexOf('(') + 1, splatToken.bloodColor.indexOf(')'))
+      .split(',')
+      .map((val) => +val / 255);
+    currentColor = '#' + rgbToHex(arr).toString(16);
+  }
+
+  const data = {
+    currentColor: currentColor,
+    currentLevel: currentLevel,
+    levelNames: levelNames,
+  };
+
+  const insertHTML = await renderTemplate('modules/' + MODULE_ID + '/templates/token-config.html', data);
+  imageTab.append(insertHTML);
+
+  const bloodColorPicker = imageTab.find('#bloodColorPicker');
+
+  if (splatToken.violenceLevel === 0) {
+    bloodColorPicker.prop('disabled', true);
+  }
+  if (!splatToken.bloodColor || splatToken.bloodColor === 'none') {
+    changeColorPickerOpacityHack(0);
+  }
+
+  //const constantine = imageTab.find('#bloodColorPicker').attachShadow({ mode: 'open' });
+
+  bloodColorPicker.on('click', (event) => {
+    changeColorPickerOpacityHack(1);
+  });
+
+  imageTab.find('.token-config-select-violence-level').on('change', (event) => {
+    // @ts-ignore
+    if (event.target.value === '-1') {
+      bloodColorPicker.prop('disabled', true);
+      changeColorPickerOpacityHack(0);
+    } else {
+      bloodColorPicker.prop('disabled', false);
+      if (splatToken.bloodColor !== 'none') changeColorPickerOpacityHack(1);
+    }
+  });
+
+  // const submitButton = html.find('[name="submit"]');
+  // submitButton.on('click', (event) => {
+  //   event.preventDefault();
+  //   debugger;
+  //   // @ts-ignore
+  //   splatToken.token.update(updateObject);
+  //   tokenConfig.close();
+  // });
+  // tokenConfig.form.onsubmit = async (event) => {
+  //   const cached = tokenConfig.form.onsubmit;
+  //   //return async function () {
+  //   await cached.apply(this);
+  //   debugger;
+  //   //return this;
+  //   //};
+  // };
+
+  // tokenConfig.form.onsubmit = async (event) => {
+  //   event.preventDefault();
+  //   tokenConfig.object.update(updateObject);
+  //   // Trigger the object update
+  //   try {
+  //     await tokenConfig._updateObject(event, updateObject);
+  //   } catch (err) {
+  //     console.error(err);
+  //     debugger;
+  //   }
+
+  //splatToken.token
+  //document.createElement('form').submit.call(tokenConfig.form);
+  //};
+});
