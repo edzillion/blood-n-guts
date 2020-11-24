@@ -10,7 +10,8 @@ import {
   mergeSettingsFiles,
   registerSettings,
   getCustomSplatFonts,
-  getMergedViolenceLevelArray,
+  getMergedViolenceLevels,
+  settingsReady,
 } from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
@@ -651,6 +652,12 @@ Hooks.once('init', () => {
     BloodNGuts.allFonts = Object.assign(splatFonts.fonts, customSplatFonts.fonts);
   });
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
+
+  // hack to get 'Custom' added as a settings option on load
+  settingsReady.then(() => {
+    if (game.settings.get(MODULE_ID, 'violenceLevel') === 'Custom')
+      game.settings.set(MODULE_ID, 'violenceLevel', 'Custom');
+  });
 });
 
 Hooks.once('ready', () => {
@@ -795,7 +802,7 @@ Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQ
 
   const imageTab = html.find('.tab[data-tab="image"]');
   debugger;
-  const allLevels: any = await getMergedViolenceLevelArray;
+  const allLevels: any = await getMergedViolenceLevels;
   const levelNames = allLevels.map((lvl) => lvl.name);
   debugger;
   const currentLevel = splatToken.violenceLevel;
