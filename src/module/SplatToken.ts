@@ -10,6 +10,7 @@ import {
   getUID,
   distanceBetween,
 } from './helpers';
+import { getMergedViolenceLevels } from './settings';
 
 /**
  * Extends `Token` and adds a layer to display token splats.
@@ -23,7 +24,7 @@ export default class SplatToken {
   public maxHP: number;
 
   public bloodColor: string;
-  public violenceLevel: number;
+  public violenceLevel: string;
 
   public spriteWidth: number;
   public spriteHeight: number;
@@ -39,6 +40,8 @@ export default class SplatToken {
   private tokenSplats: Array<SplatDataObject>;
   private bleedingDistance: number;
 
+  private tokenSettings: ViolenceLevel;
+
   constructor(token: Token) {
     // @ts-ignore
     this.id = token.id || token.actor.data._id;
@@ -50,7 +53,7 @@ export default class SplatToken {
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
     this.bleedingDistance = 0;
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
-    this.violenceLevel = this.token.getFlag(MODULE_ID, 'violenceLevel') || -1;
+    this.violenceLevel = this.token.getFlag(MODULE_ID, 'violenceLevel');
   }
 
   /**
@@ -61,12 +64,23 @@ export default class SplatToken {
    * @returns {Promise<SplatToken>} - the created SplatToken.
    */
   public async create(): Promise<SplatToken> {
+    // token blood color has priority over generic blood color
     this.bloodColor = this.token.getFlag(MODULE_ID, 'bloodColor');
     if (!this.bloodColor) this.bloodColor = await lookupTokenBloodColor(this.token);
-    if (this.bloodColor === 'none') {
-      this.violenceLevel = 0;
+
+    if (this.bloodColor === 'none' || this.violenceLevel === 'Disabled') {
+      this.violenceLevel = 'Disabled';
+      this.bloodColor = 'none';
       return this;
-    } else this.bloodColor = hexToRGBAString(parseInt(this.bloodColor.slice(1), 16), 0.7);
+    } else if (this.bloodColor && this.bloodColor[0] === '#') {
+      this.bloodColor = hexToRGBAString(parseInt(this.bloodColor.slice(1), 16), 0.7);
+    }
+
+    try {
+      this.tokenSettings = this.violenceLevel ? await getMergedViolenceLevels[this.violenceLevel] : {};
+    } catch (error) {
+      log(LogLevel.ERROR, 'SplatToken.create() violenceLevel not found!', this.violenceLevel);
+    }
 
     this.container = new PIXI.Container();
     await this.createMask();
@@ -245,14 +259,15 @@ export default class SplatToken {
    * @function
    */
   private bleedFloor(): void {
-    const density = game.settings.get(MODULE_ID, 'floorSplatDensity');
+    const density = this.tokenSettings.floorSplatDensity || game.settings.get(MODULE_ID, 'floorSplatDensity');
     if (!density) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler damageScale > 0:' + this.id + ' - bleeding:true');
     BloodNGuts.generateFloorSplats(
       this,
       BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
-      game.settings.get(MODULE_ID, 'floorSplatSize'),
+      this.tokenSettings.floorSplatSize || game.settings.get(MODULE_ID, 'floorSplatSize'),
       Math.round(density),
+      this.tokenSettings.splatSpread || game.settings.get(MODULE_ID, 'splatSpread'),
     );
   }
 
@@ -284,6 +299,7 @@ export default class SplatToken {
       BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
       game.settings.get(MODULE_ID, 'trailSplatSize'),
       distances,
+      game.settings.get(MODULE_ID, 'splatSpread'),
     );
     return true;
   }

@@ -58,10 +58,10 @@
   pointer-events: none;
 };
 
-input[type="color"]::-moz-color-swatch {
+::-moz-color-swatch {
   opacity: 1;
 }
 
-input[type="color"]::-webkit-color-swatch {
+::-webkit-color-swatch {
   opacity: 1;
 }

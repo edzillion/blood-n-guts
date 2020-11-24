@@ -12,3 +12,33 @@
       </select>
   </div>
 </div >
+<div class="form-group">
+  <label>Floor Splat Font:</label>
+  <select type="select" class="advanced-config-select-font" name="floorSplatFont">    
+    {{#select floorSplatFont}}
+      {{#each fonts}}
+        <option value="{{name}}"> {{name}} </option>
+      {{/each}}
+    {{/select}}                    
+  </select>      
+</div>
+<div class="form-group">
+  <label>Token Splat Font:</label>
+  <select type="select" class="advanced-config-select-font" name="tokenSplatFont">
+    {{#select tokenSplatFont}}
+      {{#each fonts}}
+        <option value="{{name}}"> {{name}} </option>
+      {{/each}}
+    {{/select}}                    
+  </select>      
+</div>
+<div class="form-group">
+  <label>Trail Splat Font:</label>
+  <select type="select" class="advanced-config-select-font" name="trailSplatFont">    
+    {{#select trailSplatFont}}
+      {{#each fonts}}
+        <option value="{{name}}"> {{name}} </option>
+      {{/each}}
+    {{/select}}                    
+  </select>
+</div>

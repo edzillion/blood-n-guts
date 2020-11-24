@@ -288,7 +288,13 @@ export class BloodNGuts {
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
    */
-  public static generateFloorSplats(splatToken: SplatToken, font: SplatFont, size: number, density: number): void {
+  public static generateFloorSplats(
+    splatToken: SplatToken,
+    font: SplatFont,
+    size: number,
+    density: number,
+    spread: number,
+  ): void {
     if (!density) return;
     log(LogLevel.DEBUG, 'generateFloorSplats');
 
@@ -311,8 +317,8 @@ export class BloodNGuts {
     const amount = Math.round(density * splatToken.hitSeverity);
     // get a random glyph and then get a random (x,y) spread away from the token.
     const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
-    const pixelSpreadX = splatToken.spriteWidth * game.settings.get(MODULE_ID, 'splatSpread');
-    const pixelSpreadY = splatToken.spriteHeight * game.settings.get(MODULE_ID, 'splatSpread');
+    const pixelSpreadX = splatToken.spriteWidth * spread;
+    const pixelSpreadY = splatToken.spriteHeight * spread;
     log(LogLevel.DEBUG, 'generateFloorSplats amount', amount);
     log(LogLevel.DEBUG, 'generateFloorSplats pixelSpread', pixelSpreadX, pixelSpreadY);
 
@@ -363,7 +369,13 @@ export class BloodNGuts {
    * @param {number} size - the size of splats.
    * @param {number[]} distances - distances along the trail from 0 to 1.
    */
-  public static generateTrailSplats(splatToken: SplatToken, font: SplatFont, size: number, distances: number[]): void {
+  public static generateTrailSplats(
+    splatToken: SplatToken,
+    font: SplatFont,
+    size: number,
+    distances: number[],
+    spread: number,
+  ): void {
     if (!distances) return;
     log(LogLevel.DEBUG, 'generateTrailSplats');
     log(LogLevel.DEBUG, 'generateTrailSplats severity', splatToken.bleedingSeverity);
@@ -386,8 +398,8 @@ export class BloodNGuts {
     //todo: improve this
     //horiz or vert movement
     const pixelSpread = splatToken.direction.x
-      ? splatToken.spriteWidth * game.settings.get(MODULE_ID, 'splatSpread') * 2
-      : splatToken.spriteHeight * game.settings.get(MODULE_ID, 'splatSpread') * 2;
+      ? splatToken.spriteWidth * spread * 2
+      : splatToken.spriteHeight * spread * 2;
 
     const rand = getRandomBoxMuller() * pixelSpread - pixelSpread / 2;
     log(LogLevel.DEBUG, 'generateTrailSplats rand', rand);
@@ -792,29 +804,25 @@ Token.prototype.draw = (function () {
 
 Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQuery) {
   log(LogLevel.INFO, 'renderTokenConfig');
-  // let tokenBloodColor: string;
-  // let tokenViolenceLevel: number;
-  // const updateObject = {};
 
   // @ts-ignore
   const splatToken = BloodNGuts.splatTokens[tokenConfig.token.id];
   if (!splatToken) return;
 
   const imageTab = html.find('.tab[data-tab="image"]');
-  debugger;
-  const allLevels: any = await getMergedViolenceLevels;
-  const levelNames = allLevels.map((lvl) => lvl.name);
-  debugger;
-  const currentLevel = splatToken.violenceLevel;
-  levelNames[-1] = '';
-  //if (currentLevel === -1) currentLevel = null;
-  let currentColor: string | number;
-  console.log('splatToken.bloodColor', splatToken.bloodColor);
-  if (splatToken.violenceLevel === 0) {
+  const mergedViolenceLevels: any = await getMergedViolenceLevels;
+  const choices = { '': '' };
+  for (const levelName in mergedViolenceLevels) {
+    choices[levelName] = levelName;
+  }
+  // @ts-ignore
+  const customColor = splatToken.token.getFlag(MODULE_ID, 'bloodColor');
+  let currentColor = customColor || splatToken.bloodColor;
+  if (splatToken.violenceLevel === 'Disabled') {
     currentColor = '';
-  } else {
-    const arr = splatToken.bloodColor
-      .slice(splatToken.bloodColor.indexOf('(') + 1, splatToken.bloodColor.indexOf(')'))
+  } else if (currentColor) {
+    const arr = currentColor
+      .slice(currentColor.indexOf('(') + 1, currentColor.indexOf(')'))
       .split(',')
       .map((val) => +val / 255);
     currentColor = '#' + rgbToHex(arr).toString(16);
@@ -822,8 +830,8 @@ Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQ
 
   const data = {
     currentColor: currentColor,
-    currentLevel: currentLevel,
-    levelNames: levelNames,
+    currentLevel: splatToken.violenceLevel,
+    levelNames: choices,
   };
 
   const insertHTML = await renderTemplate('modules/' + MODULE_ID + '/templates/token-config.html', data);
@@ -831,10 +839,10 @@ Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQ
 
   const bloodColorPicker = imageTab.find('#bloodColorPicker');
 
-  if (splatToken.violenceLevel === 0) {
+  if (splatToken.violenceLevel === 'Disabled') {
     bloodColorPicker.prop('disabled', true);
   }
-  if (!splatToken.bloodColor || splatToken.bloodColor === 'none') {
+  if (!customColor || currentColor === 'none') {
     changeColorPickerOpacityHack(0);
   }
 
@@ -846,7 +854,7 @@ Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQ
 
   imageTab.find('.token-config-select-violence-level').on('change', (event) => {
     // @ts-ignore
-    if (event.target.value === '-1') {
+    if (event.target.value === 'Disabled') {
       bloodColorPicker.prop('disabled', true);
       changeColorPickerOpacityHack(0);
     } else {
