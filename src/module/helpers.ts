@@ -203,6 +203,12 @@ export const getUID = (typeCode?: string): string => {
   return [prefix, typeCode, d, r].join('_');
 };
 
+/**
+ * Hacky way to change the css on pseudo element dynamically.
+ * @category helpers
+ * @function
+ * @param {number} opacity
+ */
 export const changeColorPickerOpacityHack = (opacity) => {
   for (let i = 0; i < document.styleSheets.length; i++) {
     const sheet = document.styleSheets[i];
@@ -224,6 +230,13 @@ export const changeColorPickerOpacityHack = (opacity) => {
   }
 };
 
+/**
+ * Takes an rgba string and returns hexString and opacity separately.
+ * @category helpers
+ * @function
+ * @param {string} rgbaString - rgba color string e.g. 'rgba(12, 12, 128, 0.7)'
+ * @returns {string, string} hexString, opacity
+ */
 export const rgbaStringToHexStringAndOpacity = (rgbaString: string): { hexString: string; opacity: string } => {
   const rgbaArray = rgbaString
     .slice(rgbaString.indexOf('(') + 1, rgbaString.indexOf(')'))
