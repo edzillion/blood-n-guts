@@ -705,12 +705,12 @@ export class BloodNGuts {
 
     imageTab.find('.token-config-select-violence-level').on('change', (event) => {
       // @ts-ignore
-      if (event.target.value === 'Disabled') {
+      if (event.target.value === 'Disabled' && !bloodColorPicker.prop('disabled')) {
         bloodColorPicker.prop('disabled', true);
         bloodColorText.prop('disabled', true);
         changeColorPickerOpacityHack(0);
         bloodColorText.val('');
-      } else {
+      } else if (bloodColorPicker.prop('disabled')) {
         bloodColorPicker.prop('disabled', false);
         bloodColorText.prop('disabled', false);
         if (selectedColor !== 'none') {

@@ -273,7 +273,7 @@ export const registerSettings = (): void => {
 export const getBaseTokenSettings = async (token: Token): Promise<TokenSettings> => {
   const mergedViolenceLevels = await getMergedViolenceLevels;
   const bloodColor = await lookupTokenBloodColor(token);
-  const violenceLevel = 'Shrieker'; //game.settings.get(MODULE_ID, 'violenceLevel');
+  const violenceLevel = game.settings.get(MODULE_ID, 'violenceLevel');
   return {
     bloodColor: bloodColor,
     violenceLevel: violenceLevel,
