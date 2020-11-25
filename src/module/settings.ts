@@ -11,6 +11,18 @@ import * as violenceLevelSettings from '../data/violenceLevelSettings';
  * @module Settings
  */
 
+let settingsResolved;
+
+/**
+ * Promise resolving after all settings are registered.
+ * @function
+ * @category GMOnly
+ * @returns {Promise<void>}
+ */
+export const settingsReady = new Promise((resolve) => {
+  settingsResolved = resolve;
+});
+
 /**
  * Register module settings.
  * @function
@@ -196,31 +208,38 @@ export const registerSettings = (): void => {
     },
   });
 
-  getMergedViolenceLevelArray.then((mergedViolenceLevels: any) => {
-    let index = 1;
-    const violenceLevelChoices = { '0': 'Disabled' };
-    mergedViolenceLevels.forEach((level) => {
-      violenceLevelChoices[String(index++)] = level.name;
-    });
+  getMergedViolenceLevels.then((mergedViolenceLevels: any) => {
+    const violenceLevelChoices = {};
+    for (const level in mergedViolenceLevels) {
+      violenceLevelChoices[level] = level;
+    }
+
     game.settings.register(MODULE_ID, 'violenceLevel', {
       name: game.i18n.localize('Violence Level'),
       hint: game.i18n.localize('Blood and gore level'),
 
       scope: 'client',
       config: true,
-      type: Number,
+      type: String,
       choices: violenceLevelChoices,
-      default: 2,
+      default: 'Kobold',
       onChange: (value) => {
-        if (value === '0') {
+        if (value === 'Disabled') {
           BloodNGuts.disabled = true;
           BloodNGuts.wipeAllSplats();
+          delete violenceLevelChoices['Custom'];
           return;
         } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
 
+        if (value === 'Custom') {
+          violenceLevelChoices['Custom'] = 'Custom';
+          return;
+        } else {
+          delete violenceLevelChoices['Custom'];
+        }
+
         // when violenceLevel is changed we load that violenceLevel from our merged levels
-        const violenceLevel = duplicate(mergedViolenceLevels[--value]);
-        delete violenceLevel.name;
+        const violenceLevel = duplicate(mergedViolenceLevels[value]);
         for (const key in violenceLevel) {
           game.settings.set(MODULE_ID, key, violenceLevel[key]);
         }
@@ -230,14 +249,18 @@ export const registerSettings = (): void => {
           return;
         }
         //if the scenePool has increased in size we need to repopulate it
-        const sceneSplats = duplicate(canvas.scene.getFlag(MODULE_ID, 'sceneSplats'));
-        if (sceneSplats && sceneSplats.length) {
-          const trimmedSceneSplats = BloodNGuts.getTrimmedSceneSplats(sceneSplats);
-          // trim to new ScenePool size and draw
-          BloodNGuts.drawSceneSplats(trimmedSceneSplats);
+        const sceneSplatsFlag = canvas.scene.getFlag(MODULE_ID, 'sceneSplats');
+        if (sceneSplatsFlag) {
+          const sceneSplats = duplicate(sceneSplatsFlag);
+          if (sceneSplats && sceneSplats.length) {
+            const trimmedSceneSplats = BloodNGuts.getTrimmedSceneSplats(sceneSplats);
+            // trim to new ScenePool size and draw
+            BloodNGuts.drawSceneSplats(trimmedSceneSplats);
+          }
         }
       },
     });
+    settingsResolved();
   });
 };
 
@@ -273,7 +296,7 @@ export const getMergedBloodColorSettings = new Promise((resolve) => {
  * @category GMOnly
  * @returns {Promise<SplatFont[]>} - promise resolving to custom and normal violence levels merged.
  */
-export const getMergedViolenceLevelArray = new Promise((resolve) => {
+export const getMergedViolenceLevels = new Promise((resolve) => {
   violenceLevelSettingsResolved = resolve;
 });
 
@@ -364,21 +387,11 @@ export const mergeSettingsFiles = async (): Promise<void> => {
     try {
       const customViolenceLevelSettings = await response.json();
       const mergedViolenceLevelSettings = Object.assign(violenceLevelSettings.levels, customViolenceLevelSettings);
-      const mergedViolenceLevelArray = [];
-      for (const level in mergedViolenceLevelSettings) {
-        mergedViolenceLevelSettings[level].name = level;
-        mergedViolenceLevelArray.push(mergedViolenceLevelSettings[level]);
-      }
-      violenceLevelSettingsResolved(mergedViolenceLevelArray);
+      violenceLevelSettingsResolved(mergedViolenceLevelSettings);
     } catch (err) {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     }
   } else {
-    const mergedViolenceLevelArray = [];
-    for (const level in violenceLevelSettings.levels) {
-      violenceLevelSettings.levels[level].name = level;
-      mergedViolenceLevelArray.push(violenceLevelSettings.levels[level]);
-    }
-    violenceLevelSettingsResolved(mergedViolenceLevelArray);
+    violenceLevelSettingsResolved(violenceLevelSettings.levels);
   }
 };

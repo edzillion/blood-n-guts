@@ -57,3 +57,11 @@
   position: absolute;
   pointer-events: none;
 };
+
+::-moz-color-swatch {
+  opacity: 1;
+}
+
+::-webkit-color-swatch {
+  opacity: 1;
+}
