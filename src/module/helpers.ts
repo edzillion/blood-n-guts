@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { log, LogLevel } from './logging';
-import * as bloodColorSettings from '../data/bloodColorSettings';
 import { MODULE_ID } from '../constants';
 import { getMergedBloodColorSettings } from './settings';
 
@@ -113,7 +113,7 @@ export const getRandomBoxMuller = (): number => {
  * @async
  * @category helpers
  * @param {Token} token - the token to lookup color for.
- * @returns {Promise<string>} - color in rgba format, e.g. '[125, 125, 7, 0.7]'.
+ * @returns {Promise<string>} - color in rgba string format, e.g. 'rgba(125, 125, 7, 0.7)'.
  */
 export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
@@ -213,11 +213,26 @@ export const changeColorPickerOpacityHack = (opacity) => {
         // @ts-ignore
         if (rule.selectorText === '::-moz-color-swatch' || rule.selectorText === '::-webkit-color-swatch') {
           // @ts-ignore
-          if (rule.style.opacity != opacity) rule.style.opacity = opacity;
+          if (rule.style.opacity != opacity) {
+            log(LogLevel.DEBUG, 'changeColorPickerOpacityHack opacity', opacity);
+            // @ts-ignore
+            rule.style.opacity = opacity;
+          }
         }
       }
     }
   }
+};
+
+export const rgbaStringToHexStringAndOpacity = (rgbaString: string): { hexString: string; opacity: string } => {
+  const rgbaArray = rgbaString
+    .slice(rgbaString.indexOf('(') + 1, rgbaString.indexOf(')'))
+    .split(',')
+    .map((num) => num.trim());
+  const opacity = rgbaArray[3];
+  const normalisedRGBAArray = rgbaArray.map((val) => +val / 255);
+  const hexString = '#' + rgbToHex(normalisedRGBAArray).toString(16);
+  return { hexString: hexString, opacity: opacity };
 };
 
 /**

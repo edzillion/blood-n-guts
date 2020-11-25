@@ -24,6 +24,7 @@ import {
   getUID,
   getRGBA,
   changeColorPickerOpacityHack,
+  rgbaStringToHexStringAndOpacity,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
@@ -638,17 +639,18 @@ export class BloodNGuts {
       choices[levelName] = levelName;
     }
 
-    let currentColor = splatToken.tokenSettings.bloodColor;
-    if (currentColor !== 'none') {
-      const arr = currentColor
-        .slice(currentColor.indexOf('(') + 1, currentColor.indexOf(')'))
-        .split(',')
-        .map((val) => +val / 255);
-      currentColor = '#' + rgbToHex(arr).toString(16);
+    let defaultColor = splatToken.tokenSettings.bloodColor;
+    let defaultOpacity = '0.7';
+    if (defaultColor !== 'none') {
+      const { hexString, opacity } = rgbaStringToHexStringAndOpacity(defaultColor);
+      defaultColor = hexString;
+      defaultOpacity = opacity;
     }
+    let selectedColor = splatToken.token.getFlag(MODULE_ID, 'bloodColor');
 
     const data = {
-      currentColor: currentColor,
+      defaultColor: defaultColor,
+      selectedColor: selectedColor,
       currentLevel: tokenConfig.object.getFlag(MODULE_ID, 'violenceLevel'),
       levelNames: choices,
       fonts: BloodNGuts.allFonts,
@@ -663,25 +665,60 @@ export class BloodNGuts {
     imageTab.append(insertHTML);
 
     const bloodColorPicker = imageTab.find('#bloodColorPicker');
+    const bloodColorText = imageTab.find('#bloodColorText');
     if (splatToken.token.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
       bloodColorPicker.prop('disabled', true);
     }
-    const bc = splatToken.token.getFlag(MODULE_ID, 'bloodColor');
-    if (!bc || bc === 'none') {
+
+    if (!selectedColor || selectedColor === 'none') {
       changeColorPickerOpacityHack(0);
+    } else {
+      changeColorPickerOpacityHack(defaultOpacity);
     }
+
     bloodColorPicker.on('click', (event) => {
-      changeColorPickerOpacityHack(1);
+      changeColorPickerOpacityHack(defaultOpacity);
+    });
+
+    bloodColorPicker.on('change', (event) => {
+      changeColorPickerOpacityHack(0.7);
+      // @ts-ignore
+      selectedColor = hexToRGBAString(colorStringToHex(event.target.value), 0.7);
+      bloodColorText.val(selectedColor);
+    });
+
+    bloodColorText.on('change', (event) => {
+      // regex test for rgba here w form validation
+      // @ts-ignore
+      if (event.target.value === '') {
+        changeColorPickerOpacityHack(0);
+        selectedColor = '';
+      } else {
+        const { hexString, opacity } = rgbaStringToHexStringAndOpacity(event.target.value);
+        defaultColor = hexString;
+        defaultOpacity = opacity;
+
+        bloodColorPicker.val(defaultColor);
+        changeColorPickerOpacityHack(opacity);
+      }
     });
 
     imageTab.find('.token-config-select-violence-level').on('change', (event) => {
       // @ts-ignore
       if (event.target.value === 'Disabled') {
         bloodColorPicker.prop('disabled', true);
+        bloodColorText.prop('disabled', true);
         changeColorPickerOpacityHack(0);
+        bloodColorText.val('');
       } else {
         bloodColorPicker.prop('disabled', false);
-        if (currentColor !== 'none') changeColorPickerOpacityHack(1);
+        bloodColorText.prop('disabled', false);
+        if (selectedColor !== 'none') {
+          const { hexString, opacity } = rgbaStringToHexStringAndOpacity(selectedColor);
+          bloodColorPicker.val(hexString);
+          changeColorPickerOpacityHack(opacity);
+          bloodColorText.val(selectedColor);
+        }
       }
     });
   }

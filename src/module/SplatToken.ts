@@ -12,8 +12,6 @@ import {
 } from './helpers';
 import { getBaseTokenSettings } from './settings';
 
-import ProxyTokenSettings from './ProxyTokenSettings';
-
 /**
  * Extends `Token` and adds a layer to display token splats.
  * @class
@@ -65,7 +63,17 @@ export default class SplatToken {
    */
   public async create(): Promise<SplatToken> {
     const baseTokenSettings = await getBaseTokenSettings(this.token);
-    this.tokenSettings = new ProxyTokenSettings(this.token, baseTokenSettings);
+    //this.tokenSettings = new ProxyTokenSettings(this.token, baseTokenSettings);
+
+    const settingsHandler = {
+      get: (target, property) => {
+        if (property !== 'bloodColor')
+          return this.token.getFlag(MODULE_ID, property) || game.settings.get(MODULE_ID, property);
+        else return this.token.getFlag(MODULE_ID, property) || target[property];
+      },
+    };
+
+    this.tokenSettings = new Proxy(baseTokenSettings, settingsHandler);
 
     if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
       this.disabled = true;
