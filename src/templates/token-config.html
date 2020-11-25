@@ -7,14 +7,14 @@
 <div class="form-group">
   <label>Violence Level</label>
   <div class="form-fields">
-      <select name="flags.blood-n-guts.violenceLevel" class="token-config-select-violence-level" data-dtype="Number"/>
+      <select name="flags.blood-n-guts.violenceLevel" class="token-config-select-violence-level" data-dtype="String"/>
           {{ selectOptions levelNames selected=currentLevel localize=false }}
       </select>
   </div>
 </div >
 <div class="form-group">
   <label>Floor Splat Font:</label>
-  <select type="select" class="advanced-config-select-font" name="floorSplatFont">    
+  <select type="select" class="advanced-config-select-font" name="flags.blood-n-guts.floorSplatFont">    
     {{#select floorSplatFont}}
       {{#each fonts}}
         <option value="{{name}}"> {{name}} </option>
@@ -24,7 +24,7 @@
 </div>
 <div class="form-group">
   <label>Token Splat Font:</label>
-  <select type="select" class="advanced-config-select-font" name="tokenSplatFont">
+  <select type="select" class="advanced-config-select-font" name="flags.blood-n-guts.tokenSplatFont">
     {{#select tokenSplatFont}}
       {{#each fonts}}
         <option value="{{name}}"> {{name}} </option>
@@ -34,7 +34,7 @@
 </div>
 <div class="form-group">
   <label>Trail Splat Font:</label>
-  <select type="select" class="advanced-config-select-font" name="trailSplatFont">    
+  <select type="select" class="advanced-config-select-font" name="flags.blood-n-guts.trailSplatFont">    
     {{#select trailSplatFont}}
       {{#each fonts}}
         <option value="{{name}}"> {{name}} </option>

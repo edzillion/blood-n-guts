@@ -308,7 +308,7 @@ export class BloodNGuts {
     splatDataObj.styleData = {
       fontFamily: font.name,
       fontSize: fontSize,
-      fill: splatToken.bloodColor,
+      fill: splatToken.tokenSettings.bloodColor,
       align: 'center',
     };
     const style = new PIXI.TextStyle(splatDataObj.styleData);
@@ -390,7 +390,7 @@ export class BloodNGuts {
     splatDataObj.styleData = {
       fontFamily: font.name,
       fontSize: fontSize,
-      fill: splatToken.bloodColor,
+      fill: splatToken.tokenSettings.bloodColor,
       align: 'center',
     };
     const style = new PIXI.TextStyle(splatDataObj.styleData);
@@ -725,12 +725,12 @@ Token.prototype.draw = (function () {
     } else {
       splatToken = await new SplatToken(this).create();
       BloodNGuts.splatTokens[this.id] = splatToken;
-      if (game.user.isGM && splatToken.bloodColor !== 'none' && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
+      if (game.user.isGM && !splatToken.disabled && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
         // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
         splatToken.preSplat();
       }
     }
-    if (splatToken.bloodColor === 'none') return this;
+    if (splatToken.disabled) return this;
     const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;
     if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
     else {
@@ -815,12 +815,9 @@ Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQ
   for (const levelName in mergedViolenceLevels) {
     choices[levelName] = levelName;
   }
-  // @ts-ignore
-  const customColor = splatToken.token.getFlag(MODULE_ID, 'bloodColor');
-  let currentColor = customColor || splatToken.bloodColor;
-  if (splatToken.violenceLevel === 'Disabled') {
-    currentColor = '';
-  } else if (currentColor) {
+
+  let currentColor = splatToken.tokenSettings.bloodColor;
+  if (currentColor !== 'none') {
     const arr = currentColor
       .slice(currentColor.indexOf('(') + 1, currentColor.indexOf(')'))
       .split(',')
@@ -830,23 +827,29 @@ Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQ
 
   const data = {
     currentColor: currentColor,
-    currentLevel: splatToken.violenceLevel,
+    currentLevel: splatToken.token.getFlag(MODULE_ID, 'violenceLevel'),
     levelNames: choices,
+    fonts: BloodNGuts.allFonts,
+    floorSplatFont: splatToken.token.getFlag(MODULE_ID, 'floorSplatFont'),
+    tokenSplatFont: splatToken.token.getFlag(MODULE_ID, 'tokenSplatFont'),
+    trailSplatFont: splatToken.token.getFlag(MODULE_ID, 'trailSplatFont'),
   };
-
+  // add blank entry for empty font settings.
+  data.fonts[''] = '';
   const insertHTML = await renderTemplate('modules/' + MODULE_ID + '/templates/token-config.html', data);
   imageTab.append(insertHTML);
 
   const bloodColorPicker = imageTab.find('#bloodColorPicker');
 
-  if (splatToken.violenceLevel === 'Disabled') {
+  if (splatToken.token.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
     bloodColorPicker.prop('disabled', true);
   }
-  if (!customColor || currentColor === 'none') {
+
+  const bc = splatToken.token.getFlag(MODULE_ID, 'bloodColor');
+
+  if (!bc || bc === 'none') {
     changeColorPickerOpacityHack(0);
   }
-
-  //const constantine = imageTab.find('#bloodColorPicker').attachShadow({ mode: 'open' });
 
   bloodColorPicker.on('click', (event) => {
     changeColorPickerOpacityHack(1);
@@ -859,7 +862,7 @@ Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQ
       changeColorPickerOpacityHack(0);
     } else {
       bloodColorPicker.prop('disabled', false);
-      if (splatToken.bloodColor !== 'none') changeColorPickerOpacityHack(1);
+      if (currentColor !== 'none') changeColorPickerOpacityHack(1);
     }
   });
 

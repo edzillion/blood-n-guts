@@ -15,9 +15,18 @@ interface ViolenceLevel {
   floorSplatSize: number;
   tokenSplatSize: number;
   splatSpread: number;
+  healthThreshold: number;
   damageThreshold: number;
   deathMultiplier: number;
   sceneSplatPoolSize: number;
+}
+
+interface TokenSettings extends ViolenceLevel {
+  floorSplatFont: string;
+  tokenSplatFont: string;
+  trailSplatFont: string;
+  violenceLevel: string;
+  bloodColor: string;
 }
 
 interface SplatPoolObject {
