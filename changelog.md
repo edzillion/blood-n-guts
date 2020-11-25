@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [0.7.0]
+
+### FEATURES
+
+- UX improvements for mod settings, 'Custom' shown when settings are changed from defaults. 
+- Per-token settings: can set blood color, violence level and splat fonts on individual tokens, which will override base mod settings @ `Token Configuration -> Image`.
+
+### BUGFIXES
+
+- Fixed some issues with saving settings.
+
 ## [0.6.10]
 
 ### BUGS
