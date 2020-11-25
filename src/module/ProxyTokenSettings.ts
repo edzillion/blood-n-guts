@@ -2,7 +2,6 @@ import { MODULE_ID } from '../constants';
 
 export default class ProxyTokenSettings extends Object {
   token: Token;
-  scene: Scene;
   settings: TokenSettings;
 
   constructor(token, settings) {
