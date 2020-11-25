@@ -1,15 +1,17 @@
-import { log, LogLevel } from '../module/logging';
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+import { log, LogLevel } from './logging';
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import {
-  lookupTokenBloodColor,
   getRandomGlyph,
   getRandomBoxMuller,
   alignSplatsGetOffsetAndDimensions,
   getDirectionNrml,
   getUID,
   distanceBetween,
+  lookupTokenBloodColor,
 } from './helpers';
+import { getMergedViolenceLevels } from './settings';
 
 /**
  * Extends `Token` and adds a layer to display token splats.
@@ -21,7 +23,8 @@ export default class SplatToken {
   public y: number;
   public hp: number;
   public maxHP: number;
-  public bloodColor: string;
+  public disabled: boolean;
+
   public spriteWidth: number;
   public spriteHeight: number;
   public direction: PIXI.Point;
@@ -32,9 +35,14 @@ export default class SplatToken {
   public movePos: PIXI.Point;
   public container: PIXI.Container;
 
-  private token: Token;
+  public token: Token;
   private tokenSplats: Array<SplatDataObject>;
   private bleedingDistance: number;
+
+  public tokenSettings: any;
+
+  public violenceLevels: any;
+  public defaultBloodColor: string;
 
   constructor(token: Token) {
     // @ts-ignore
@@ -47,6 +55,7 @@ export default class SplatToken {
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
     this.bleedingDistance = 0;
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
+    this.disabled = false;
   }
 
   /**
@@ -57,8 +66,27 @@ export default class SplatToken {
    * @returns {Promise<SplatToken>} - the created SplatToken.
    */
   public async create(): Promise<SplatToken> {
-    this.bloodColor = await lookupTokenBloodColor(this.token);
-    if (this.bloodColor === 'none') return this;
+    this.violenceLevels = await getMergedViolenceLevels;
+    this.defaultBloodColor = await lookupTokenBloodColor(this.token);
+
+    const tokenSettingsHandler = {
+      get: (target, property) => {
+        if (property === 'bloodColor') return target[property] || this.defaultBloodColor;
+        else return target[property] || game.settings.get(MODULE_ID, property);
+      },
+      set: (target, property, value) => {
+        target[property] = value;
+        if (property === 'violenceLevel') target = Object.assign(target, this.violenceLevels[value]);
+        return true;
+      },
+    };
+
+    this.tokenSettings = new Proxy({}, tokenSettingsHandler);
+
+    if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
+      this.disabled = true;
+      return this;
+    }
 
     this.container = new PIXI.Container();
     await this.createMask();
@@ -72,7 +100,7 @@ export default class SplatToken {
    * @async
    */
   public async createMask(): Promise<void> {
-    if (this.bloodColor === 'none') return;
+    if (this.disabled) return;
     // @ts-ignore
     const maskTexture = await PIXI.Texture.fromURL(this.token.data.img);
     const maskSprite = PIXI.Sprite.from(maskTexture);
@@ -134,7 +162,7 @@ export default class SplatToken {
    * @function
    */
   public updateSplats(updatedSplats: SplatDataObject[]): void {
-    if (this.bloodColor === 'none' || JSON.stringify(updatedSplats) === JSON.stringify(this.tokenSplats)) return;
+    if (this.disabled || JSON.stringify(updatedSplats) === JSON.stringify(this.tokenSplats)) return;
     this.tokenSplats = updatedSplats || [];
     this.draw();
   }
@@ -144,17 +172,29 @@ export default class SplatToken {
    * @category GMOnly
    * @param changes - the latest token changes.
    * @function
-   * @returns {boolean} - whether there have been changes or not
+   * @returns {boolean} - whether there have been changes to the scene or not
    */
   public updateChanges(changes): boolean {
+    log(LogLevel.DEBUG, 'updateChanges');
+    if (changes.flags) {
+      // todo: Proxy objects don't work with Object.assign?
+      // this.tokenSettings = Object.assign(this.tokenSettings, changes.flags[MODULE_ID]?.violenceLevel);
+      for (const setting in changes.flags[MODULE_ID]) {
+        this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
+      }
+    }
+
+    this.disabled = this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled';
+
     if (
-      this.bloodColor === 'none' ||
+      this.disabled ||
       (changes.rotation === undefined &&
         changes.x === undefined &&
         changes.y === undefined &&
         changes.actorData?.data?.attributes?.hp === undefined)
     )
       return false;
+
     const updates = { bleedingSeverity: null, splats: null };
     [this.hitSeverity, updates.bleedingSeverity] = this.getUpdatedDamage(changes);
     if (updates.bleedingSeverity !== null) this.bleedingSeverity = updates.bleedingSeverity;
@@ -227,14 +267,15 @@ export default class SplatToken {
    * @function
    */
   private bleedFloor(): void {
-    const density = game.settings.get(MODULE_ID, 'floorSplatDensity');
+    const density = this.tokenSettings.floorSplatDensity;
     if (!density) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler damageScale > 0:' + this.id + ' - bleeding:true');
     BloodNGuts.generateFloorSplats(
       this,
-      BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'floorSplatFont')],
-      game.settings.get(MODULE_ID, 'floorSplatSize'),
+      BloodNGuts.allFonts[this.tokenSettings.floorSplatFont],
+      this.tokenSettings.floorSplatSize,
       Math.round(density),
+      this.tokenSettings.splatSpread,
     );
   }
 
@@ -245,7 +286,7 @@ export default class SplatToken {
    * @returns {boolean} - whether a blood trail has been created.
    */
   private bleedTrail(): boolean {
-    const density = game.settings.get(MODULE_ID, 'trailSplatDensity');
+    const density = this.tokenSettings.trailSplatDensity;
     if (!density) return false;
 
     const amount = density * this.bleedingSeverity;
@@ -263,9 +304,10 @@ export default class SplatToken {
     }
     BloodNGuts.generateTrailSplats(
       this,
-      BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'trailSplatFont')],
-      game.settings.get(MODULE_ID, 'trailSplatSize'),
+      BloodNGuts.allFonts[this.tokenSettings.trailSplatFont],
+      this.tokenSettings.trailSplatSize,
       distances,
+      this.tokenSettings.splatSpread,
     );
     return true;
   }
@@ -278,14 +320,14 @@ export default class SplatToken {
    */
   private bleedToken(): SplatDataObject[] {
     const splatDataObj: Partial<SplatDataObject> = {};
-    const density = game.settings.get(MODULE_ID, 'tokenSplatDensity');
+    const density = this.tokenSettings.tokenSplatDensity;
     if (density === 0) return;
 
-    const font = BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')];
+    const font = BloodNGuts.allFonts[this.tokenSettings.tokenSplatFont];
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(
-      game.settings.get(MODULE_ID, 'trailSplatSize') *
+      this.tokenSettings.trailSplatSize *
         ((this.spriteWidth + this.spriteHeight) / canvas.grid.size / 2) *
         this.hitSeverity,
     );
@@ -293,7 +335,7 @@ export default class SplatToken {
     splatDataObj.styleData = {
       fontFamily: font.name,
       fontSize: fontSize,
-      fill: this.bloodColor,
+      fill: this.tokenSettings.bloodColor,
       align: 'center',
     };
     const style = new PIXI.TextStyle(splatDataObj.styleData);
@@ -302,8 +344,8 @@ export default class SplatToken {
     if (amount === 0) return;
     // get a random glyph and then get a random (x,y) spread away from the token.
     const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
-    const pixelSpreadX = this.spriteWidth * game.settings.get(MODULE_ID, 'splatSpread');
-    const pixelSpreadY = this.spriteHeight * game.settings.get(MODULE_ID, 'splatSpread');
+    const pixelSpreadX = this.spriteWidth * this.tokenSettings.splatSpread;
+    const pixelSpreadY = this.spriteHeight * this.tokenSettings.splatSpread;
     log(LogLevel.DEBUG, 'bleedToken amount', amount);
     log(LogLevel.DEBUG, 'bleedToken pixelSpread', pixelSpreadX, pixelSpreadY);
 
@@ -425,8 +467,8 @@ export default class SplatToken {
     //fully healed, return -1
     if (currentHP === this.maxHP) return -1;
 
-    const healthThreshold = game.settings.get(MODULE_ID, 'healthThreshold');
-    const damageThreshold = game.settings.get(MODULE_ID, 'damageThreshold');
+    const healthThreshold = this.tokenSettings.healthThreshold;
+    const damageThreshold = this.tokenSettings.damageThreshold;
     const lastHP = this.hp;
     const fractionOfMax = currentHP / this.maxHP;
     const changeFractionOfMax = (lastHP - currentHP) / this.maxHP;
@@ -448,7 +490,7 @@ export default class SplatToken {
       return -fractionOfMax / healthThreshold;
     }
     // dead, multiply splats.
-    const deathMultiplier = currentHP === 0 ? game.settings.get(MODULE_ID, 'deathMultiplier') : 1;
+    const deathMultiplier = currentHP === 0 ? this.tokenSettings.deathMultiplier : 1;
     const severity = 1 + (changeFractionOfMax / 2) * deathMultiplier;
 
     log(LogLevel.DEBUG, 'getDamageSeverity severity', severity);

@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { log, LogLevel } from './logging';
-import * as bloodColorSettings from '../data/bloodColorSettings';
 import { MODULE_ID } from '../constants';
 import { getMergedBloodColorSettings } from './settings';
 
@@ -113,7 +113,7 @@ export const getRandomBoxMuller = (): number => {
  * @async
  * @category helpers
  * @param {Token} token - the token to lookup color for.
- * @returns {Promise<string>} - color in rgba format, e.g. '[125, 125, 7, 0.7]'.
+ * @returns {Promise<string>} - color in rgba string format, e.g. 'rgba(125, 125, 7, 0.7)'.
  */
 export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
@@ -201,6 +201,51 @@ export const getUID = (typeCode?: string): string => {
   const prefix = 'bng';
 
   return [prefix, typeCode, d, r].join('_');
+};
+
+/**
+ * Hacky way to change the css on pseudo element dynamically.
+ * @category helpers
+ * @function
+ * @param {number} opacity
+ */
+export const changeColorPickerOpacityHack = (opacity) => {
+  for (let i = 0; i < document.styleSheets.length; i++) {
+    const sheet = document.styleSheets[i];
+    // @ts-ignore
+    if (sheet.ownerNode?.attributes?.href?.value === 'modules/blood-n-guts/blood-n-guts.css') {
+      for (let j = 0; j < sheet.rules.length; j++) {
+        const rule = sheet.rules[j];
+        // @ts-ignore
+        if (rule.selectorText === '::-moz-color-swatch' || rule.selectorText === '::-webkit-color-swatch') {
+          // @ts-ignore
+          if (rule.style.opacity != opacity) {
+            log(LogLevel.DEBUG, 'changeColorPickerOpacityHack opacity', opacity);
+            // @ts-ignore
+            rule.style.opacity = opacity;
+          }
+        }
+      }
+    }
+  }
+};
+
+/**
+ * Takes an rgba string and returns hexString and opacity separately.
+ * @category helpers
+ * @function
+ * @param {string} rgbaString - rgba color string e.g. 'rgba(12, 12, 128, 0.7)'
+ * @returns {string, string} hexString, opacity
+ */
+export const rgbaStringToHexStringAndOpacity = (rgbaString: string): { hexString: string; opacity: string } => {
+  const rgbaArray = rgbaString
+    .slice(rgbaString.indexOf('(') + 1, rgbaString.indexOf(')'))
+    .split(',')
+    .map((num) => num.trim());
+  const opacity = rgbaArray[3];
+  const normalisedRGBAArray = rgbaArray.map((val) => +val / 255);
+  const hexString = '#' + rgbToHex(normalisedRGBAArray).toString(16);
+  return { hexString: hexString, opacity: opacity };
 };
 
 /**

@@ -11,6 +11,18 @@ import * as violenceLevelSettings from '../data/violenceLevelSettings';
  * @module Settings
  */
 
+let settingsResolved;
+
+/**
+ * Promise resolving after all settings are registered.
+ * @function
+ * @category GMOnly
+ * @returns {Promise<void>}
+ */
+export const settingsReady = new Promise((resolve) => {
+  settingsResolved = resolve;
+});
+
 /**
  * Register module settings.
  * @function
@@ -196,34 +208,41 @@ export const registerSettings = (): void => {
     },
   });
 
-  getMergedViolenceLevelArray.then((mergedViolenceLevels: any) => {
-    let index = 0;
+  getMergedViolenceLevels.then((mergedViolenceLevels: any) => {
     const violenceLevelChoices = {};
-    mergedViolenceLevels.forEach((level) => {
-      violenceLevelChoices[String(index++)] = level.name;
-    });
+    for (const level in mergedViolenceLevels) {
+      violenceLevelChoices[level] = level;
+    }
+
     game.settings.register(MODULE_ID, 'violenceLevel', {
       name: game.i18n.localize('Violence Level'),
       hint: game.i18n.localize('Blood and gore level'),
 
       scope: 'client',
       config: true,
-      type: Number,
+      type: String,
       choices: violenceLevelChoices,
-      default: 2,
+      default: 'Kobold',
       onChange: (value) => {
+        if (value === 'Disabled') {
+          BloodNGuts.disabled = true;
+          BloodNGuts.wipeAllSplats();
+          delete violenceLevelChoices['Custom'];
+          return;
+        } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
+
+        if (value === 'Custom') {
+          violenceLevelChoices['Custom'] = 'Custom';
+          return;
+        } else {
+          delete violenceLevelChoices['Custom'];
+        }
+
         // when violenceLevel is changed we load that violenceLevel from our merged levels
         const violenceLevel = duplicate(mergedViolenceLevels[value]);
-        delete violenceLevel.name;
         for (const key in violenceLevel) {
           game.settings.set(MODULE_ID, key, violenceLevel[key]);
         }
-
-        if (value === '0') {
-          BloodNGuts.disabled = true;
-          BloodNGuts.wipeAllSplats();
-          return;
-        } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
 
         if (!canvas.scene.active) {
           ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
@@ -241,6 +260,7 @@ export const registerSettings = (): void => {
         }
       },
     });
+    settingsResolved();
   });
 };
 
@@ -276,7 +296,7 @@ export const getMergedBloodColorSettings = new Promise((resolve) => {
  * @category GMOnly
  * @returns {Promise<SplatFont[]>} - promise resolving to custom and normal violence levels merged.
  */
-export const getMergedViolenceLevelArray = new Promise((resolve) => {
+export const getMergedViolenceLevels = new Promise((resolve) => {
   violenceLevelSettingsResolved = resolve;
 });
 
@@ -367,21 +387,11 @@ export const mergeSettingsFiles = async (): Promise<void> => {
     try {
       const customViolenceLevelSettings = await response.json();
       const mergedViolenceLevelSettings = Object.assign(violenceLevelSettings.levels, customViolenceLevelSettings);
-      const mergedViolenceLevelArray = [];
-      for (const level in mergedViolenceLevelSettings) {
-        mergedViolenceLevelSettings[level].name = level;
-        mergedViolenceLevelArray.push(mergedViolenceLevelSettings[level]);
-      }
-      violenceLevelSettingsResolved(mergedViolenceLevelArray);
+      violenceLevelSettingsResolved(mergedViolenceLevelSettings);
     } catch (err) {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     }
   } else {
-    const mergedViolenceLevelArray = [];
-    for (const level in violenceLevelSettings.levels) {
-      violenceLevelSettings.levels[level].name = level;
-      mergedViolenceLevelArray.push(violenceLevelSettings.levels[level]);
-    }
-    violenceLevelSettingsResolved(mergedViolenceLevelArray);
+    violenceLevelSettingsResolved(violenceLevelSettings.levels);
   }
 };

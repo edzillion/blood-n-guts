@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /**
  * Documentation for Blood 'n Guts, a Foundry VTT module that adds blood splatter to your games.
  * All functionality is wrapped in it's main Class `BloodNGuts`.
@@ -6,7 +7,7 @@
  * @author [edzillion]{@link https://github.com/edzillion}
  */
 
-import { mergeSettingsFiles, registerSettings, getCustomSplatFonts } from './module/settings';
+import { mergeSettingsFiles, registerSettings, getCustomSplatFonts, settingsReady } from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
@@ -16,6 +17,8 @@ import {
   getPointOnCurve,
   getUID,
   getRGBA,
+  changeColorPickerOpacityHack,
+  rgbaStringToHexStringAndOpacity,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
@@ -76,7 +79,7 @@ export class BloodNGuts {
    * Takes an array of splats, trims the excess over 'sceneSplatPoolSize' and fades the oldest.
    * @category GMOnly
    * @function
-   * @param {SplatDataObject[]} - original splat array
+   * @param {SplatDataObject[]} splats - original splat array
    * @returns {SplatDataObject[]} - trimmed splat array
    */
   public static getTrimmedSceneSplats(splats: SplatDataObject[]): SplatDataObject[] {
@@ -280,8 +283,15 @@ export class BloodNGuts {
    * @param {SplatFont} font - the font to use for splats.
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
+   * @param {number} spread - the distance from centre point to spread the splats.
    */
-  public static generateFloorSplats(splatToken: SplatToken, font: SplatFont, size: number, density: number): void {
+  public static generateFloorSplats(
+    splatToken: SplatToken,
+    font: SplatFont,
+    size: number,
+    density: number,
+    spread: number,
+  ): void {
     if (!density) return;
     log(LogLevel.DEBUG, 'generateFloorSplats');
 
@@ -295,7 +305,7 @@ export class BloodNGuts {
     splatDataObj.styleData = {
       fontFamily: font.name,
       fontSize: fontSize,
-      fill: splatToken.bloodColor,
+      fill: splatToken.tokenSettings.bloodColor,
       align: 'center',
     };
     const style = new PIXI.TextStyle(splatDataObj.styleData);
@@ -304,8 +314,8 @@ export class BloodNGuts {
     const amount = Math.round(density * splatToken.hitSeverity);
     // get a random glyph and then get a random (x,y) spread away from the token.
     const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
-    const pixelSpreadX = splatToken.spriteWidth * game.settings.get(MODULE_ID, 'splatSpread');
-    const pixelSpreadY = splatToken.spriteHeight * game.settings.get(MODULE_ID, 'splatSpread');
+    const pixelSpreadX = splatToken.spriteWidth * spread;
+    const pixelSpreadY = splatToken.spriteHeight * spread;
     log(LogLevel.DEBUG, 'generateFloorSplats amount', amount);
     log(LogLevel.DEBUG, 'generateFloorSplats pixelSpread', pixelSpreadX, pixelSpreadY);
 
@@ -355,8 +365,15 @@ export class BloodNGuts {
    * @param {SplatFont} font - the font to use for splats.
    * @param {number} size - the size of splats.
    * @param {number[]} distances - distances along the trail from 0 to 1.
+   * @param {number} spread - the distance from centre point to spread the splats.
    */
-  public static generateTrailSplats(splatToken: SplatToken, font: SplatFont, size: number, distances: number[]): void {
+  public static generateTrailSplats(
+    splatToken: SplatToken,
+    font: SplatFont,
+    size: number,
+    distances: number[],
+    spread: number,
+  ): void {
     if (!distances) return;
     log(LogLevel.DEBUG, 'generateTrailSplats');
     log(LogLevel.DEBUG, 'generateTrailSplats severity', splatToken.bleedingSeverity);
@@ -371,7 +388,7 @@ export class BloodNGuts {
     splatDataObj.styleData = {
       fontFamily: font.name,
       fontSize: fontSize,
-      fill: splatToken.bloodColor,
+      fill: splatToken.tokenSettings.bloodColor,
       align: 'center',
     };
     const style = new PIXI.TextStyle(splatDataObj.styleData);
@@ -379,8 +396,8 @@ export class BloodNGuts {
     //todo: improve this
     //horiz or vert movement
     const pixelSpread = splatToken.direction.x
-      ? splatToken.spriteWidth * game.settings.get(MODULE_ID, 'splatSpread') * 2
-      : splatToken.spriteHeight * game.settings.get(MODULE_ID, 'splatSpread') * 2;
+      ? splatToken.spriteWidth * spread * 2
+      : splatToken.spriteHeight * spread * 2;
 
     const rand = getRandomBoxMuller() * pixelSpread - pixelSpread / 2;
     log(LogLevel.DEBUG, 'generateTrailSplats rand', rand);
@@ -527,9 +544,9 @@ export class BloodNGuts {
    * @category GMandPC
    * @function
    * @async
-   * @param {scene} - reference to the current scene
-   * @param {tokenData} - tokenData of updated Token/Actor
-   * @param {changes} - changes
+   * @param scene - reference to the current scene
+   * @param tokenData - tokenData of updated Token/Actor
+   * @param changes - changes
    */
   public static updateTokenOrActorHandler(scene, tokenData, changes): void {
     if (!scene.active || BloodNGuts.disabled) return;
@@ -546,9 +563,7 @@ export class BloodNGuts {
    * Handler called when canvas has been fully loaded. Wipes scene splats and reloads from flags.
    * @category GMandPC
    * @function
-   * @param {scene} - reference to the current scene
-   * @param {tokenData} - tokenData of updated Token/Actor
-   * @param {changes} - changes
+   * @param canvas - reference to the canvas
    */
   public static canvasReadyHandler(canvas): void {
     if (!canvas.scene.active || BloodNGuts.disabled) return;
@@ -566,8 +581,8 @@ export class BloodNGuts {
    * Handler called when scene data updated. Draws splats from scene data flags.
    * @category GMandPC
    * @function
-   * @param {scene} - reference to the current scene
-   * @param {changes} - changes
+   * @param scene - reference to the current scene
+   * @param changes - changes
    */
   public static updateSceneHandler(scene, changes): void {
     if (!scene.active || BloodNGuts.disabled || !changes.flags || changes.flags[MODULE_ID]?.sceneSplats === undefined)
@@ -585,8 +600,8 @@ export class BloodNGuts {
    * Handler called when token is deleted. Removed tokenSplats and pool objects for this token.
    * @category GMOnly
    * @function
-   * @param {scene} - reference to the current scene
-   * @param {token} - reference to deleted token
+   * @param scene - reference to the current scene
+   * @param token - reference to deleted token
    */
   public static deleteTokenHandler(scene, token): void {
     if (!scene.active || !game.user.isGM) return;
@@ -596,10 +611,117 @@ export class BloodNGuts {
   }
 
   /**
+   * Handler called when token configuration window is opened. Injects custom form html and deals
+   * with updating token.
+   * @category GMOnly
+   * @function
+   * @async
+   * @param {TokenConfig} tokenConfig
+   * @param {JQuery} html
+   */
+  public static async renderTokenConfigHandler(tokenConfig: TokenConfig, html: JQuery): Promise<void> {
+    log(LogLevel.INFO, 'renderTokenConfig');
+
+    // @ts-ignore
+    const splatToken = BloodNGuts.splatTokens[tokenConfig.token.id];
+    if (!splatToken) return;
+
+    const imageTab = html.find('.tab[data-tab="image"]');
+    const choices = { '': '' };
+    for (const levelName in splatToken.violenceLevels) {
+      choices[levelName] = levelName;
+    }
+
+    let defaultColor = tokenConfig.object.getFlag(MODULE_ID, 'bloodColor') || splatToken.defaultBloodColor;
+    let defaultOpacity = '0.7';
+    if (defaultColor !== 'none') {
+      const { hexString, opacity } = rgbaStringToHexStringAndOpacity(defaultColor);
+      defaultColor = hexString;
+      defaultOpacity = opacity;
+    }
+    let selectedColor = tokenConfig.object.getFlag(MODULE_ID, 'bloodColor');
+
+    const data = {
+      defaultColor: defaultColor,
+      selectedColor: selectedColor,
+      currentLevel: tokenConfig.object.getFlag(MODULE_ID, 'violenceLevel'),
+      levelNames: choices,
+      fonts: BloodNGuts.allFonts,
+      floorSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'floorSplatFont'),
+      tokenSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'tokenSplatFont'),
+      trailSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'trailSplatFont'),
+    };
+    // add blank entry for empty font settings.
+    data.fonts[''] = '';
+
+    const insertHTML = await renderTemplate('modules/' + MODULE_ID + '/templates/token-config.html', data);
+    imageTab.append(insertHTML);
+
+    const bloodColorPicker = imageTab.find('#bloodColorPicker');
+    const bloodColorText = imageTab.find('#bloodColorText');
+    if (splatToken.token.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
+      bloodColorPicker.prop('disabled', true);
+    }
+
+    if (!selectedColor || selectedColor === 'none') {
+      changeColorPickerOpacityHack(0);
+    } else {
+      changeColorPickerOpacityHack(defaultOpacity);
+    }
+
+    bloodColorPicker.on('click', (event) => {
+      changeColorPickerOpacityHack(defaultOpacity);
+    });
+
+    bloodColorPicker.on('change', (event) => {
+      changeColorPickerOpacityHack(0.7);
+      // @ts-ignore
+      selectedColor = hexToRGBAString(colorStringToHex(event.target.value), 0.7);
+      bloodColorText.val(selectedColor);
+    });
+
+    bloodColorText.on('change', (event) => {
+      // regex test for rgba here w form validation
+      // @ts-ignore
+      if (event.target.value === '') {
+        changeColorPickerOpacityHack(0);
+        selectedColor = '';
+      } else {
+        // @ts-ignore
+        const { hexString, opacity } = rgbaStringToHexStringAndOpacity(event.target.value);
+        defaultColor = hexString;
+        defaultOpacity = opacity;
+
+        bloodColorPicker.val(defaultColor);
+        changeColorPickerOpacityHack(opacity);
+      }
+    });
+
+    imageTab.find('.token-config-select-violence-level').on('change', (event) => {
+      // @ts-ignore
+      if (event.target.value === 'Disabled' && !bloodColorPicker.prop('disabled')) {
+        bloodColorPicker.prop('disabled', true);
+        bloodColorText.prop('disabled', true);
+        changeColorPickerOpacityHack(0);
+        bloodColorText.val('');
+      } else if (bloodColorPicker.prop('disabled')) {
+        bloodColorPicker.prop('disabled', false);
+        bloodColorText.prop('disabled', false);
+        if (selectedColor !== 'none') {
+          const { hexString, opacity } = rgbaStringToHexStringAndOpacity(selectedColor);
+          bloodColorPicker.val(hexString);
+          changeColorPickerOpacityHack(opacity);
+          bloodColorText.val(selectedColor);
+        }
+      }
+    });
+  }
+
+  /**
    * Handler called when left button bar is drawn
    * @category GMOnly
    * @function
-   * @param {buttons} - reference to the buttons controller
+   * @param buttons - reference to the buttons controller
    */
   public static getSceneControlButtonsHandler(buttons): void {
     if (!game.user.isGM) return;
@@ -645,6 +767,12 @@ Hooks.once('init', () => {
     BloodNGuts.allFonts = Object.assign(splatFonts.fonts, customSplatFonts.fonts);
   });
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
+
+  // hack to get 'Custom' added as a settings option on load
+  settingsReady.then(() => {
+    if (game.settings.get(MODULE_ID, 'violenceLevel') === 'Custom')
+      game.settings.set(MODULE_ID, 'violenceLevel', 'Custom');
+  });
 });
 
 Hooks.once('ready', () => {
@@ -663,6 +791,7 @@ Hooks.on('updateActor', (actor, changes) => {
 });
 
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
+Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
 
@@ -700,12 +829,12 @@ Token.prototype.draw = (function () {
     } else {
       splatToken = await new SplatToken(this).create();
       BloodNGuts.splatTokens[this.id] = splatToken;
-      if (game.user.isGM && splatToken.bloodColor !== 'none' && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
+      if (game.user.isGM && !splatToken.disabled && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
         // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
         splatToken.preSplat();
       }
     }
-    if (splatToken.bloodColor === 'none') return this;
+    if (splatToken.disabled) return this;
     const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;
     if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
     else {
