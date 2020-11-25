@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { log, LogLevel } from './logging';
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
@@ -11,7 +12,7 @@ import {
 } from './helpers';
 import { getBaseTokenSettings } from './settings';
 
-import BnGProxy from './bngSettings';
+import ProxyTokenSettings from './ProxyTokenSettings';
 
 /**
  * Extends `Token` and adds a layer to display token splats.
@@ -24,9 +25,6 @@ export default class SplatToken {
   public hp: number;
   public maxHP: number;
   public disabled: boolean;
-
-  public defaultBloodColor: string;
-  public defaultViolenceLevel: string;
 
   public spriteWidth: number;
   public spriteHeight: number;
@@ -44,8 +42,6 @@ export default class SplatToken {
 
   public tokenSettings: any;
 
-  public bngProxy: BnGProxy;
-
   constructor(token: Token) {
     // @ts-ignore
     this.id = token.id || token.actor.data._id;
@@ -58,19 +54,8 @@ export default class SplatToken {
     this.bleedingDistance = 0;
     this.tokenSplats = this.token.getFlag(MODULE_ID, 'splats') || [];
     this.disabled = false;
-    //this.bngProxy = new BnGProxy(this.token, game.scene);
-    //const bloob = this.bngProxy.splatTokenStyle;
   }
 
-  private tokenSettingsHandler = {
-    get(target, property, receiver) {
-      log(LogLevel.INFO, 'tokenSettingsHandler looking up property', property);
-      // custom settings set on this token take precedence over default settings.
-      if (property !== 'bloodColor')
-        return target.token.getFlag(MODULE_ID, property) || game.settings.get(MODULE_ID, property);
-      else return target.token.getFlag(MODULE_ID, property) || target.settings[property];
-    },
-  };
   /**
    * Async constructor adjunct to await looking up token blood color and then create mask.
    * @category GMandPC
@@ -79,49 +64,13 @@ export default class SplatToken {
    * @returns {Promise<SplatToken>} - the created SplatToken.
    */
   public async create(): Promise<SplatToken> {
-    const ss = await getBaseTokenSettings(this.token);
-    this.tokenSettings = new BnGProxy(this.token, ss);
-
-    // this.tokenSettings = new Proxy(await getBaseTokenSettings(this.token), {
-    //   get(target, property: string) {
-    //     debugger;
-    //     log(LogLevel.INFO, 'tokenSettingsHandler looking up property', property);
-    //     // custom settings set on this token take precedence over default settings.
-    //     if (property !== 'bloodColor')
-    //       return this.token.getFlag(MODULE_ID, property) || game.settings.get(MODULE_ID, property);
-    //     else return this.token.getFlag(MODULE_ID, property) || target[property];
-    //   },
-    // });
-
-    // bloodColor: this.token.getFlag(MODULE_ID, 'bloodColor'),
-    // violenceLevel: violenceLevel,
-    // floorSplatFont: this.token.getFlag(MODULE_ID, 'floorSplatFont'),
-    // tokenSplatFont: this.token.getFlag(MODULE_ID, 'tokenSplatFont'),
-    // trailSplatFont: this.token.getFlag(MODULE_ID, 'trailSplatFont'),
-    // trailSplatDensity: mergedViolenceLevels[violenceLevel].trailSplatDensity,
-    // floorSplatDensity: mergedViolenceLevels[violenceLevel].floorSplatDensity,
-    // tokenSplatDensity: mergedViolenceLevels[violenceLevel].tokenSplatDensity,
-    // trailSplatSize: mergedViolenceLevels[violenceLevel].trailSplatSize,
-    // floorSplatSize: mergedViolenceLevels[violenceLevel].floorSplatSize,
-    // tokenSplatSize: mergedViolenceLevels[violenceLevel].tokenSplatSize,
-    // splatSpread: mergedViolenceLevels[violenceLevel].splatSpread,
-    // damageThreshold: mergedViolenceLevels[violenceLevel].damageThreshold,
-    // deathMultiplier: mergedViolenceLevels[violenceLevel].deathMultiplier,
-    // sceneSplatPoolSize: mergedViolenceLevels[violenceLevel].sceneSplatPoolSize,
+    const baseTokenSettings = await getBaseTokenSettings(this.token);
+    this.tokenSettings = new ProxyTokenSettings(this.token, baseTokenSettings);
 
     if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
       this.disabled = true;
       return this;
     }
-    // } else if (this.bloodColor && this.bloodColor[0] === '#') {
-    //   this.bloodColor = hexToRGBAString(parseInt(this.bloodColor.slice(1), 16), 0.7);
-    // }
-
-    // try {
-    //   this.tokenSettings = this.violenceLevel ? await getMergedViolenceLevels[this.violenceLevel] : {};
-    // } catch (error) {
-    //   log(LogLevel.ERROR, 'SplatToken.create() violenceLevel not found!', this.violenceLevel);
-    // }
 
     this.container = new PIXI.Container();
     await this.createMask();
@@ -210,28 +159,6 @@ export default class SplatToken {
    * @returns {boolean} - whether there have been changes to the scene or not
    */
   public updateChanges(changes): boolean {
-    debugger;
-    // if (changes.flags) {
-    //   if (changes.flags[MODULE_ID]?.bloodColor != null) {
-    //     this.tokenSettings.bloodColor = hexToRGBAString(
-    //       parseInt(changes.flags[MODULE_ID].bloodColor.slice(1), 16),
-    //       0.7,
-    //     );
-    //   }
-    //   if (changes.flags[MODULE_ID]?.violenceLevel != null) {
-    //     this.tokenSettings.violenceLevel = changes.flags[MODULE_ID].violenceLevel;
-    //   }
-    //   if (changes.flags[MODULE_ID]?.floorSplatFont != null) {
-    //     this.tokenSettings.floorSplatFont = changes.flags[MODULE_ID].floorSplatFont;
-    //   }
-    //   if (changes.flags[MODULE_ID]?.tokenSplatFont != null) {
-    //     this.tokenSettings.tokenSplatFont = changes.flags[MODULE_ID].tokenSplatFont;
-    //   }
-    //   if (changes.flags[MODULE_ID]?.trailSplatFont != null) {
-    //     this.tokenSettings.trailSplatFont = changes.flags[MODULE_ID].trailSplatFont;
-    //   }
-    // }
-
     this.disabled = this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled';
 
     if (

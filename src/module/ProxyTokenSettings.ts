@@ -1,6 +1,6 @@
 import { MODULE_ID } from '../constants';
 
-export default class BnGProxy extends Object {
+export default class ProxyTokenSettings extends Object {
   token: Token;
   scene: Scene;
   settings: TokenSettings;
@@ -8,15 +8,12 @@ export default class BnGProxy extends Object {
   constructor(token, settings) {
     super(...arguments);
     this.token = token;
-    //this.scene = scene;
     this.settings = settings;
-
     return new Proxy(this, this.handler);
   }
   get handler() {
     return {
       get(target, property) {
-        debugger;
         let returnData;
         let source;
         if (property !== 'bloodColor') {
@@ -37,13 +34,12 @@ export default class BnGProxy extends Object {
         console.log('---> returning property', property, returnData, source);
         return returnData;
       },
-      set(target, prop, value) {
-        debugger;
-        return true;
-      },
-      getPrototypeOf() {
-        return BnGProxy.prototype;
-      },
+      // set(target, prop, value) {
+      //   return true;
+      // },
+      // getPrototypeOf() {
+      //   return ProxyTokenSettings.prototype;
+      // },
     };
   }
 }

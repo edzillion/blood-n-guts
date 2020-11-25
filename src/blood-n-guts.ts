@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /**
  * Documentation for Blood 'n Guts, a Foundry VTT module that adds blood splatter to your games.
  * All functionality is wrapped in it's main Class `BloodNGuts`.
@@ -83,7 +84,7 @@ export class BloodNGuts {
    * Takes an array of splats, trims the excess over 'sceneSplatPoolSize' and fades the oldest.
    * @category GMOnly
    * @function
-   * @param {SplatDataObject[]} - original splat array
+   * @param {SplatDataObject[]} splats - original splat array
    * @returns {SplatDataObject[]} - trimmed splat array
    */
   public static getTrimmedSceneSplats(splats: SplatDataObject[]): SplatDataObject[] {
@@ -287,6 +288,7 @@ export class BloodNGuts {
    * @param {SplatFont} font - the font to use for splats.
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of splats.
+   * @param {number} spread - the distance from centre point to spread the splats.
    */
   public static generateFloorSplats(
     splatToken: SplatToken,
@@ -368,6 +370,7 @@ export class BloodNGuts {
    * @param {SplatFont} font - the font to use for splats.
    * @param {number} size - the size of splats.
    * @param {number[]} distances - distances along the trail from 0 to 1.
+   * @param {number} spread - the distance from centre point to spread the splats.
    */
   public static generateTrailSplats(
     splatToken: SplatToken,
@@ -546,9 +549,9 @@ export class BloodNGuts {
    * @category GMandPC
    * @function
    * @async
-   * @param {scene} - reference to the current scene
-   * @param {tokenData} - tokenData of updated Token/Actor
-   * @param {changes} - changes
+   * @param scene - reference to the current scene
+   * @param tokenData - tokenData of updated Token/Actor
+   * @param changes - changes
    */
   public static updateTokenOrActorHandler(scene, tokenData, changes): void {
     if (!scene.active || BloodNGuts.disabled) return;
@@ -565,9 +568,7 @@ export class BloodNGuts {
    * Handler called when canvas has been fully loaded. Wipes scene splats and reloads from flags.
    * @category GMandPC
    * @function
-   * @param {scene} - reference to the current scene
-   * @param {tokenData} - tokenData of updated Token/Actor
-   * @param {changes} - changes
+   * @param canvas - reference to the canvas
    */
   public static canvasReadyHandler(canvas): void {
     if (!canvas.scene.active || BloodNGuts.disabled) return;
@@ -585,8 +586,8 @@ export class BloodNGuts {
    * Handler called when scene data updated. Draws splats from scene data flags.
    * @category GMandPC
    * @function
-   * @param {scene} - reference to the current scene
-   * @param {changes} - changes
+   * @param scene - reference to the current scene
+   * @param changes - changes
    */
   public static updateSceneHandler(scene, changes): void {
     if (!scene.active || BloodNGuts.disabled || !changes.flags || changes.flags[MODULE_ID]?.sceneSplats === undefined)
@@ -604,8 +605,8 @@ export class BloodNGuts {
    * Handler called when token is deleted. Removed tokenSplats and pool objects for this token.
    * @category GMOnly
    * @function
-   * @param {scene} - reference to the current scene
-   * @param {token} - reference to deleted token
+   * @param scene - reference to the current scene
+   * @param token - reference to deleted token
    */
   public static deleteTokenHandler(scene, token): void {
     if (!scene.active || !game.user.isGM) return;
@@ -615,10 +616,81 @@ export class BloodNGuts {
   }
 
   /**
+   * Handler called when token configuration window is opened. Injects custom form html and deals
+   * with updating token.
+   * @category GMOnly
+   * @function
+   * @async
+   * @param {TokenConfig} tokenConfig
+   * @param {JQuery} html
+   */
+  public static async renderTokenConfigHandler(tokenConfig: TokenConfig, html: JQuery): Promise<void> {
+    log(LogLevel.INFO, 'renderTokenConfig');
+
+    // @ts-ignore
+    const splatToken = BloodNGuts.splatTokens[tokenConfig.token.id];
+    if (!splatToken) return;
+
+    const imageTab = html.find('.tab[data-tab="image"]');
+    const mergedViolenceLevels: any = await getMergedViolenceLevels;
+    const choices = { '': '' };
+    for (const levelName in mergedViolenceLevels) {
+      choices[levelName] = levelName;
+    }
+
+    let currentColor = splatToken.tokenSettings.bloodColor;
+    if (currentColor !== 'none') {
+      const arr = currentColor
+        .slice(currentColor.indexOf('(') + 1, currentColor.indexOf(')'))
+        .split(',')
+        .map((val) => +val / 255);
+      currentColor = '#' + rgbToHex(arr).toString(16);
+    }
+
+    const data = {
+      currentColor: currentColor,
+      currentLevel: tokenConfig.object.getFlag(MODULE_ID, 'violenceLevel'),
+      levelNames: choices,
+      fonts: BloodNGuts.allFonts,
+      floorSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'floorSplatFont'),
+      tokenSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'tokenSplatFont'),
+      trailSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'trailSplatFont'),
+    };
+    // add blank entry for empty font settings.
+    data.fonts[''] = '';
+
+    const insertHTML = await renderTemplate('modules/' + MODULE_ID + '/templates/token-config.html', data);
+    imageTab.append(insertHTML);
+
+    const bloodColorPicker = imageTab.find('#bloodColorPicker');
+    if (splatToken.token.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
+      bloodColorPicker.prop('disabled', true);
+    }
+    const bc = splatToken.token.getFlag(MODULE_ID, 'bloodColor');
+    if (!bc || bc === 'none') {
+      changeColorPickerOpacityHack(0);
+    }
+    bloodColorPicker.on('click', (event) => {
+      changeColorPickerOpacityHack(1);
+    });
+
+    imageTab.find('.token-config-select-violence-level').on('change', (event) => {
+      // @ts-ignore
+      if (event.target.value === 'Disabled') {
+        bloodColorPicker.prop('disabled', true);
+        changeColorPickerOpacityHack(0);
+      } else {
+        bloodColorPicker.prop('disabled', false);
+        if (currentColor !== 'none') changeColorPickerOpacityHack(1);
+      }
+    });
+  }
+
+  /**
    * Handler called when left button bar is drawn
    * @category GMOnly
    * @function
-   * @param {buttons} - reference to the buttons controller
+   * @param buttons - reference to the buttons controller
    */
   public static getSceneControlButtonsHandler(buttons): void {
     if (!game.user.isGM) return;
@@ -688,6 +760,7 @@ Hooks.on('updateActor', (actor, changes) => {
 });
 
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
+Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
 
@@ -740,161 +813,3 @@ Token.prototype.draw = (function () {
     }
   };
 })();
-
-// Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQuery) {
-//   log(LogLevel.INFO, 'renderTokenConfig');
-
-//   // @ts-ignore
-//   //let checked = followingTokenId && tokenConfig.token.id === followingTokenId ? 'checked' : '';
-//   // @ts-ignore
-//   let gmFollowChecked = gmFollowingTokenId && tokenConfig.token.id === gmFollowingTokenId ? 'checked' : '';
-//   const d = document.createElement('div');
-//   d.className = 'form-group';
-//   d.innerHTML = `<label>Lock Camera on this Token:</label>
-// 	<input type="checkbox" class="lockCamera" name="lockCamera" data-dtype="Boolean" ${checked} />`;
-//   const f = html.find(`.tab[data-tab='character']`);
-//   f.append(d);
-
-//   if (game.user.isGM) {
-//     const d2 = document.createElement('div');
-//     const isDisabled = checked != 'checked' ? 'disabled' : '';
-//     d2.className = 'form-group';
-//     d2.innerHTML = `<label>[GM Only] Lock all players on this token:</label>
-// 		<input type="checkbox" class="gmLockCamera" name="gmLockCamera" data-dtype="Boolean" ${gmFollowChecked} ${isDisabled}/>`;
-//     f.append(d2);
-//   }
-
-//   html.find('.lockCamera').on('change', () => {
-//     if (checked) {
-//       // @ts-ignore
-//       log(LogLevel.DEBUG, tokenConfig.token.name, 'stop cam follow');
-//       followingTokenId = '';
-//       if (game.user.isGM) {
-//         canvas.scene.setFlag(MODULE_ID, 'gmFollowingTokenId', null);
-//         html.find('.gmLockCamera').prop('disabled', true);
-//         html.find('.gmLockCamera').prop('checked', false);
-//       }
-//       checked = '';
-//     } else {
-//       // @ts-ignore
-//       log(LogLevel.DEBUG, tokenConfig.token.name, 'cam follow');
-//       // @ts-ignore
-//       followingTokenId = tokenConfig.token.id;
-//       if (game.user.isGM) html.find('.gmLockCamera').prop('disabled', false);
-//       checked = 'checked';
-//     }
-//   });
-//   html.find('.gmLockCamera').on('change', () => {
-//     if (gmFollowChecked) {
-//       // @ts-ignore
-//       log(LogLevel.DEBUG, tokenConfig.token.name, 'stop cam follow GM');
-//       canvas.scene.setFlag(MODULE_ID, 'gmFollowingTokenId', null);
-//       gmFollowChecked = '';
-//     } else {
-//       // @ts-ignore
-//       log(LogLevel.DEBUG, tokenConfig.token.name, 'cam follow GM');
-//       // @ts-ignore
-//       canvas.scene.setFlag(MODULE_ID, 'gmFollowingTokenId', tokenConfig.token.id);
-//       gmFollowChecked = 'checked';
-//     }
-//   });
-//   //recalculate the height now that we've added elements
-//   tokenConfig.setPosition({ height: 'auto' });
-// });
-
-Hooks.on('renderTokenConfig', async function (tokenConfig: TokenConfig, html: JQuery) {
-  log(LogLevel.INFO, 'renderTokenConfig');
-
-  // @ts-ignore
-  const splatToken = BloodNGuts.splatTokens[tokenConfig.token.id];
-  if (!splatToken) return;
-
-  const imageTab = html.find('.tab[data-tab="image"]');
-  const mergedViolenceLevels: any = await getMergedViolenceLevels;
-  const choices = { '': '' };
-  for (const levelName in mergedViolenceLevels) {
-    choices[levelName] = levelName;
-  }
-
-  let currentColor = splatToken.tokenSettings.bloodColor;
-  if (currentColor !== 'none') {
-    const arr = currentColor
-      .slice(currentColor.indexOf('(') + 1, currentColor.indexOf(')'))
-      .split(',')
-      .map((val) => +val / 255);
-    currentColor = '#' + rgbToHex(arr).toString(16);
-  }
-
-  const data = {
-    currentColor: currentColor,
-    currentLevel: splatToken.token.getFlag(MODULE_ID, 'violenceLevel'),
-    levelNames: choices,
-    fonts: BloodNGuts.allFonts,
-    floorSplatFont: splatToken.token.getFlag(MODULE_ID, 'floorSplatFont'),
-    tokenSplatFont: splatToken.token.getFlag(MODULE_ID, 'tokenSplatFont'),
-    trailSplatFont: splatToken.token.getFlag(MODULE_ID, 'trailSplatFont'),
-  };
-  // add blank entry for empty font settings.
-  data.fonts[''] = '';
-  const insertHTML = await renderTemplate('modules/' + MODULE_ID + '/templates/token-config.html', data);
-  imageTab.append(insertHTML);
-
-  const bloodColorPicker = imageTab.find('#bloodColorPicker');
-
-  if (splatToken.token.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
-    bloodColorPicker.prop('disabled', true);
-  }
-
-  const bc = splatToken.token.getFlag(MODULE_ID, 'bloodColor');
-
-  if (!bc || bc === 'none') {
-    changeColorPickerOpacityHack(0);
-  }
-
-  bloodColorPicker.on('click', (event) => {
-    changeColorPickerOpacityHack(1);
-  });
-
-  imageTab.find('.token-config-select-violence-level').on('change', (event) => {
-    // @ts-ignore
-    if (event.target.value === 'Disabled') {
-      bloodColorPicker.prop('disabled', true);
-      changeColorPickerOpacityHack(0);
-    } else {
-      bloodColorPicker.prop('disabled', false);
-      if (currentColor !== 'none') changeColorPickerOpacityHack(1);
-    }
-  });
-
-  // const submitButton = html.find('[name="submit"]');
-  // submitButton.on('click', (event) => {
-  //   event.preventDefault();
-  //   debugger;
-  //   // @ts-ignore
-  //   splatToken.token.update(updateObject);
-  //   tokenConfig.close();
-  // });
-  // tokenConfig.form.onsubmit = async (event) => {
-  //   const cached = tokenConfig.form.onsubmit;
-  //   //return async function () {
-  //   await cached.apply(this);
-  //   debugger;
-  //   //return this;
-  //   //};
-  // };
-
-  // tokenConfig.form.onsubmit = async (event) => {
-  //   event.preventDefault();
-  //   tokenConfig.object.update(updateObject);
-  //   // Trigger the object update
-  //   try {
-  //     await tokenConfig._updateObject(event, updateObject);
-  //   } catch (err) {
-  //     console.error(err);
-  //     debugger;
-  //   }
-
-  //splatToken.token
-  //document.createElement('form').submit.call(tokenConfig.form);
-  //};
-});
