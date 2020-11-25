@@ -227,6 +227,7 @@ export const registerSettings = (): void => {
         if (value === 'Disabled') {
           BloodNGuts.disabled = true;
           BloodNGuts.wipeAllSplats();
+          delete violenceLevelChoices['Custom'];
           return;
         } else if (BloodNGuts.disabled) BloodNGuts.disabled = false;
 
