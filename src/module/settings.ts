@@ -5,7 +5,6 @@ import { BloodNGuts } from '../blood-n-guts.js';
 
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
-import { lookupTokenBloodColor } from './helpers.js';
 
 /**
  * Registers settings.
@@ -262,36 +261,6 @@ export const registerSettings = (): void => {
     });
     settingsResolved();
   });
-};
-
-/**
- * Promise resolving after custom splat fonts are loaded from disk.
- * @function
- * @category GMOnly
- * @returns {Promise<any>} - promise resolving to only the custom splat fonts.
- */
-export const getBaseTokenSettings = async (token: Token): Promise<TokenSettings> => {
-  const mergedViolenceLevels = await getMergedViolenceLevels;
-  const bloodColor = await lookupTokenBloodColor(token);
-  const violenceLevel = game.settings.get(MODULE_ID, 'violenceLevel');
-  return {
-    bloodColor: bloodColor,
-    violenceLevel: violenceLevel,
-    floorSplatFont: game.settings.get(MODULE_ID, 'floorSplatFont'),
-    tokenSplatFont: game.settings.get(MODULE_ID, 'tokenSplatFont'),
-    trailSplatFont: game.settings.get(MODULE_ID, 'trailSplatFont'),
-    trailSplatDensity: mergedViolenceLevels[violenceLevel].trailSplatDensity,
-    floorSplatDensity: mergedViolenceLevels[violenceLevel].floorSplatDensity,
-    tokenSplatDensity: mergedViolenceLevels[violenceLevel].tokenSplatDensity,
-    trailSplatSize: mergedViolenceLevels[violenceLevel].trailSplatSize,
-    floorSplatSize: mergedViolenceLevels[violenceLevel].floorSplatSize,
-    tokenSplatSize: mergedViolenceLevels[violenceLevel].tokenSplatSize,
-    splatSpread: mergedViolenceLevels[violenceLevel].splatSpread,
-    damageThreshold: mergedViolenceLevels[violenceLevel].damageThreshold,
-    healthThreshold: mergedViolenceLevels[violenceLevel].damageThreshold,
-    deathMultiplier: mergedViolenceLevels[violenceLevel].deathMultiplier,
-    sceneSplatPoolSize: mergedViolenceLevels[violenceLevel].sceneSplatPoolSize,
-  };
 };
 
 // Custom Settings

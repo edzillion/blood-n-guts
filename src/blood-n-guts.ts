@@ -7,13 +7,7 @@
  * @author [edzillion]{@link https://github.com/edzillion}
  */
 
-import {
-  mergeSettingsFiles,
-  registerSettings,
-  getCustomSplatFonts,
-  getMergedViolenceLevels,
-  settingsReady,
-} from './module/settings';
+import { mergeSettingsFiles, registerSettings, getCustomSplatFonts, settingsReady } from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
@@ -633,20 +627,19 @@ export class BloodNGuts {
     if (!splatToken) return;
 
     const imageTab = html.find('.tab[data-tab="image"]');
-    const mergedViolenceLevels: any = await getMergedViolenceLevels;
     const choices = { '': '' };
-    for (const levelName in mergedViolenceLevels) {
+    for (const levelName in splatToken.violenceLevels) {
       choices[levelName] = levelName;
     }
 
-    let defaultColor = splatToken.tokenSettings.bloodColor;
+    let defaultColor = tokenConfig.object.getFlag(MODULE_ID, 'bloodColor') || splatToken.defaultBloodColor;
     let defaultOpacity = '0.7';
     if (defaultColor !== 'none') {
       const { hexString, opacity } = rgbaStringToHexStringAndOpacity(defaultColor);
       defaultColor = hexString;
       defaultOpacity = opacity;
     }
-    let selectedColor = splatToken.token.getFlag(MODULE_ID, 'bloodColor');
+    let selectedColor = tokenConfig.object.getFlag(MODULE_ID, 'bloodColor');
 
     const data = {
       defaultColor: defaultColor,
@@ -694,6 +687,7 @@ export class BloodNGuts {
         changeColorPickerOpacityHack(0);
         selectedColor = '';
       } else {
+        // @ts-ignore
         const { hexString, opacity } = rgbaStringToHexStringAndOpacity(event.target.value);
         defaultColor = hexString;
         defaultOpacity = opacity;

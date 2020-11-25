@@ -9,8 +9,9 @@ import {
   getDirectionNrml,
   getUID,
   distanceBetween,
+  lookupTokenBloodColor,
 } from './helpers';
-import { getBaseTokenSettings } from './settings';
+import { getMergedViolenceLevels } from './settings';
 
 /**
  * Extends `Token` and adds a layer to display token splats.
@@ -40,6 +41,9 @@ export default class SplatToken {
 
   public tokenSettings: any;
 
+  public violenceLevels: any;
+  public defaultBloodColor: string;
+
   constructor(token: Token) {
     // @ts-ignore
     this.id = token.id || token.actor.data._id;
@@ -62,18 +66,22 @@ export default class SplatToken {
    * @returns {Promise<SplatToken>} - the created SplatToken.
    */
   public async create(): Promise<SplatToken> {
-    const baseTokenSettings = await getBaseTokenSettings(this.token);
-    //this.tokenSettings = new ProxyTokenSettings(this.token, baseTokenSettings);
+    this.violenceLevels = await getMergedViolenceLevels;
+    this.defaultBloodColor = await lookupTokenBloodColor(this.token);
 
-    const settingsHandler = {
+    const tokenSettingsHandler = {
       get: (target, property) => {
-        if (property !== 'bloodColor')
-          return this.token.getFlag(MODULE_ID, property) || game.settings.get(MODULE_ID, property);
-        else return this.token.getFlag(MODULE_ID, property) || target[property];
+        if (property === 'bloodColor') return target[property] || this.defaultBloodColor;
+        else return target[property] || game.settings.get(MODULE_ID, property);
+      },
+      set: (target, property, value) => {
+        target[property] = value;
+        if (property === 'violenceLevel') target = Object.assign(target, this.violenceLevels[value]);
+        return true;
       },
     };
 
-    this.tokenSettings = new Proxy(baseTokenSettings, settingsHandler);
+    this.tokenSettings = new Proxy({}, tokenSettingsHandler);
 
     if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
       this.disabled = true;
@@ -167,6 +175,15 @@ export default class SplatToken {
    * @returns {boolean} - whether there have been changes to the scene or not
    */
   public updateChanges(changes): boolean {
+    log(LogLevel.DEBUG, 'updateChanges');
+    if (changes.flags) {
+      // todo: Proxy objects don't work with Object.assign?
+      // this.tokenSettings = Object.assign(this.tokenSettings, changes.flags[MODULE_ID]?.violenceLevel);
+      for (const setting in changes.flags[MODULE_ID]) {
+        this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
+      }
+    }
+
     this.disabled = this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled';
 
     if (
