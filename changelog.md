@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [0.7.1]
+
+### FEATURES
+
+- Token Config works on prototype tokens now too
+- All tokens on scene will be pre-splatted based on `healthThreshold` and `damageThreshold`
+
+### BUGFIXES
+
+- Fixed token blood color going black on re-adding a linked token.
+
 ## [0.7.0]
 
 ### FEATURES
