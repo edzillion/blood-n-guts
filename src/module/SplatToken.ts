@@ -11,7 +11,7 @@ import {
   distanceBetween,
   lookupTokenBloodColor,
 } from './helpers';
-import { getMergedViolenceLevels } from './settings';
+import { getBaseTokenSettings, getMergedViolenceLevels } from './settings';
 
 /**
  * Extends `Token` and adds a layer to display token splats.
@@ -68,6 +68,7 @@ export default class SplatToken {
   public async create(): Promise<SplatToken> {
     this.violenceLevels = await getMergedViolenceLevels;
     this.defaultBloodColor = await lookupTokenBloodColor(this.token);
+    const baseTokenSettings = await getBaseTokenSettings(this.token);
 
     const tokenSettingsHandler = {
       get: (target, property) => {
@@ -76,12 +77,12 @@ export default class SplatToken {
       },
       set: (target, property, value) => {
         target[property] = value;
-        if (property === 'violenceLevel') target = Object.assign(target, this.violenceLevels[value]);
+        if (property === 'violenceLevel' && value) target = Object.assign(target, this.violenceLevels[value]);
         return true;
       },
     };
 
-    this.tokenSettings = new Proxy({}, tokenSettingsHandler);
+    this.tokenSettings = new Proxy(baseTokenSettings, tokenSettingsHandler);
 
     if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
       this.disabled = true;

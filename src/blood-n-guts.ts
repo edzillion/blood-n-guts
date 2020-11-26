@@ -7,7 +7,13 @@
  * @author [edzillion]{@link https://github.com/edzillion}
  */
 
-import { mergeSettingsFiles, registerSettings, getCustomSplatFonts, settingsReady } from './module/settings';
+import {
+  mergeSettingsFiles,
+  registerSettings,
+  getCustomSplatFonts,
+  settingsReady,
+  getMergedViolenceLevels,
+} from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
@@ -19,6 +25,7 @@ import {
   getRGBA,
   changeColorPickerOpacityHack,
   rgbaStringToHexStringAndOpacity,
+  lookupTokenBloodColor,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
@@ -622,17 +629,15 @@ export class BloodNGuts {
   public static async renderTokenConfigHandler(tokenConfig: TokenConfig, html: JQuery): Promise<void> {
     log(LogLevel.INFO, 'renderTokenConfig');
 
-    // @ts-ignore
-    const splatToken = BloodNGuts.splatTokens[tokenConfig.token.id];
-    if (!splatToken) return;
-
     const imageTab = html.find('.tab[data-tab="image"]');
     const choices = { '': '' };
-    for (const levelName in splatToken.violenceLevels) {
+    const violenceLevels: any = await getMergedViolenceLevels;
+    for (const levelName in violenceLevels) {
       choices[levelName] = levelName;
     }
 
-    let defaultColor = tokenConfig.object.getFlag(MODULE_ID, 'bloodColor') || splatToken.defaultBloodColor;
+    let defaultColor =
+      tokenConfig.object.getFlag(MODULE_ID, 'bloodColor') || (await lookupTokenBloodColor(tokenConfig.object));
     let defaultOpacity = '0.7';
     if (defaultColor !== 'none') {
       const { hexString, opacity } = rgbaStringToHexStringAndOpacity(defaultColor);
@@ -659,7 +664,7 @@ export class BloodNGuts {
 
     const bloodColorPicker = imageTab.find('#bloodColorPicker');
     const bloodColorText = imageTab.find('#bloodColorText');
-    if (splatToken.token.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
+    if (tokenConfig.object.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
       bloodColorPicker.prop('disabled', true);
     }
 
@@ -782,7 +787,8 @@ Hooks.once('ready', () => {
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
 Hooks.on('updateActor', (actor, changes) => {
-  if (!canvas.scene.active) return;
+  //changes.token are changes to the prototype?
+  if (!canvas.scene.active || changes.token || changes.sort) return;
   // convert into same structure as token changes.
   if (changes.data) changes.actorData = { data: changes.data };
   const token = canvas.tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === actor.id);
