@@ -11,7 +11,7 @@ import {
   distanceBetween,
   lookupTokenBloodColor,
 } from './helpers';
-import { getMergedViolenceLevels } from './settings';
+import { getBaseTokenSettings, getMergedViolenceLevels } from './settings';
 
 /**
  * Extends `Token` and adds a layer to display token splats.
@@ -68,6 +68,7 @@ export default class SplatToken {
   public async create(): Promise<SplatToken> {
     this.violenceLevels = await getMergedViolenceLevels;
     this.defaultBloodColor = await lookupTokenBloodColor(this.token);
+    const baseTokenSettings = await getBaseTokenSettings(this.token);
 
     const tokenSettingsHandler = {
       get: (target, property) => {
@@ -76,12 +77,12 @@ export default class SplatToken {
       },
       set: (target, property, value) => {
         target[property] = value;
-        if (property === 'violenceLevel') target = Object.assign(target, this.violenceLevels[value]);
+        if (property === 'violenceLevel' && value) target = Object.assign(target, this.violenceLevels[value]);
         return true;
       },
     };
 
-    this.tokenSettings = new Proxy({}, tokenSettingsHandler);
+    this.tokenSettings = new Proxy(baseTokenSettings, tokenSettingsHandler);
 
     if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
       this.disabled = true;
@@ -144,9 +145,16 @@ export default class SplatToken {
    * @function
    */
   public preSplat(): void {
-    if (!this.bleedingSeverity && this.hp < this.maxHP / 2 && !this.tokenSplats.length) {
-      this.hitSeverity = 2 - this.hp / (this.maxHP / 2);
-      this.bleedingSeverity = this.hitSeverity;
+    log(LogLevel.DEBUG, 'preSpat', this.token.data.name);
+    if (!this.tokenSplats.length) {
+      const currentHP = this.hp;
+      const lastHP = this.maxHP * this.tokenSettings.healthThreshold;
+      const maxHP = this.maxHP;
+      const severity = this.getDamageSeverity(currentHP, lastHP, maxHP);
+      if (severity <= 0) return;
+
+      this.bleedingSeverity = this.hitSeverity = severity;
+
       const tempSplats = this.bleedToken();
       this.token.update(
         { flags: { [MODULE_ID]: { splats: tempSplats, bleedingSeverity: this.bleedingSeverity } } },
@@ -226,7 +234,10 @@ export default class SplatToken {
    */
   private getUpdatedDamage(changes): [number, number] {
     if (changes.actorData === undefined || changes.actorData.data.attributes?.hp === undefined) return [null, null];
-    return this.updateSeverities(this.getDamageSeverity(changes));
+    const currentHP = changes.actorData.data.attributes.hp.value;
+    const lastHP = this.hp;
+    const maxHP = this.maxHP;
+    return this.updateSeverities(this.getDamageSeverity(currentHP, lastHP, maxHP));
   }
 
   /**
@@ -433,7 +444,9 @@ export default class SplatToken {
   }
 
   /**
-   * Takes the new damage severity and determines the hitSeverity and bleedingSeverity
+   * Takes the new damage severity and determines the hitSeverity and bleedingSeverity.
+   * hitSeverity is always the severity of the last hit. bleedingSeverity is set to
+   * hitSeverity if hitSeverity > bleedingSeverity.
    * @category GMOnly
    * @function
    * @param {number} damageSeverity - the updated damage severity.
@@ -460,18 +473,16 @@ export default class SplatToken {
    * @param {any} changes - the token.actor changes object.
    * @returns {number} - the damage severity.
    */
-  private getDamageSeverity(changes): number {
-    log(LogLevel.DEBUG, 'getDamageSeverity', changes.actorData);
-    const currentHP = changes.actorData.data.attributes.hp.value;
+  private getDamageSeverity(currentHP, lastHP, maxHP): number {
+    log(LogLevel.DEBUG, 'getDamageSeverity');
 
     //fully healed, return -1
-    if (currentHP === this.maxHP) return -1;
+    if (currentHP === maxHP) return -1;
 
     const healthThreshold = this.tokenSettings.healthThreshold;
     const damageThreshold = this.tokenSettings.damageThreshold;
-    const lastHP = this.hp;
-    const fractionOfMax = currentHP / this.maxHP;
-    const changeFractionOfMax = (lastHP - currentHP) / this.maxHP;
+    const fractionOfMax = currentHP / maxHP;
+    const changeFractionOfMax = (lastHP - currentHP) / maxHP;
 
     if (currentHP && currentHP < lastHP) {
       if (fractionOfMax > healthThreshold) {

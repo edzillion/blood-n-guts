@@ -395,3 +395,24 @@ export const mergeSettingsFiles = async (): Promise<void> => {
     violenceLevelSettingsResolved(violenceLevelSettings.levels);
   }
 };
+
+/**
+ * Promise resolving after custom splat fonts are loaded from disk.
+ * @function
+ * @category GMOnly
+ * @returns {Promise<any>} - promise resolving to only the custom splat fonts.
+ */
+export const getBaseTokenSettings = async (token: Token): Promise<TokenSettings> => {
+  let baseSettings: Partial<TokenSettings> = {};
+
+  const mergedViolenceLevels = await getMergedViolenceLevels;
+  baseSettings.violenceLevel = token.getFlag(MODULE_ID, 'violenceLevel');
+  if (baseSettings.violenceLevel)
+    baseSettings = Object.assign(baseSettings, mergedViolenceLevels[baseSettings.violenceLevel]);
+
+  baseSettings.bloodColor = token.getFlag(MODULE_ID, 'bloodColor');
+  baseSettings.floorSplatFont = token.getFlag(MODULE_ID, 'floorSplatFont');
+  baseSettings.tokenSplatFont = token.getFlag(MODULE_ID, 'tokenSplatFont');
+  baseSettings.trailSplatFont = token.getFlag(MODULE_ID, 'trailSplatFont');
+  return <TokenSettings>baseSettings;
+};

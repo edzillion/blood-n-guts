@@ -143,6 +143,9 @@ export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   if (!bloodColor) return getRGBA('blood');
   if (bloodColor === 'none') return 'none';
 
+  // remember to reset the regex since it has a global setting
+  rgbaOnlyRegex.lastIndex = 0;
+
   // bloodSettings can return either an rbga string, a color string or 'name' which looks up the
   // color based on it's name. e.g. 'Purple Ooze'
   let rgba: string;
