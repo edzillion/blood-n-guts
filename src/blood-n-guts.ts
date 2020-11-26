@@ -835,8 +835,7 @@ Token.prototype.draw = (function () {
     } else {
       splatToken = await new SplatToken(this).create();
       BloodNGuts.splatTokens[this.id] = splatToken;
-      if (game.user.isGM && !splatToken.disabled && game.settings.get(MODULE_ID, 'halfHealthBloodied')) {
-        // If the `halfHealthBloodied` setting is true we need to pre-splat the tokens that are bloodied
+      if (game.user.isGM && !splatToken.disabled) {
         splatToken.preSplat();
       }
     }
