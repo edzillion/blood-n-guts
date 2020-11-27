@@ -534,7 +534,8 @@ export default class SplatToken {
   }
 
   /**
-   * Wipes all splat tokens and token data.
+   * Wipes all splat tokens and token data. There are issues with running this on multiple
+   * tokens, see https://github.com/edzillion/blood-n-guts/issues/153 - instead use `token.update(updatesArray)`
    * @category GMOnly
    * @function
    */
