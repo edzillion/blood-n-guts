@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [0.7.2]
+
+### BUGFIXES
+
+- Fixed problem with loading custom files while running on Foundry.
+- Fixed problem with creatures set to 'name' without colors in name.
+- Fixed problems with loading default colors, related to rgba -> hex conversion.
+- Fixed bug with wipeAllFlags not wiping all token flags.
+- Fixed some blood color defaults issues.
+
 ## [0.7.1]
 
 ### FEATURES
