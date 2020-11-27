@@ -188,8 +188,10 @@ export const getActorColorByName = (actor: Actor): string => {
       break;
     }
   }
-  if (!color) log(LogLevel.ERROR, 'unable to find actor color!');
-  else colorString = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.7)`;
+  if (!color) {
+    log(LogLevel.WARN, 'unable to find actor color in name!');
+    return getRGBA('blood');
+  } else colorString = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.7)`;
   return colorString;
 };
 
@@ -245,9 +247,17 @@ export const rgbaStringToHexStringAndOpacity = (rgbaString: string): { hexString
     .slice(rgbaString.indexOf('(') + 1, rgbaString.indexOf(')'))
     .split(',')
     .map((num) => num.trim());
-  const opacity = rgbaArray[3];
-  const normalisedRGBAArray = rgbaArray.map((val) => +val / 255);
-  const hexString = '#' + rgbToHex(normalisedRGBAArray).toString(16);
+  const opacity = rgbaArray.splice(3)[0];
+
+  const hexString =
+    '#' +
+    rgbaArray
+      .map((x: any) => {
+        x = parseInt(x).toString(16);
+        return x.length === 1 ? '0' + x : x;
+      })
+      .join('');
+
   return { hexString: hexString, opacity: opacity };
 };
 
