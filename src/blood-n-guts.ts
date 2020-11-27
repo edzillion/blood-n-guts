@@ -263,11 +263,13 @@ export class BloodNGuts {
    * @category GMOnly
    * @function
    */
-  public static async wipeTokenFlags(): Promise<void> {
+  public static async wipeTokenFlags(): Promise<PlaceableObject> {
     log(LogLevel.INFO, 'wipeTokenFlags');
-    const promises: Promise<PlaceableObject>[] = [];
-    for (const tokenId in BloodNGuts.splatTokens) promises.push(BloodNGuts.splatTokens[tokenId].wipeFlags());
-    await Promise.all(promises);
+    const updateData = [];
+    for (const tokenId in BloodNGuts.splatTokens) {
+      updateData.push({ _id: tokenId, 'flags.blood-n-guts.splats': '' });
+    }
+    return BloodNGuts.splatTokens[updateData[0]._id].token.update(updateData);
   }
 
   /**
