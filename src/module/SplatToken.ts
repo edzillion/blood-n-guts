@@ -191,7 +191,6 @@ export default class SplatToken {
         this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
       }
     }
-    debugger;
 
     this.disabled = this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled';
 
