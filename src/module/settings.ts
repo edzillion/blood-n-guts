@@ -312,39 +312,58 @@ export const mergeSettingsFiles = async (): Promise<void> => {
     'customSplatFonts.json',
     'customBloodColorSettings.json',
     'customViolenceLevelSettings.json',
+    'custom.css',
   ];
   let filesToMerge: string[] = [];
 
+  // @ts-expect-error - ForgeVTT is not a global object
+  // todo: fix this error
+  const dataSource = typeof ForgeVTT !== undefined && ForgeVTT.usingTheForge ? 'forgevtt' : 'data';
+
   // create main folder if missing
-  await FilePicker.createDirectory('data', MODULE_ID, {})
+  await FilePicker.browse(dataSource, '/', {})
     .then((result) => {
-      log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
+      if (result.dirs.includes(MODULE_ID)) return;
+      return FilePicker.createDirectory(dataSource, MODULE_ID, {})
+        .then((result) => {
+          log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
+        })
+        .catch((err) => {
+          if (!err.includes('EEXIST')) {
+            log(LogLevel.ERROR, 'mergeSettingsFiles', err);
+          }
+        });
     })
     .catch((err) => {
-      if (!err.includes('EEXIST')) {
-        log(LogLevel.ERROR, 'mergeSettingsFiles', err);
-      }
+      log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     });
 
   // create fonts folder if missing
-  await FilePicker.createDirectory('data', MODULE_ID + '/fonts', {})
+  await FilePicker.browse(dataSource, MODULE_ID, {})
     .then((result) => {
-      log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
+      if (result.dirs.includes('fonts')) return;
+      return FilePicker.createDirectory(dataSource, MODULE_ID + '/fonts', {})
+        .then((result) => {
+          log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
+        })
+        .catch((err) => {
+          if (!err.includes('EEXIST')) {
+            log(LogLevel.ERROR, 'mergeSettingsFiles', err);
+          }
+        });
     })
     .catch((err) => {
-      if (!err.includes('EEXIST')) {
-        log(LogLevel.ERROR, 'mergeSettingsFiles', err);
-      }
+      log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     });
 
   // check if we need to create the custom settings files, if we do then they obviously do not need to be merged.
-  await FilePicker.browse('data', MODULE_ID + '/*', {})
+  await FilePicker.browse(dataSource, MODULE_ID, {})
     .then((res) => {
       const extantFiles = res.files.map((fullPath) => fullPath.slice(fullPath.lastIndexOf('/') + 1));
       const filesToCreate = customFileNames.filter((filename) => !extantFiles.includes(filename));
       filesToCreate.forEach((filename) => {
         const file = new File(['{}'], filename);
-        FilePicker.upload('data', MODULE_ID + '/', file, {});
+        FilePicker.upload(dataSource, MODULE_ID + '/', file, {});
       });
       filesToMerge = customFileNames.filter((filename) => !filesToCreate.includes(filename));
     })
