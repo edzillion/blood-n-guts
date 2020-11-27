@@ -188,8 +188,10 @@ export const getActorColorByName = (actor: Actor): string => {
       break;
     }
   }
-  if (!color) log(LogLevel.ERROR, 'unable to find actor color!');
-  else colorString = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.7)`;
+  if (!color) {
+    log(LogLevel.WARN, 'unable to find actor color in name!');
+    return getRGBA('blood');
+  } else colorString = `rgba(${color[0]}, ${color[1]}, ${color[2]}, 0.7)`;
   return colorString;
 };
 
