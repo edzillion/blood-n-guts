@@ -301,13 +301,14 @@ export const getMergedViolenceLevels = new Promise((resolve) => {
 });
 
 /**
- * Initiate the loading and merging of custom settings files from the 'Data/blood-n-guts/' folder.
+ * Initiate the loading and merging of custom settings files from the `sourceData` folder.
  * @function
  * @async
  * @category GMOnly
+ * @param {string} dataSource
  * @returns {Promise<void>}
  */
-export const mergeSettingsFiles = async (): Promise<void> => {
+export const mergeSettingsFiles = async (dataSource: string): Promise<void> => {
   const customFileNames = [
     'customSplatFonts.json',
     'customBloodColorSettings.json',
@@ -315,10 +316,6 @@ export const mergeSettingsFiles = async (): Promise<void> => {
     'custom.css',
   ];
   let filesToMerge: string[] = [];
-
-  // @ts-expect-error - ForgeVTT is not a global object
-  // todo: fix this error
-  const dataSource = typeof ForgeVTT !== undefined && ForgeVTT.usingTheForge ? 'forgevtt' : 'data';
 
   // create main folder if missing
   await FilePicker.browse(dataSource, '/', {})

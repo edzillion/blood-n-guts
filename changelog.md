@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.7.3]
+
+### BUGFIXES
+
+- Fixed ReferenceError issue with FoundryVTT
+
 ## [0.7.2]
 
 ### BUGFIXES
