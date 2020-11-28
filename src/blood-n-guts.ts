@@ -755,8 +755,19 @@ Hooks.once('init', () => {
 
   // Assign custom classes and constants here
   BloodNGuts.initialize();
+
+  let dataSource = 'data';
+  try {
+    // @ts-expect-error - ForgeVTT is not a global object
+    dataSource = typeof ForgeVTT !== undefined && ForgeVTT.usingTheForge ? 'forgevtt' : 'data';
+    log(LogLevel.INFO, 'setting forgevtt as custom data source');
+  } catch (error) {
+    log(LogLevel.INFO, 'setting data as custom data source');
+    // todo: why the fuck is this happening?
+  }
+
   // Register custom module settings
-  mergeSettingsFiles();
+  mergeSettingsFiles(dataSource);
   registerSettings();
 
   for (const fontName in splatFonts.fonts) {
