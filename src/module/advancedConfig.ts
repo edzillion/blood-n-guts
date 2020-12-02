@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
@@ -14,15 +15,13 @@ export class AdvancedConfig extends FormApplication {
   allAsciiCharacters: string;
   mergedViolenceLevels: any;
   baseViolenceLevel: string;
-  isEdited: boolean;
   dataObject: any;
-  sceneName: string;
+  violenceLevelHTML: JQuery;
 
   constructor(object: any, options?: FormApplicationOptions) {
     super(object, options);
     game.settings.sheet.close();
     game.users.apps.push(this);
-    this.isEdited = false;
     this.dataObject = {};
   }
 
@@ -39,23 +38,18 @@ export class AdvancedConfig extends FormApplication {
   }
 
   async getData(): Promise<any> {
-    if (!this.isEdited) {
-      this.dataObject['violenceLevel'] = this.baseViolenceLevel = game.settings.get(MODULE_ID, 'violenceLevel');
-      this.mergedViolenceLevels = await getMergedViolenceLevels;
-      for (const key in this.mergedViolenceLevels[this.baseViolenceLevel]) {
-        this.dataObject[key] = game.settings.get(MODULE_ID, key);
-      }
-      this.dataObject['fonts'] = BloodNGuts.allFonts;
-      this.dataObject['floorSplatFont'] = game.settings.get(MODULE_ID, 'floorSplatFont');
-      this.dataObject['tokenSplatFont'] = game.settings.get(MODULE_ID, 'tokenSplatFont');
-      this.dataObject['trailSplatFont'] = game.settings.get(MODULE_ID, 'trailSplatFont');
-      this.dataObject['sceneName'] = '';
+    this.dataObject['violenceLevel'] = this.baseViolenceLevel = game.settings.get(MODULE_ID, 'violenceLevel');
+    this.mergedViolenceLevels = await getMergedViolenceLevels;
+    // we use 'Disabled' here only to iterate the obj keys
+    for (const key in this.mergedViolenceLevels['Disabled']) {
+      this.dataObject[key] = game.settings.get(MODULE_ID, key);
     }
-    if (this.isEdited || this.baseViolenceLevel === 'Custom') {
-      this.dataObject['violenceLevel'] = 'Custom';
-      this.dataObject['sceneName'] = '{' + canvas.scene.data.name + '}';
-    }
+    this.dataObject['fonts'] = BloodNGuts.allFonts;
+    this.dataObject['floorSplatFont'] = game.settings.get(MODULE_ID, 'floorSplatFont');
+    this.dataObject['tokenSplatFont'] = game.settings.get(MODULE_ID, 'tokenSplatFont');
+    this.dataObject['trailSplatFont'] = game.settings.get(MODULE_ID, 'trailSplatFont');
 
+    if (this.baseViolenceLevel === 'Custom') this.dataObject['sceneName'] = '{' + canvas.scene.name + '}';
     return this.dataObject;
   }
 
@@ -87,14 +81,16 @@ export class AdvancedConfig extends FormApplication {
       );
     });
 
+    this.violenceLevelHTML = html.find('#violenceLevel');
+
     // add change handlers to detect changes from base violence Level
     const settingsFields = html.find('input[type=number]');
-    settingsFields.change((event) => {
+    settingsFields.on('input', (event) => {
       // @ts-ignore
       this.dataObject[event.target.name] = event.target.value;
+      this.dataObject['violenceLevel'] = 'Custom';
       // @ts-ignore
-      this.isEdited = +event.target.value !== this.mergedViolenceLevels[this.baseViolenceLevel][event.target.name];
-      this.render(true);
+      this.violenceLevelHTML.text('Violence Level: Custom {' + canvas.scene.name + '}');
     });
   }
 
