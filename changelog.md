@@ -1,16 +1,22 @@
 # CHANGELOG
 
+## [0.7.4]
+
+### BUGFIXES
+
+- Fixed Advanced Configuration blank when loading 'Custom' settings
+
 ## [0.7.3]
 
 ### BUGFIXES
 
-- Fixed ReferenceError issue with FoundryVTT
+- Fixed ReferenceError issue with ForgeVTT
 
 ## [0.7.2]
 
 ### BUGFIXES
 
-- Fixed problem with loading custom files while running on Foundry.
+- Fixed problem with loading custom files while running on Forge.
 - Fixed problem with creatures set to 'name' without colors in name.
 - Fixed problems with loading default colors, related to rgba -> hex conversion.
 - Fixed bug with wipeAllFlags not wiping all token flags.
