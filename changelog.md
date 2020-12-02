@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.7.4]
+
+### BUGFIXES
+
+- Fixed Advanced Configuration blank when loading 'Custom' settings
+
 ## [0.7.3]
 
 ### BUGFIXES
