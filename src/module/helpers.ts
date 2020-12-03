@@ -133,7 +133,7 @@ export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
 
   log(LogLevel.INFO, 'lookupTokenBloodColor: ', token.name, actorType, creatureType);
   if (!creatureType) {
-    log(LogLevel.ERROR, 'lookupTokenBloodColor missing creatureType', token);
+    log(LogLevel.WARN, 'lookupTokenBloodColor missing creatureType for token:', token.data.name);
     return getRGBA('blood');
   }
 
