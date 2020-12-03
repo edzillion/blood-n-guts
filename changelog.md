@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.7.5]
+
+### BUGFIXES
+
+- Changed lookupBloodToken error to warn, reorder log levels, and change default logLevel to 2 (INFO).
+
 ## [0.7.4]
 
 ### BUGFIXES

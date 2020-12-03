@@ -8,8 +8,8 @@ import { MODULE_ID } from '../constants';
 export enum LogLevel {
   ERROR,
   INFO,
-  DEBUG,
   WARN,
+  DEBUG,
   ALL,
 }
 
@@ -22,5 +22,6 @@ export enum LogLevel {
 export function log(messageLevel: LogLevel, ...args: any): void {
   if (messageLevel > CONFIG[MODULE_ID].logLevel) return;
   if (messageLevel === LogLevel.ERROR) console.error(MODULE_ID + ' | ', ...args);
+  else if (messageLevel === LogLevel.WARN) console.warn(MODULE_ID + ' | ', ...args);
   else console.log(MODULE_ID + ' | ', ...args);
 }
