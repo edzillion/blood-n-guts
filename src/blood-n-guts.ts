@@ -32,7 +32,7 @@ import SplatToken from './module/SplatToken';
 import * as splatFonts from './data/splatFonts';
 
 // CONFIG.debug.hooks = true;
-CONFIG[MODULE_ID] = { logLevel: 1 };
+CONFIG[MODULE_ID] = { logLevel: 2 };
 
 /**
  * Main class wrapper for all blood-n-guts features.
