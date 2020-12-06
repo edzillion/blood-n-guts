@@ -561,7 +561,17 @@ export class BloodNGuts {
     if (!scene.active || BloodNGuts.disabled) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler', changes);
     const tokenId = tokenData._id || tokenData.data._id;
+
     const splatToken = BloodNGuts.splatTokens[tokenId];
+
+    if (changes.flags && changes.flags[MODULE_ID]?.customBloodChecked != null) {
+      if (!changes.flags[MODULE_ID].customBloodChecked) {
+        splatToken.wipeCustomSettings().then((res) => {
+          return;
+        });
+      }
+    }
+
     if (game.user.isGM && splatToken.updateChanges(changes)) BloodNGuts.saveScene();
 
     if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
@@ -646,14 +656,13 @@ export class BloodNGuts {
       defaultColor = hexString;
       defaultOpacity = opacity;
     }
-    let selectedColor = tokenConfig.object.getFlag(MODULE_ID, 'bloodColor');
 
     const data = {
       defaultColor: defaultColor,
-      selectedColor: selectedColor,
-      currentLevel: tokenConfig.object.getFlag(MODULE_ID, 'violenceLevel'),
       levelNames: choices,
       fonts: BloodNGuts.allFonts,
+      selectedColor: tokenConfig.object.getFlag(MODULE_ID, 'bloodColor'),
+      currentLevel: tokenConfig.object.getFlag(MODULE_ID, 'violenceLevel'),
       floorSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'floorSplatFont'),
       tokenSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'tokenSplatFont'),
       trailSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'trailSplatFont'),
@@ -664,17 +673,38 @@ export class BloodNGuts {
     const insertHTML = await renderTemplate('modules/' + MODULE_ID + '/templates/token-config.html', data);
     imageTab.append(insertHTML);
 
+    const selectViolenceLevel = imageTab.find('.token-config-select-violence-level');
+    const customBloodCheckBox = imageTab.find('#customBloodCheckBox');
+
+    const customBloodPanel = imageTab.find('#customBloodPanel');
     const bloodColorPicker = imageTab.find('#bloodColorPicker');
     const bloodColorText = imageTab.find('#bloodColorText');
+
+    // if any custom settings are set on the token
+    if (data.selectedColor || data.currentLevel || data.floorSplatFont || data.tokenSplatFont || data.trailSplatFont) {
+      customBloodCheckBox.prop('checked', true);
+      customBloodPanel.show();
+    } else {
+      customBloodCheckBox.prop('checked', false);
+      customBloodPanel.hide();
+    }
+
     if (tokenConfig.object.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
       bloodColorPicker.prop('disabled', true);
     }
 
-    if (!selectedColor || selectedColor === 'none') {
+    if (!data.selectedColor || data.selectedColor === 'none') {
       changeColorPickerOpacityHack(0);
     } else {
       changeColorPickerOpacityHack(defaultOpacity);
     }
+
+    customBloodCheckBox.on('click', (event) => {
+      // @ts-ignore
+      if (event.target.checked) customBloodPanel.show();
+      else customBloodPanel.hide();
+      tokenConfig.setPosition({ height: 'auto' });
+    });
 
     bloodColorPicker.on('click', (event) => {
       changeColorPickerOpacityHack(defaultOpacity);
@@ -683,8 +713,8 @@ export class BloodNGuts {
     bloodColorPicker.on('change', (event) => {
       changeColorPickerOpacityHack(0.7);
       // @ts-ignore
-      selectedColor = hexToRGBAString(colorStringToHex(event.target.value), 0.7);
-      bloodColorText.val(selectedColor);
+      data.selectedColor = hexToRGBAString(colorStringToHex(event.target.value), 0.7);
+      bloodColorText.val(data.selectedColor);
     });
 
     bloodColorText.on('change', (event) => {
@@ -692,7 +722,7 @@ export class BloodNGuts {
       // @ts-ignore
       if (event.target.value === '') {
         changeColorPickerOpacityHack(0);
-        selectedColor = '';
+        data.selectedColor = '';
       } else {
         // @ts-ignore
         const { hexString, opacity } = rgbaStringToHexStringAndOpacity(event.target.value);
@@ -704,7 +734,7 @@ export class BloodNGuts {
       }
     });
 
-    imageTab.find('.token-config-select-violence-level').on('change', (event) => {
+    selectViolenceLevel.on('change', (event) => {
       // @ts-ignore
       if (event.target.value === 'Disabled' && !bloodColorPicker.prop('disabled')) {
         bloodColorPicker.prop('disabled', true);
@@ -714,14 +744,16 @@ export class BloodNGuts {
       } else if (bloodColorPicker.prop('disabled')) {
         bloodColorPicker.prop('disabled', false);
         bloodColorText.prop('disabled', false);
-        if (selectedColor !== 'none') {
-          const { hexString, opacity } = rgbaStringToHexStringAndOpacity(selectedColor);
+        if (data.selectedColor !== 'none') {
+          const { hexString, opacity } = rgbaStringToHexStringAndOpacity(data.selectedColor);
           bloodColorPicker.val(hexString);
           changeColorPickerOpacityHack(opacity);
-          bloodColorText.val(selectedColor);
+          bloodColorText.val(data.selectedColor);
         }
       }
     });
+
+    tokenConfig.setPosition({ height: 'auto' });
   }
 
   /**

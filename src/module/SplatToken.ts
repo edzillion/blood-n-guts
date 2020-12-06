@@ -539,10 +539,14 @@ export default class SplatToken {
    * @category GMOnly
    * @function
    */
-  public async wipeFlags(): Promise<PlaceableObject> {
-    this.wipeSplats();
-    this.tokenSplats = [];
-    if (this.token) return this.token.setFlag(MODULE_ID, 'splats', null);
+  public async wipeCustomSettings() {
+    const promises: Promise<Entity>[] = [];
+    promises.push(this.token.unsetFlag(MODULE_ID, 'floorSplatFont'));
+    promises.push(this.token.unsetFlag(MODULE_ID, 'trailSplatFont'));
+    promises.push(this.token.unsetFlag(MODULE_ID, 'tokenSplatFont'));
+    promises.push(this.token.unsetFlag(MODULE_ID, 'bloodColor'));
+    promises.push(this.token.unsetFlag(MODULE_ID, 'violenceLevel'));
+    return Promise.all(promises);
   }
 
   /**
