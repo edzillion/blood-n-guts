@@ -209,6 +209,17 @@ export const getUID = (typeCode?: string): string => {
 };
 
 /**
+ * Checks user to see if the current user is the first registered GM.
+ * @category helpers
+ * @function
+ * @returns {Boolean} - whether the user is the first GM
+ */
+export const isFirstActiveGM = (): boolean => {
+  // @ts-ignore
+  return game.users.find((e) => e.isGM).data._id === game.user.data._id;
+};
+
+/**
  * Hacky way to change the css on pseudo element dynamically.
  * @category helpers
  * @function

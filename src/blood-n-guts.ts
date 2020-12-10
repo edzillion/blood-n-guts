@@ -26,6 +26,7 @@ import {
   changeColorPickerOpacityHack,
   rgbaStringToHexStringAndOpacity,
   lookupTokenBloodColor,
+  isFirstActiveGM,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
@@ -572,7 +573,7 @@ export class BloodNGuts {
       }
     }
 
-    if (game.user.isGM && splatToken.updateChanges(changes)) BloodNGuts.saveScene();
+    if (isFirstActiveGM() && splatToken.updateChanges(changes)) BloodNGuts.saveScene();
 
     if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
       splatToken.updateSplats(changes.flags[MODULE_ID].splats);
@@ -587,6 +588,13 @@ export class BloodNGuts {
   public static canvasReadyHandler(canvas): void {
     if (!canvas.scene.active || BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
+
+    const gm = game.users.find((e) => e.isGM && e.active);
+    if (!gm) {
+      ui.notifications.notify(`Note: Blood 'n Guts requires a GM to be online to function!`, 'warning');
+      BloodNGuts.disabled = true;
+    }
+
     // wipe pools to be refilled from scene flag data
     BloodNGuts.scenePool = [];
 
@@ -623,7 +631,7 @@ export class BloodNGuts {
    * @param token - reference to deleted token
    */
   public static deleteTokenHandler(scene, token): void {
-    if (!scene.active || !game.user.isGM) return;
+    if (!scene.active || !isFirstActiveGM()) return;
     log(LogLevel.INFO, 'deleteTokenHandler', token._id);
     if (BloodNGuts.splatTokens[token._id]) delete BloodNGuts.splatTokens[token._id];
     BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.data.tokenId != token._id);
@@ -763,7 +771,7 @@ export class BloodNGuts {
    * @param buttons - reference to the buttons controller
    */
   public static getSceneControlButtonsHandler(buttons): void {
-    if (!game.user.isGM) return;
+    if (!isFirstActiveGM()) return;
     log(LogLevel.DEBUG, 'getSceneControlButtonsHandler');
     const tileButtons = buttons.find((b) => b.name == 'tiles');
 
@@ -776,6 +784,28 @@ export class BloodNGuts {
         visible: true,
         onClick: BloodNGuts.wipeAllFlags,
       });
+    }
+  }
+
+  /**
+   * Handler called when user logs in/out
+   * @category GMOnly
+   * @function
+   */
+  public static getUserContextOptionsHandler(): void {
+    log(LogLevel.DEBUG, 'getUserContextOptions');
+
+    const gm = game.users.find((e) => e.isGM && e.active);
+    if (!gm) {
+      ui.notifications.notify(`Note: Blood 'n Guts requires a GM to be online to function!`, 'warning');
+      BloodNGuts.disabled = true;
+    } else if (BloodNGuts.disabled) {
+      ui.notifications.notify(`GM Present: Blood 'n Guts is now functional`, 'info');
+
+      // user may have disabled BnG in settings, if not then enable.
+      if (game.settings.get(MODULE_ID, 'violenceLevel') !== 'Disabled') {
+        BloodNGuts.disabled = false;
+      }
     }
   }
 }
@@ -845,13 +875,14 @@ Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
+Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
 
 Hooks.on('chatMessage', (_chatTab, commandString, _user) => {
   const commands = commandString.split(' ');
   if (commands[0] != '/blood') return;
   switch (commands[1]) {
     case 'clear':
-      if (game.user.isGM) BloodNGuts.wipeAllFlags();
+      if (isFirstActiveGM()) BloodNGuts.wipeAllFlags();
       else BloodNGuts.wipeAllSplats();
       return false;
     default:
@@ -880,7 +911,7 @@ Token.prototype.draw = (function () {
     } else {
       splatToken = await new SplatToken(this).create();
       BloodNGuts.splatTokens[this.id] = splatToken;
-      if (game.user.isGM && !splatToken.disabled) {
+      if (isFirstActiveGM() && !splatToken.disabled) {
         splatToken.preSplat();
       }
     }
