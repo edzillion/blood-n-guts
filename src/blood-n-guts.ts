@@ -587,6 +587,13 @@ export class BloodNGuts {
   public static canvasReadyHandler(canvas): void {
     if (!canvas.scene.active || BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
+
+    const gm = game.users.find((e) => e.isGM && e.active);
+    if (!gm) {
+      ui.notifications.notify(`Note: Blood 'n Guts requires a GM to be online to function!`, 'warning');
+      BloodNGuts.disabled = true;
+    }
+
     // wipe pools to be refilled from scene flag data
     BloodNGuts.scenePool = [];
 
@@ -778,6 +785,28 @@ export class BloodNGuts {
       });
     }
   }
+
+  /**
+   * Handler called when user logs in/out
+   * @category GMOnly
+   * @function
+   */
+  public static getUserContextOptions(): void {
+    log(LogLevel.DEBUG, 'getUserContextOptions');
+
+    const gm = game.users.find((e) => e.isGM && e.active);
+    if (!gm) {
+      ui.notifications.notify(`Note: Blood 'n Guts requires a GM to be online to function!`, 'warning');
+      BloodNGuts.disabled = true;
+    } else if (BloodNGuts.disabled) {
+      ui.notifications.notify(`GM Present: Blood 'n Guts is now functional`, 'info');
+
+      // user may have disabled BnG in settings, if not then enable.
+      if (game.settings.get(MODULE_ID, 'violenceLevel') !== 'Disabled') {
+        BloodNGuts.disabled = false;
+      }
+    }
+  }
 }
 
 // HOOKS
@@ -845,6 +874,7 @@ Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
+Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptions);
 
 Hooks.on('chatMessage', (_chatTab, commandString, _user) => {
   const commands = commandString.split(' ');
