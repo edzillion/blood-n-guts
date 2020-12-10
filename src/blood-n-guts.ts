@@ -26,6 +26,7 @@ import {
   changeColorPickerOpacityHack,
   rgbaStringToHexStringAndOpacity,
   lookupTokenBloodColor,
+  isFirstActiveGM,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './module/SplatToken';
@@ -572,7 +573,7 @@ export class BloodNGuts {
       }
     }
 
-    if (game.user.isGM && splatToken.updateChanges(changes)) BloodNGuts.saveScene();
+    if (isFirstActiveGM() && splatToken.updateChanges(changes)) BloodNGuts.saveScene();
 
     if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
       splatToken.updateSplats(changes.flags[MODULE_ID].splats);
@@ -630,7 +631,7 @@ export class BloodNGuts {
    * @param token - reference to deleted token
    */
   public static deleteTokenHandler(scene, token): void {
-    if (!scene.active || !game.user.isGM) return;
+    if (!scene.active || !isFirstActiveGM()) return;
     log(LogLevel.INFO, 'deleteTokenHandler', token._id);
     if (BloodNGuts.splatTokens[token._id]) delete BloodNGuts.splatTokens[token._id];
     BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.data.tokenId != token._id);
@@ -770,7 +771,7 @@ export class BloodNGuts {
    * @param buttons - reference to the buttons controller
    */
   public static getSceneControlButtonsHandler(buttons): void {
-    if (!game.user.isGM) return;
+    if (!isFirstActiveGM()) return;
     log(LogLevel.DEBUG, 'getSceneControlButtonsHandler');
     const tileButtons = buttons.find((b) => b.name == 'tiles');
 
@@ -881,7 +882,7 @@ Hooks.on('chatMessage', (_chatTab, commandString, _user) => {
   if (commands[0] != '/blood') return;
   switch (commands[1]) {
     case 'clear':
-      if (game.user.isGM) BloodNGuts.wipeAllFlags();
+      if (isFirstActiveGM()) BloodNGuts.wipeAllFlags();
       else BloodNGuts.wipeAllSplats();
       return false;
     default:
@@ -910,7 +911,7 @@ Token.prototype.draw = (function () {
     } else {
       splatToken = await new SplatToken(this).create();
       BloodNGuts.splatTokens[this.id] = splatToken;
-      if (game.user.isGM && !splatToken.disabled) {
+      if (isFirstActiveGM() && !splatToken.disabled) {
         splatToken.preSplat();
       }
     }
