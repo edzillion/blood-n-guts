@@ -791,7 +791,7 @@ export class BloodNGuts {
    * @category GMOnly
    * @function
    */
-  public static getUserContextOptions(): void {
+  public static getUserContextOptionsHandler(): void {
     log(LogLevel.DEBUG, 'getUserContextOptions');
 
     const gm = game.users.find((e) => e.isGM && e.active);
@@ -874,7 +874,7 @@ Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
-Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptions);
+Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
 
 Hooks.on('chatMessage', (_chatTab, commandString, _user) => {
   const commands = commandString.split(' ');
