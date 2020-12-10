@@ -45,11 +45,13 @@ export class BloodNGuts {
   public static splatTokens: Record<string, SplatToken>;
   public static scenePool: Array<SplatPoolObject>;
   public static disabled: boolean;
+  public static paintActive: boolean;
 
   public static initialize(): void {
     BloodNGuts.splatTokens = {};
     BloodNGuts.scenePool = [];
     BloodNGuts.disabled = false;
+    BloodNGuts.paintActive = false;
   }
 
   /**
@@ -547,107 +549,33 @@ export class BloodNGuts {
   }
 
   /**
-   * Draw splats on any HTMLElement sent to it.
+   * Paint splats on the scene. If user clicks on floor then `generateFloorSplats` if on token then
+   * `generateTokenSplats`.
    * @category GMOnly
    * @function
-   * @param {HTMLElement} html - the HTMLElement to draw splats on.
-   * @param {SplatFont=tokenSplatFont} font - the font to use for splats
-   * @param {number} size - the size of splats.
-   * @param {number} density - the amount of splats.
-   * @param {string='blood'} bloodColor - splat color, can be a css color name or RBGA string e.g. '[255,255,0,0.5]'
    */
-  public static paintSceneSplats() {
-    if (!canvas.scene.active) {
-      ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
-      return;
+  public static togglePaintSceneSplatTool(enable = true) {
+    if (enable) {
+      if (!canvas.scene.active) {
+        ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
+        return;
+      }
+      $('body').on('click', 'canvas', BloodNGuts.onPaintSceneClickHandler);
+      $('.scene-control[data-control="tiles"] .control-tool[data-tool="browse"]').on(
+        'click',
+        'li',
+        BloodNGuts.onBrowseTilesClickHandler,
+      );
+      BloodNGuts.paintActive = true;
+    } else {
+      $('body').off('click', 'canvas', BloodNGuts.onPaintSceneClickHandler);
+      $('.scene-control[data-control="tiles"] .control-tool[data-tool="browse"]').off(
+        'click',
+        'li',
+        BloodNGuts.onBrowseTilesClickHandler,
+      );
+      BloodNGuts.paintActive = false;
     }
-
-    const paintSceneClickHandler = (event) => {
-      const [x, y] = [event.clientX, event.clientY];
-      const t = canvas.stage.worldTransform;
-      const xx = (x - t.tx) / canvas.stage.scale.x;
-      const yy = (y - t.ty) / canvas.stage.scale.y;
-
-      if (
-        xx < canvas.dimensions.paddingX ||
-        xx > canvas.dimensions.width - canvas.dimensions.paddingX ||
-        yy < canvas.dimensions.paddingY ||
-        yy > canvas.dimensions.height - canvas.dimensions.paddingY
-      ) {
-        if (xx < 0 || xx > canvas.dimensions.width || yy < 0 || yy > canvas.dimensions.height) console.log('outside');
-        else console.log('padding');
-      }
-
-      log(LogLevel.DEBUG, 'generateFloorSplats');
-
-      const splatDataObj: Partial<SplatDataObject> = {};
-
-      // scale the splats based on token size and severity
-      const fontSize = game.settings.get(MODULE_ID, 'floorSplatSize');
-      const font = BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'floorSplatFont')];
-      const bloodColor = getRGBA('blood');
-      log(LogLevel.DEBUG, 'generateFloorSplats fontSize', fontSize);
-      splatDataObj.styleData = {
-        fontFamily: font.name,
-        fontSize: fontSize,
-        fill: bloodColor,
-        align: 'center',
-      };
-      const style = new PIXI.TextStyle(splatDataObj.styleData);
-
-      const spread = game.settings.get(MODULE_ID, 'splatSpread');
-      // amount of splats is based on density and severity
-      const amount = game.settings.get(MODULE_ID, 'floorSplatDensity');
-      // get a random glyph and then get a random (x,y) spread away from the token.
-      const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
-      const pixelSpreadX = canvas.grid.size * spread;
-      const pixelSpreadY = canvas.grid.size * spread;
-      log(LogLevel.DEBUG, 'generateFloorSplats amount', amount);
-      log(LogLevel.DEBUG, 'generateFloorSplats pixelSpread', pixelSpreadX, pixelSpreadY);
-
-      // create our splats for later drawing.
-      splatDataObj.splats = glyphArray.map((glyph) => {
-        const tm = PIXI.TextMetrics.measureText(glyph, style);
-        const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
-        const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
-        return {
-          x: Math.round(randX - tm.width / 2),
-          y: Math.round(randY - tm.height / 2),
-          angle: Math.round(Math.random() * 360),
-          width: tm.width,
-          height: tm.height,
-          glyph: glyph,
-        };
-      });
-
-      const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatDataObj.splats);
-      splatDataObj.offset = offset;
-      splatDataObj.x = offset.x;
-      splatDataObj.y = offset.y;
-
-      const maxDistance = Math.max(width, height);
-      const tokenCenter = new PIXI.Point(xx, yy);
-      const sight = computeSightFromPoint(tokenCenter, maxDistance);
-
-      // since we don't want to add the mask to the container yet (as that will
-      // screw up our alignment) we need to move it by editing the x,y points directly
-      for (let i = 0; i < sight.length; i += 2) {
-        sight[i] -= splatDataObj.offset.x;
-        sight[i + 1] -= splatDataObj.offset.y;
-      }
-
-      splatDataObj.x += tokenCenter.x;
-      splatDataObj.y += tokenCenter.y;
-      splatDataObj.maskPolygon = sight;
-      splatDataObj.id = getUID();
-      BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
-      BloodNGuts.saveScene();
-      // console.log({ xx }, { yy });
-      // if (xx < 0 || yy < 0 || xx > canvas.scene.width || yy > canvas.scene.height) console.error('out of bounds!');
-    };
-
-    // ... Now foo will be called when paragraphs are clicked ...
-    $('body').on('click', 'canvas', paintSceneClickHandler);
 
     // if ( layer.options?.rotatableObjects && ( isCtrl || isShift ) ) {
     //   const hasTarget = layer.options?.controllableObjects ? layer.controlled.length : !!layer._hover;
@@ -664,6 +592,86 @@ export class BloodNGuts {
   }
 
   // HANDLERS
+
+  public static onPaintSceneClickHandler(event) {
+    const [x, y] = [event.clientX, event.clientY];
+    const t = canvas.stage.worldTransform;
+    const canvasX = (x - t.tx) / canvas.stage.scale.x;
+    const canvasY = (y - t.ty) / canvas.stage.scale.y;
+
+    if (
+      canvasX < canvas.dimensions.paddingX ||
+      canvasX > canvas.dimensions.width - canvas.dimensions.paddingX ||
+      canvasY < canvas.dimensions.paddingY ||
+      canvasY > canvas.dimensions.height - canvas.dimensions.paddingY
+    )
+      return;
+
+    log(LogLevel.DEBUG, 'onPaintSceneClick');
+
+    const splatDataObj: Partial<SplatDataObject> = {};
+
+    // scale the splats based on token size and severity
+    const font = BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'floorSplatFont')];
+    splatDataObj.styleData = {
+      fontFamily: font.name,
+      fontSize: game.settings.get(MODULE_ID, 'floorSplatSize'),
+      fill: getRGBA('blood'),
+      align: 'center',
+    };
+    const style = new PIXI.TextStyle(splatDataObj.styleData);
+
+    const spread = game.settings.get(MODULE_ID, 'splatSpread');
+    const amount = game.settings.get(MODULE_ID, 'floorSplatDensity');
+    // get a random glyph and then get a random (x,y) spread away from the token.
+    const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
+    const pixelSpreadX = canvas.grid.size * spread;
+    const pixelSpreadY = canvas.grid.size * spread;
+    log(LogLevel.DEBUG, 'generateFloorSplats amount', amount);
+    log(LogLevel.DEBUG, 'generateFloorSplats pixelSpread', pixelSpreadX, pixelSpreadY);
+
+    // create our splats for later drawing.
+    splatDataObj.splats = glyphArray.map((glyph) => {
+      const tm = PIXI.TextMetrics.measureText(glyph, style);
+      const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
+      const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
+      return {
+        x: Math.round(randX - tm.width / 2),
+        y: Math.round(randY - tm.height / 2),
+        angle: Math.round(Math.random() * 360),
+        width: tm.width,
+        height: tm.height,
+        glyph: glyph,
+      };
+    });
+
+    const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatDataObj.splats);
+    splatDataObj.offset = offset;
+    splatDataObj.x = offset.x;
+    splatDataObj.y = offset.y;
+
+    const maxDistance = Math.max(width, height);
+    const clickPt = new PIXI.Point(canvasX, canvasY);
+    const sight = computeSightFromPoint(clickPt, maxDistance);
+
+    // since we don't want to add the mask to the container yet (as that will
+    // screw up our alignment) we need to move it by editing the x,y points directly
+    for (let i = 0; i < sight.length; i += 2) {
+      sight[i] -= splatDataObj.offset.x;
+      sight[i + 1] -= splatDataObj.offset.y;
+    }
+
+    splatDataObj.x += clickPt.x;
+    splatDataObj.y += clickPt.y;
+    splatDataObj.maskPolygon = sight;
+    splatDataObj.id = getUID();
+    BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
+    BloodNGuts.saveScene();
+  }
+
+  public static onBrowseTilesClickHandler(event) {
+    BloodNGuts.togglePaintSceneSplatTool(false);
+  }
 
   /**
    * Handler called on all updateToken and updateActor events. Checks for movement and damage and
@@ -894,15 +902,15 @@ export class BloodNGuts {
 
     if (tileButtons) {
       tileButtons.tools.push({
-        name: MODULE_ID + 'paint',
+        name: MODULE_ID + '-paint',
         title: 'Draw blood splats.',
         icon: 'fas fa-tint',
         active: false,
         visible: true,
-        onClick: BloodNGuts.paintSceneSplats,
+        onClick: BloodNGuts.togglePaintSceneSplatTool,
       });
       tileButtons.tools.push({
-        name: MODULE_ID + 'wipe',
+        name: MODULE_ID + '-wipe',
         title: 'Wipe all blood splats from this scene.',
         icon: 'fas fa-tint-slash',
         active: false,
@@ -913,7 +921,7 @@ export class BloodNGuts {
   }
 
   /**
-   * Handler called when user logs in/out
+   * Handler called when user logs in/out. Used to make sure there is a GM online and disable if not.
    * @category GMOnly
    * @function
    */
@@ -1001,6 +1009,27 @@ Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
 Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
 Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
+
+Hooks.on('renderSceneControls', (sceneControls, html, controls) => {
+  if (sceneControls.activeControl === 'tiles') {
+    if (sceneControls.controls.find((c) => c.name === 'tiles').activeTool === MODULE_ID + '-paint') {
+      if (!BloodNGuts.paintActive) BloodNGuts.togglePaintSceneSplatTool(true);
+    } else if (BloodNGuts.paintActive) BloodNGuts.togglePaintSceneSplatTool(false);
+  } else if (BloodNGuts.paintActive) BloodNGuts.togglePaintSceneSplatTool(false);
+
+  // const currentControl = ;
+  // if (currentControl.activeTool !== MODULE_ID + '-paint') {
+  //   $('body').off('click', 'canvas', BloodNGuts.onPaintSceneClickHandler);
+  //   const browseButton = html.find('.scene-control[data-control="tiles"] .control-tool[data-tool="browse"]');
+  //   browseButton.off('click', 'li', BloodNGuts.onBrowseTilesClickHandler);
+  //   BloodNGuts.paintActive = false;
+  // }
+  // else {
+  //   const browseButton = html.find('.scene-control[data-control="tiles"] .control-tool[data-tool="browse"]');
+  //   browseButton.on('click', 'li', BloodNGuts.onBrowseTilesClickHandler);
+  // }
+  return;
+});
 
 Hooks.on('chatMessage', (_chatTab, commandString, _user) => {
   const commands = commandString.split(' ');
