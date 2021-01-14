@@ -28,8 +28,9 @@ import {
   lookupTokenBloodColor,
   isFirstActiveGM,
 } from './module/helpers';
-import { MODULE_ID } from './constants';
+import { MODULE_ID, MODULE_TITLE } from './constants';
 import SplatToken from './module/SplatToken';
+import BloodLayer3 from './module/BloodLayer3';
 import * as splatFonts from './data/splatFonts';
 
 // CONFIG.debug.hooks = true;
@@ -52,6 +53,17 @@ export class BloodNGuts {
     BloodNGuts.scenePool = [];
     BloodNGuts.disabled = false;
     BloodNGuts.paintActive = false;
+  }
+
+  public static registerLayer() {
+    const layers = mergeObject(Canvas.layers, {
+      blood: BloodLayer3,
+    });
+    Object.defineProperty(Canvas, 'layers', {
+      get: function () {
+        return layers;
+      },
+    });
   }
 
   /**
@@ -183,7 +195,7 @@ export class BloodNGuts {
           container.alpha = data.alpha || 1;
           // we don't want to save alpha to flags
           delete data.alpha;
-          canvas.tiles.addChild(container);
+          canvas.blood.addChild(container);
 
           //if it's in the pool already update it otherwise add new entry
           if (existingIds.includes(data.id))
@@ -895,28 +907,61 @@ export class BloodNGuts {
    * @function
    * @param buttons - reference to the buttons controller
    */
-  public static getSceneControlButtonsHandler(buttons): void {
+  public static getSceneControlButtonsHandler(controls): void {
     if (!isFirstActiveGM()) return;
     log(LogLevel.DEBUG, 'getSceneControlButtonsHandler');
-    const tileButtons = buttons.find((b) => b.name == 'tiles');
 
-    if (tileButtons) {
-      tileButtons.tools.push({
-        name: MODULE_ID + '-paint',
-        title: 'Draw blood splats.',
+    if (game.user.isGM) {
+      controls.push({
+        name: MODULE_ID,
+        title: MODULE_TITLE,
         icon: 'fas fa-tint',
-        active: false,
-        visible: true,
-        onClick: BloodNGuts.togglePaintSceneSplatTool,
+        layer: 'BloodLayer3',
+        tools: [
+          {
+            name: MODULE_ID + '-toggle',
+            title: 'Toggle ' + MODULE_TITLE + ' on/off',
+            icon: 'fas fa-eye',
+            onClick: () => {
+              canvas.blood.toggle();
+            },
+            active: false, //canvas.blood.visible,
+            toggle: true,
+          },
+          {
+            name: MODULE_ID + '-brush',
+            title: 'Draw blood splats to the scene',
+            icon: 'fas fa-tint',
+            onClick: BloodNGuts.togglePaintSceneSplatTool,
+          },
+          {
+            name: MODULE_ID + '-wipe',
+            title: 'Wipe all blood splats from this scene',
+            icon: 'fas fa-tint-slash',
+            button: true,
+            onClick: BloodNGuts.wipeAllFlags,
+          },
+        ],
+        activeTool: MODULE_ID + '-brush',
       });
-      tileButtons.tools.push({
-        name: MODULE_ID + '-wipe',
-        title: 'Wipe all blood splats from this scene.',
-        icon: 'fas fa-tint-slash',
-        active: false,
-        visible: true,
-        onClick: BloodNGuts.wipeAllFlags,
-      });
+
+      // if (tileButtons) {
+      //   tileButtons.tools.push({
+      //     name: MODULE_ID + '-paint',
+      //     title: 'Draw blood splats.',
+      //     icon: 'fas fa-tint',
+      //     active: false,
+      //     visible: true,
+
+      //   });
+      //   tileButtons.tools.push({
+      //     name: MODULE_ID + '-wipe',
+      //     title: 'Wipe all blood splats from this scene.',
+      //     icon: 'fas fa-tint-slash',
+      //     active: false,
+      //     visible: true,
+
+      //   });
     }
   }
 
@@ -947,6 +992,8 @@ export class BloodNGuts {
 
 Hooks.once('init', () => {
   log(LogLevel.INFO, `Initializing module ${MODULE_ID}`);
+
+  BloodNGuts.registerLayer();
 
   // Assign custom classes and constants here
   BloodNGuts.initialize();
@@ -986,6 +1033,12 @@ Hooks.once('init', () => {
     if (game.settings.get(MODULE_ID, 'violenceLevel') === 'Custom')
       game.settings.set(MODULE_ID, 'violenceLevel', 'Custom');
   });
+});
+
+Hooks.once('canvasInit', () => {
+  // Add SimplefogLayer to canvas
+  const zIndex = canvas.stage.children.indexOf(canvas.background) + 1;
+  canvas.blood = canvas.stage.addChildAt(new BloodLayer3(), zIndex);
 });
 
 Hooks.once('ready', () => {
