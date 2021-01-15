@@ -27,14 +27,9 @@ export default class BloodLayer extends TilesLayer {
     return mergeObject(super.layerOptions, {
       // @ts-ignore
       zIndex: 11,
+      canDragCreate: false,
     });
   }
-
-  /** @override */
-  _onClickLeft(event) {
-    log(LogLevel.INFO, '_onClickLeft');
-  }
-
   // set objects(objects) {
   //   debugger;
   //   this._objects = objects;

@@ -921,7 +921,7 @@ export class BloodNGuts {
         layer: 'BloodLayer',
         tools: [
           {
-            name: MODULE_ID + '-toggle',
+            name: 'toggle',
             title: 'Toggle ' + MODULE_TITLE + ' on/off',
             icon: 'fas fa-eye',
             onClick: () => {
@@ -931,20 +931,25 @@ export class BloodNGuts {
             toggle: true,
           },
           {
-            name: MODULE_ID + '-brush',
+            name: 'select',
+            title: 'Select blood splats',
+            icon: 'fas fa-expand',
+          },
+          {
+            name: 'brush',
             title: 'Draw blood splats to the scene',
             icon: 'fas fa-tint',
             onClick: BloodNGuts.togglePaintSceneSplatTool,
           },
           {
-            name: MODULE_ID + '-wipe',
+            name: 'wipe',
             title: 'Wipe all blood splats from this scene',
             icon: 'fas fa-tint-slash',
             button: true,
             onClick: BloodNGuts.wipeAllFlags,
           },
         ],
-        activeTool: MODULE_ID + '-brush',
+        activeTool: 'select',
       });
 
       // if (tileButtons) {
