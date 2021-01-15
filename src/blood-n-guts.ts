@@ -30,7 +30,7 @@ import {
 } from './module/helpers';
 import { MODULE_ID, MODULE_TITLE } from './constants';
 import SplatToken from './module/SplatToken';
-import BloodLayer3 from './module/BloodLayer3';
+import BloodLayer from './module/BloodLayer';
 import * as splatFonts from './data/splatFonts';
 
 // CONFIG.debug.hooks = true;
@@ -56,9 +56,11 @@ export class BloodNGuts {
   }
 
   public static registerLayer() {
+    // @ts-ignore
     const layers = mergeObject(Canvas.layers, {
-      blood: BloodLayer3,
+      blood: BloodLayer,
     });
+    // @ts-ignore
     Object.defineProperty(Canvas, 'layers', {
       get: function () {
         return layers;
@@ -913,10 +915,10 @@ export class BloodNGuts {
 
     if (game.user.isGM) {
       controls.push({
-        name: MODULE_ID,
+        name: 'blood',
         title: MODULE_TITLE,
         icon: 'fas fa-tint',
-        layer: 'BloodLayer3',
+        layer: 'BloodLayer',
         tools: [
           {
             name: MODULE_ID + '-toggle',
@@ -1033,12 +1035,6 @@ Hooks.once('init', () => {
     if (game.settings.get(MODULE_ID, 'violenceLevel') === 'Custom')
       game.settings.set(MODULE_ID, 'violenceLevel', 'Custom');
   });
-});
-
-Hooks.once('canvasInit', () => {
-  // Add SimplefogLayer to canvas
-  const zIndex = canvas.stage.children.indexOf(canvas.background) + 1;
-  canvas.blood = canvas.stage.addChildAt(new BloodLayer3(), zIndex);
 });
 
 Hooks.once('ready', () => {
