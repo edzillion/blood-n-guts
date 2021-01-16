@@ -143,6 +143,7 @@ export class BloodNGuts {
    * @param {[SplatDataObject]} splats - updated array of scene splats
    */
   public static drawSceneSplats(splats: SplatDataObject[]): void {
+    debugger;
     log(LogLevel.DEBUG, 'drawSceneSplats');
     const updatedIds = splats.map((s) => s.id);
     const existingIds = BloodNGuts.scenePool.map((poolObj) => poolObj.data.id);
@@ -936,10 +937,10 @@ export class BloodNGuts {
             icon: 'fas fa-expand',
           },
           {
-            name: 'brush',
+            name: 'tile',
             title: 'Draw blood splats to the scene',
             icon: 'fas fa-tint',
-            onClick: BloodNGuts.togglePaintSceneSplatTool,
+            //onClick: BloodNGuts.togglePaintSceneSplatTool,
           },
           {
             name: 'wipe',
