@@ -143,7 +143,6 @@ export class BloodNGuts {
    * @param {[SplatDataObject]} splats - updated array of scene splats
    */
   public static drawSceneSplats(splats: SplatDataObject[]): void {
-    debugger;
     log(LogLevel.DEBUG, 'drawSceneSplats');
     const updatedIds = splats.map((s) => s.id);
     const existingIds = BloodNGuts.scenePool.map((poolObj) => poolObj.data.id);
