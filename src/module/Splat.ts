@@ -24,6 +24,7 @@ import { log, LogLevel } from './logging';
  * @see {@link TileSheet}
  * @see {@link TileHUD}
  */
+
 export default class Splat extends Tile {
   container: any;
   frame: any;
@@ -31,14 +32,11 @@ export default class Splat extends Tile {
   constructor(data = {}, scene) {
     super(data, scene);
 
-    // Clean initial data
-    //this._cleanData();
-
     /**
      * The Splat image container
      * @type {PIXI.Container|null}
      */
-    this.container = null;
+    this.container = new PIXI.Container();
 
     this.data = {
       splats: [
@@ -211,39 +209,6 @@ export default class Splat extends Tile {
       ],
       id: 'bng__177066395c4_0.844fc02d550df8',
     };
-  }
-
-  /** @extends {Entity.createEmbeddedEntity} */
-  async create(data, options = {}) {
-    debugger;
-    const created = await canvas.scene.createEmbeddedEntity(this.embeddedName, data, options);
-    if (!created) return;
-    if (created instanceof Array) {
-      return created.map((c) => this.layer.get(c._id));
-    } else {
-      return this.layer.get(created._id);
-    }
-  }
-
-  /* -------------------------------------------- */
-
-  /** @override */
-  static get embeddedName() {
-    return 'Splat';
-  }
-
-  /** @override */
-  async draw() {
-    this.clear();
-
-    // Create the outer frame for the border and interaction handles
-    this.frame = this.addChild(new PIXI.Container());
-    this.frame.border = this.frame.addChild(new PIXI.Graphics());
-    //@ts-ignore
-    this.frame.handle = this.frame.addChild(new ResizeHandle([1, 1]));
-
-    // Create the tile container and it's child elements
-    this.container = this.addChild(new PIXI.Container());
     const style = new PIXI.TextStyle(this.data.styleData);
     // all scene splats have a .maskPolgyon.
     if (this.data.maskPolygon) {
@@ -265,18 +230,80 @@ export default class Splat extends Tile {
       this.container.addChild(sightMask);
       this.container.mask = sightMask;
 
-      this.container.x = this.data.x;
-      this.container.y = this.data.y;
-      this.container.alpha = this.data.alpha || 1;
+      // this.container.x = this.data.x;
+      // this.container.y = this.data.y;
+      // this.container.alpha = this.data.alpha || 1;
       // we don't want to save alpha to flags
-      // delete this.data.alpha;
+      //delete this.data.alpha;
+      canvas.blood.addChild(this.container);
+
+      //   //if it's in the pool already update it otherwise add new entry
+      //   if (existingIds.includes(data.id))
+      //     BloodNGuts.scenePool.find((p) => p.data.id === data.id).container = container;
+      //   else BloodNGuts.scenePool.push({ data: data, container: container });
+      // } else {
+      //   log(LogLevel.ERROR, 'drawSceneSplats: splatDataObject has no .maskPolygon!');
+      // }
     }
-
-    // Refresh the current display
-    this.refresh();
-
-    // Enable interactivity, only if the Splat has a true ID
-    if (this.id) this.activateListeners();
-    return this;
   }
+
+  /* -------------------------------------------- */
+
+  /** @override */
+  static get embeddedName() {
+    return 'Splat';
+  }
+
+  // static getEmbeddedCollection(embeddedName) {
+  //   //@ts-expect-error missing def
+  //   return super.getEmbeddedCollection(embeddedName);
+  // }
+
+  // /** @override */
+  // async draw() {
+  //   this.clear();
+
+  //   // Create the outer frame for the border and interaction handles
+  //   this.frame = this.addChild(new PIXI.Container());
+  //   this.frame.border = this.frame.addChild(new PIXI.Graphics());
+  //   //@ts-ignore
+  //   this.frame.handle = this.frame.addChild(new ResizeHandle([1, 1]));
+
+  //   // Create the tile container and it's child elements
+  //   this.container = this.addChild(new PIXI.Container());
+  //   const style = new PIXI.TextStyle(this.data.styleData);
+  //   // all scene splats have a .maskPolgyon.
+  //   if (this.data.maskPolygon) {
+  //     this.data.splats.forEach((splat) => {
+  //       const text = new PIXI.Text(splat.glyph, style);
+  //       text.x = splat.x + splat.width / 2;
+  //       text.y = splat.y + splat.height / 2;
+  //       text.pivot.set(splat.width / 2, splat.height / 2);
+  //       text.angle = splat.angle;
+  //       this.container.addChild(text);
+  //       return text;
+  //     });
+
+  //     log(LogLevel.DEBUG, 'drawSceneSplats: splatDataObj.maskPolygon');
+  //     const sightMask = new PIXI.Graphics();
+  //     sightMask.beginFill(1, 1);
+  //     sightMask.drawPolygon(this.data.maskPolygon);
+  //     sightMask.endFill();
+  //     this.container.addChild(sightMask);
+  //     this.container.mask = sightMask;
+
+  //     this.container.x = this.data.x;
+  //     this.container.y = this.data.y;
+  //     this.container.alpha = this.data.alpha || 1;
+  //     // we don't want to save alpha to flags
+  //     // delete this.data.alpha;
+  //   }
+
+  //   // Refresh the current display
+  //   this.refresh();
+
+  //   // Enable interactivity, only if the Splat has a true ID
+  //   if (this.id) this.activateListeners();
+  //   return this;
+  // }
 }

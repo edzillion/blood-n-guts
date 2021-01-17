@@ -20,9 +20,14 @@ export const SplatTile = async function (tile) {
     _last_update: 0,
   };
 
-  tile._onUpdate = (data) => {
+  tile._onCreateEmbeddedEntity = (embeddedName, child, options, userId) => {
     debugger;
   };
+
+  // tile._onUpdate = (data) => {
+  //   debugger;
+  // };
+
   return this;
 };
 
