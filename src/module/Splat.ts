@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { log, LogLevel } from './logging';
 
 /**
@@ -23,10 +24,10 @@ import { log, LogLevel } from './logging';
  * @see {@link TileSheet}
  * @see {@link TileHUD}
  */
-class Splat extends Tile {
-  static container: any;
-  static frame: any;
-  static data: any;
+export default class Splat extends Tile {
+  container: any;
+  frame: any;
+  data: any;
   constructor(data = {}, scene) {
     super(data, scene);
 
@@ -212,10 +213,70 @@ class Splat extends Tile {
     };
   }
 
+  /** @extends {Entity.createEmbeddedEntity} */
+  async create(data, options = {}) {
+    debugger;
+    const created = await canvas.scene.createEmbeddedEntity(this.embeddedName, data, options);
+    if (!created) return;
+    if (created instanceof Array) {
+      return created.map((c) => this.layer.get(c._id));
+    } else {
+      return this.layer.get(created._id);
+    }
+  }
+
   /* -------------------------------------------- */
 
   /** @override */
   static get embeddedName() {
     return 'Splat';
+  }
+
+  /** @override */
+  async draw() {
+    this.clear();
+
+    // Create the outer frame for the border and interaction handles
+    this.frame = this.addChild(new PIXI.Container());
+    this.frame.border = this.frame.addChild(new PIXI.Graphics());
+    //@ts-ignore
+    this.frame.handle = this.frame.addChild(new ResizeHandle([1, 1]));
+
+    // Create the tile container and it's child elements
+    this.container = this.addChild(new PIXI.Container());
+    const style = new PIXI.TextStyle(this.data.styleData);
+    // all scene splats have a .maskPolgyon.
+    if (this.data.maskPolygon) {
+      this.data.splats.forEach((splat) => {
+        const text = new PIXI.Text(splat.glyph, style);
+        text.x = splat.x + splat.width / 2;
+        text.y = splat.y + splat.height / 2;
+        text.pivot.set(splat.width / 2, splat.height / 2);
+        text.angle = splat.angle;
+        this.container.addChild(text);
+        return text;
+      });
+
+      log(LogLevel.DEBUG, 'drawSceneSplats: splatDataObj.maskPolygon');
+      const sightMask = new PIXI.Graphics();
+      sightMask.beginFill(1, 1);
+      sightMask.drawPolygon(this.data.maskPolygon);
+      sightMask.endFill();
+      this.container.addChild(sightMask);
+      this.container.mask = sightMask;
+
+      this.container.x = this.data.x;
+      this.container.y = this.data.y;
+      this.container.alpha = this.data.alpha || 1;
+      // we don't want to save alpha to flags
+      // delete this.data.alpha;
+    }
+
+    // Refresh the current display
+    this.refresh();
+
+    // Enable interactivity, only if the Splat has a true ID
+    if (this.id) this.activateListeners();
+    return this;
   }
 }

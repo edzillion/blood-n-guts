@@ -39,18 +39,18 @@ interface SplatDataObject {
   x: number;
   y: number;
   styleData: any;
-  splats: Array<Splat>;
+  splats: Array<any>;
   offset: PIXI.Point;
   maskPolygon?: Array<number>;
   tokenId?: string;
   alpha?: number;
 }
 
-interface Splat {
-  glyph: string;
-  x: number;
-  y: number;
-  angle: number;
-  width?: number;
-  height?: number;
-}
+// interface Splat {
+//   glyph: string;
+//   x: number;
+//   y: number;
+//   angle: number;
+//   width?: number;
+//   height?: number;
+// }

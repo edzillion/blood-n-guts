@@ -19,7 +19,7 @@ const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?
  * @returns {PIXI.Point, number, number} - offset, width, height
  */
 export const alignSplatsGetOffsetAndDimensions = (
-  splats: Array<Splat>,
+  splats: Array<any>,
 ): { offset: PIXI.Point; width: number; height: number } => {
   let lowestX = canvas.dimensions.sceneWidth;
   let lowestY = canvas.dimensions.sceneHeight;
