@@ -3,7 +3,8 @@ import { log, LogLevel } from './logging';
 import Splat from './Splat';
 import { SplatTile } from './SplatTile';
 
-export default class BloodLayer extends PlaceablesLayer {
+//@ts-expect-error missing definition
+export default class BloodLayer extends TilesLayer {
   dataArray: any;
   defaults: {
     img: string;
@@ -18,6 +19,7 @@ export default class BloodLayer extends PlaceablesLayer {
     locked: boolean;
   };
   layer: PIXI.Container;
+  collection: any[];
   // _objects: [];
   constructor() {
     super();
@@ -35,6 +37,8 @@ export default class BloodLayer extends PlaceablesLayer {
       hidden: false,
       locked: true,
     };
+
+    this.collection = [];
 
     // this.layer = BloodLayer.getCanvasContainer();
     // this.addChild(this.layer);
@@ -65,7 +69,7 @@ export default class BloodLayer extends PlaceablesLayer {
   /** @override */
   static get layerOptions() {
     return mergeObject(super.layerOptions, {
-      //@ts-expect-error definition missing
+      // //@ts-expect-error definition missing
       zIndex: 11,
       canDragCreate: false,
       objectClass: Splat,
@@ -85,6 +89,7 @@ export default class BloodLayer extends PlaceablesLayer {
     d.x = p.x;
     d.y = p.y;
     const obj: Splat = new Splat(d, canvas.scene);
+    this.collection.push(obj.data);
     obj.zIndex = this.defaults.z || 0;
     //@ts-expect-error definition missing
     this.objects.addChild(obj);
@@ -116,12 +121,14 @@ export default class BloodLayer extends PlaceablesLayer {
     const dataArray = [this.defaults]; //[canvas.scene.data['flags'][MODULE_ID].sceneSplats] || [];
 
     const promises = dataArray.map((data) => {
+      //@ts-expect-error missing definition
       const obj = this.createObject(data);
-      //@ts-expect-error definition missing
+      // //@ts-expect-error definition missing
       return obj.draw();
     });
 
     // Wait for all objects to draw
+    //@ts-expect-error missing definition
     this.visible = true;
     return Promise.all(promises);
   }
@@ -132,6 +139,7 @@ export default class BloodLayer extends PlaceablesLayer {
     CanvasLayer.prototype.activate.apply(this);
     //@ts-expect-error definition missing
     this.objects.visible = true;
+    //@ts-expect-error missing definition
     this.placeables.forEach((l) => l.refresh());
     return this;
   }
@@ -145,8 +153,91 @@ export default class BloodLayer extends PlaceablesLayer {
     if (this.objects) this.objects.visible = true;
     //@ts-expect-error definition missing
     this.releaseAll();
+    //@ts-expect-error missing definition
     this.placeables.forEach((l) => l.refresh());
+    //@ts-expect-error missing definition
     if (this.preview) this.preview.removeChildren();
     return this;
   }
+
+  async updateMany(data, options = {} as any) {
+    const user = game.user;
+    options = mergeObject({ diff: true }, options);
+
+    //   // Structure the update data
+    const pending = new Map();
+    data = data instanceof Array ? data : [data];
+    for (const d of data) {
+      if (!d._id) throw new Error('You must provide an id for every Embedded Entity in an update operation');
+      pending.set(d._id, d);
+    }
+
+    // Difference each update against existing data
+    const updates = this.collection.reduce((arr, d) => {
+      if (!pending.has(d._id)) return arr;
+      let update = pending.get(d._id);
+
+      // Diff the update against current data
+      if (options.diff) {
+        update = diffObject(d, expandObject(update));
+        if (isObjectEmpty(update)) return arr;
+        update['_id'] = d._id;
+      }
+
+      //     // Call pre-update hooks to ensure the update is allowed to proceed
+      // if (!options.noHook) {
+      //   const allowed = Hooks.call(`preUpdate${embeddedName}`, this, d, update, options, user._id);
+      //   if (allowed === false) {
+      //     console.debug(`${vtt} | ${embeddedName} update prevented by preUpdate hook`);
+      //     return arr;
+      //   }
+      // }
+
+      // Stage the update
+      arr.push(update);
+      return arr;
+    }, []);
+    if (!updates.length) return [];
+
+    updates.forEach((update) => {
+      debugger;
+      //@ts-expect-error definition missing
+      const s = this.get(update._id);
+      s.data = mergeObject(s.data, update);
+    });
+    // //@ts-expect-error definition missing
+  }
+
+  // }
+
+  // addSplatsToCollection(splatDatas) {
+  //   // Prepare created Entities
+  //   const entities = splatDatas.map((data) => {
+  //     // Create the Entity instance
+  //     const entity = new this(data);
+  //     if (temporary) return entity;
+
+  //     // Add it to the EntityCollection
+  //     this.collection.insert(entity);
+
+  //     // Trigger follow-up actions and return
+  //     entity._onCreate(data, options, userId);
+  //     Hooks.callAll(`create${type}`, entity, options, userId);
+  //     return entity;
+  //   });
+
+  //   // Log creation
+  //   let msg = entities.length === 1 ? `Created ${type}` : `Created ${entities.length} ${type}s`;
+  //   if (entities.length === 1) msg += ` with id ${entities[0].id}`;
+  //   else if (entities.length <= 5) msg += ` with ids: [${entities.map((d) => d.id)}]`;
+  //   console.log(`${vtt} | ${msg}`);
+
+  //   // Re-render the parent EntityCollection
+  //   if (options.render !== false) {
+  //     this.collection.render(false, { entityType: this.entity, action: 'create', entities: entities, data: result });
+  //   }
+
+  //   // Return the created Entities
+  //   return entities;
+  // }
 }

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+import { getUID } from './helpers';
 import { log, LogLevel } from './logging';
 
 /**
@@ -209,6 +210,7 @@ export default class Splat extends Tile {
       ],
       id: 'bng__177066395c4_0.844fc02d550df8',
     };
+    this.data._id = getUID();
   }
 
   /** @override */
@@ -272,9 +274,9 @@ export default class Splat extends Tile {
 
     // Refresh the current display
     this.refresh();
-
-    // Enable interactivity, only if the Tile has a true ID
-    if (this.id) this.activateListeners();
+    // Enable interactivity, only if the Splat is not a preview?
+    this.activateListeners();
+    //if (this.id) this.activateListeners();
     return this;
   }
 
@@ -311,7 +313,6 @@ export default class Splat extends Tile {
    * @type {PlaceablesLayer}
    */
   static get layer() {
-    debugger;
     return canvas.blood;
   }
 
@@ -443,5 +444,19 @@ export default class Splat extends Tile {
   //   // Enable interactivity, only if the Splat has a true ID
   //   if (this.id) this.activateListeners();
   //   return this;
+  // }
+
+  /**
+   * Tile objects on this layer utilize the TileHUD
+   * @type {TileHUD}
+   */
+  get hud() {
+    return canvas.hud.tile;
+  }
+
+  // _onClickLeft(e): boolean {
+  //   debugger;
+  //   // //@ts-expect-error missing definition
+  //   return super._onClickLeft(e);
   // }
 }

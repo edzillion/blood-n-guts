@@ -68,6 +68,37 @@ export class BloodNGuts {
     });
   }
 
+  public static registerSceneConfig(canvas) {
+    // // @ts-expect-error missing definition
+    const cached = mergeObject(canvas.scene.constructor.config, {
+      embeddedEntities: { Splat: 'blood' },
+    });
+    // // @ts-expect-error missing definition
+    Object.defineProperty(canvas.scene.constructor, 'config', {
+      get: function () {
+        return cached;
+      },
+    });
+  }
+
+  // static get config() {
+  //   return {
+  //     baseEntity: Scene,
+  //     collection: game.scenes,
+  //     embeddedEntities: {
+  //       "AmbientLight": "lights",
+  //       "AmbientSound": "sounds",
+  //       "Drawing": "drawings",
+  //       "Note": "notes",
+  //       "MeasuredTemplate": "templates",
+  //       "Tile": "tiles",
+  //       "Token": "tokens",
+  //       "Wall": "walls"
+  //     },
+  //     label: "ENTITY.Scene"
+  //   };
+  //}
+
   /**
    * Loads all `SplatDataObject`s from scene flag `sceneSplats` trims them and draws them - this
    * will also add them back into the pool.
@@ -725,6 +756,7 @@ export class BloodNGuts {
    * @param canvas - reference to the canvas
    */
   public static canvasReadyHandler(canvas): void {
+    BloodNGuts.registerSceneConfig(canvas);
     if (!canvas.scene.active || BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
 
