@@ -56,11 +56,11 @@ export class BloodNGuts {
   }
 
   public static registerLayer() {
-    // @ts-ignore
+    // @ts-expect-error missing definition
     const layers = mergeObject(Canvas.layers, {
       blood: BloodLayer,
     });
-    // @ts-ignore
+    // @ts-expect-error missing definition
     Object.defineProperty(Canvas, 'layers', {
       get: function () {
         return layers;
@@ -949,7 +949,7 @@ export class BloodNGuts {
             onClick: BloodNGuts.wipeAllFlags,
           },
         ],
-        activeTool: 'select',
+        activeTool: 'tile',
       });
 
       // if (tileButtons) {
