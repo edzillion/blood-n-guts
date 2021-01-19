@@ -27,11 +27,13 @@ import {
   rgbaStringToHexStringAndOpacity,
   lookupTokenBloodColor,
   isFirstActiveGM,
+  isTokenSplatData,
 } from './module/helpers';
 import { MODULE_ID, MODULE_TITLE } from './constants';
 import SplatToken from './module/SplatToken';
 import BloodLayer from './module/BloodLayer';
 import * as splatFonts from './data/splatFonts';
+import { SplatData, TokenSplatData } from './globals';
 
 // CONFIG.debug.hooks = true;
 CONFIG[MODULE_ID] = { logLevel: 2 };
@@ -47,6 +49,7 @@ export class BloodNGuts {
   public static scenePool: Array<SplatPoolObject>;
   public static disabled: boolean;
   public static paintActive: boolean;
+  public static layer: BloodLayer;
 
   public static initialize(): void {
     BloodNGuts.splatTokens = {};
@@ -67,37 +70,6 @@ export class BloodNGuts {
       },
     });
   }
-
-  public static registerSceneConfig(canvas) {
-    // // @ts-expect-error missing definition
-    const cached = mergeObject(canvas.scene.constructor.config, {
-      embeddedEntities: { Splat: 'blood' },
-    });
-    // // @ts-expect-error missing definition
-    Object.defineProperty(canvas.scene.constructor, 'config', {
-      get: function () {
-        return cached;
-      },
-    });
-  }
-
-  // static get config() {
-  //   return {
-  //     baseEntity: Scene,
-  //     collection: game.scenes,
-  //     embeddedEntities: {
-  //       "AmbientLight": "lights",
-  //       "AmbientSound": "sounds",
-  //       "Drawing": "drawings",
-  //       "Note": "notes",
-  //       "MeasuredTemplate": "templates",
-  //       "Tile": "tiles",
-  //       "Token": "tokens",
-  //       "Wall": "walls"
-  //     },
-  //     label: "ENTITY.Scene"
-  //   };
-  //}
 
   /**
    * Loads all `SplatDataObject`s from scene flag `sceneSplats` trims them and draws them - this
@@ -163,6 +135,42 @@ export class BloodNGuts {
       `getTrimmedSceneSplats sceneSplatPool:${splats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
     );
     const trimmedSplats = splats.filter((s) => !s.tokenId);
+    return trimmedSplats;
+  }
+
+  /**
+   * Takes an array of splats, trims the excess over 'sceneSplatPoolSize' and fades the oldest.
+   * @category GMOnly
+   * @function
+   * @param {SplatDataObject[]} splats - original splat array
+   * @returns {SplatDataObject[]} - trimmed splat array
+   */
+  public static trimTileSplatData(splats: SplatData[]): TokenSplatData[] {
+    log(LogLevel.DEBUG, 'getTrimmedSceneSplats');
+    const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
+    if (splats.length > maxPoolSize) {
+      // remove the oldest splats
+      log(LogLevel.DEBUG, 'getTrimmedSceneSplats removing ', splats.length - maxPoolSize);
+      splats.splice(0, splats.length - maxPoolSize);
+    }
+
+    const fadedPoolSize = splats.length - Math.round(maxPoolSize * 0.85);
+    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
+    log(LogLevel.DEBUG, 'getTrimmedSceneSplats sizes curr, max', splats.length, maxPoolSize);
+
+    // 15% of splats will be set to fade. 1/3rd of those will be very faded
+    if (fadedPoolSize > 0) {
+      for (let i = 0; i < fadedPoolSize; i++) {
+        const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
+        splats[i].alpha = alpha;
+      }
+    }
+
+    log(
+      LogLevel.DEBUG,
+      `getTrimmedSceneSplats sceneSplatPool:${splats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
+    );
+    const trimmedSplats: TokenSplatData = splats.filter((s) => !isTokenSplatData(s));
     return trimmedSplats;
   }
 
@@ -353,19 +361,20 @@ export class BloodNGuts {
     log(LogLevel.DEBUG, 'generateFloorSplats');
 
     const splatDataObj: Partial<SplatDataObject> = {};
+    const tileSplatData: Partial<TileSplatData> = {};
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(
       size * ((splatToken.spriteWidth + splatToken.spriteWidth) / canvas.grid.size / 2) * splatToken.hitSeverity,
     );
     log(LogLevel.DEBUG, 'generateFloorSplats fontSize', fontSize);
-    splatDataObj.styleData = {
+    tileSplatData.styleData = {
       fontFamily: font.name,
       fontSize: fontSize,
       fill: splatToken.tokenSettings.bloodColor,
       align: 'center',
     };
-    const style = new PIXI.TextStyle(splatDataObj.styleData);
+    const style = new PIXI.TextStyle(tileSplatData.styleData);
 
     // amount of splats is based on density and severity
     const amount = Math.round(density * splatToken.hitSeverity);
@@ -377,11 +386,11 @@ export class BloodNGuts {
     log(LogLevel.DEBUG, 'generateFloorSplats pixelSpread', pixelSpreadX, pixelSpreadY);
 
     // create our splats for later drawing.
-    splatDataObj.splats = glyphArray.map((glyph) => {
+    tileSplatData.drips = glyphArray.map((glyph) => {
       const tm = PIXI.TextMetrics.measureText(glyph, style);
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
-      return {
+      const dripData: SplatDripData = {
         x: Math.round(randX - tm.width / 2),
         y: Math.round(randY - tm.height / 2),
         angle: Math.round(Math.random() * 360),
@@ -389,6 +398,7 @@ export class BloodNGuts {
         height: tm.height,
         glyph: glyph,
       };
+      return dripData;
     });
 
     const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatDataObj.splats);
@@ -756,10 +766,8 @@ export class BloodNGuts {
    * @param canvas - reference to the canvas
    */
   public static canvasReadyHandler(canvas): void {
-    BloodNGuts.registerSceneConfig(canvas);
     if (!canvas.scene.active || BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
-
     const gm = game.users.find((e) => e.isGM && e.active);
     if (!gm) {
       ui.notifications.notify(`Note: Blood 'n Guts requires a GM to be online to function!`, 'warning');
@@ -1078,6 +1086,12 @@ Hooks.once('ready', () => {
   window.BloodNGuts = BloodNGuts;
   Hooks.call('bloodNGutsReady');
 });
+
+Hooks.once('canvasInit', () => {
+  // Add SimplefogLayer to canvas
+  canvas.blood.initialize();
+  BloodNGuts.layer = canvas.blood;
+});
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
 Hooks.on('updateActor', (actor, changes) => {
@@ -1092,7 +1106,7 @@ Hooks.on('updateActor', (actor, changes) => {
 
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
-Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
+// Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
 Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
 Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
 

@@ -46,11 +46,48 @@ interface SplatDataObject {
   alpha?: number;
 }
 
-// interface Splat {
-//   glyph: string;
-//   x: number;
-//   y: number;
-//   angle: number;
-//   width?: number;
-//   height?: number;
-// }
+type SplatData = TileSplatData | TokenSplatData;
+
+interface SplatDripData {
+  glyph: string;
+  x: number;
+  y: number;
+  angle: number;
+  width?: number;
+  height?: number;
+}
+
+interface TileSplatData {
+  _id?: string;
+  id?: string;
+  alpha?: number;
+  img?: string; //not used
+  width: number;
+  height: number;
+  scale: number;
+  x: number;
+  y: number;
+  z?: number;
+  rotation: number;
+  hidden: boolean;
+  locked: boolean;
+  drips: SplatDripData[];
+  styleData: SplatStyleData;
+  offset: PIXI.Point;
+  maskPolygon: [];
+  tokenId: never;
+}
+
+interface TokenSplatData {
+  _id?: string;
+  id?: string;
+  alpha?: number;
+  tokenId: string;
+}
+
+interface SplatStyleData {
+  fontFamily: string;
+  fontSize: number;
+  fill: string;
+  align: string;
+}

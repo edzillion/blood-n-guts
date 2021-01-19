@@ -10,6 +10,11 @@ const rgbaOnlyRegex = /rgba\((\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d{1,3}%?),\s*(\d*(?
  * @module Helpers
  */
 
+// Types
+export const isTokenSplatData = (splatData: SplatData): splatData is TokenSplatData => {
+  return (splatData as TokenSplatData).tokenId !== undefined;
+};
+
 /**
  * Get the lowest x,y position of an array of `Splat`, align all splats with that
  * point and return the offset, the width and height of the area of all splats.

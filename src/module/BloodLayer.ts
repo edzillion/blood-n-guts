@@ -1,25 +1,15 @@
+import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import { log, LogLevel } from './logging';
-import Splat from './Splat';
-import { SplatTile } from './SplatTile';
+import TileSplat from './TileSplat';
 
 //@ts-expect-error missing definition
 export default class BloodLayer extends TilesLayer {
   dataArray: any;
-  defaults: {
-    img: string;
-    width: number;
-    height: number;
-    scale: number;
-    x: number;
-    y: number;
-    z: number;
-    rotation: number;
-    hidden: boolean;
-    locked: boolean;
-  };
+  defaults: any;
   layer: PIXI.Container;
-  collection: any[];
+  collection: TileSplatData[];
+  splatData: any;
   // _objects: [];
   constructor() {
     super();
@@ -35,13 +25,189 @@ export default class BloodLayer extends TilesLayer {
       z: 370,
       rotation: 45,
       hidden: false,
-      locked: true,
+      locked: false,
     };
 
-    this.collection = [];
+    this.splatData = {
+      splats: [
+        {
+          x: 52,
+          y: 4,
+          angle: 303,
+          width: 115.16417694091797,
+          height: 141,
+          glyph: 'c',
+        },
+        {
+          x: 49,
+          y: 0,
+          angle: 89,
+          width: 72.37313079833984,
+          height: 141,
+          glyph: 'S',
+        },
+        {
+          x: 38,
+          y: 4,
+          angle: 315,
+          width: 44.55223846435547,
+          height: 141,
+          glyph: '*',
+        },
+        {
+          x: 0,
+          y: 16,
+          angle: 65,
+          width: 70.07462310791016,
+          height: 141,
+          glyph: 'u',
+        },
+      ],
+      styleData: {
+        fontFamily: 'WC Rhesus A Bta',
+        fontSize: 110,
+        fill: 'rgba(138, 7, 7, 0.7)',
+        align: 'center',
+      },
+      offset: {
+        x: -35,
+        y: -86,
+      },
+      x: 1015,
+      y: 64,
+      maskPolygon: [
+        -201.37014619445802,
+        85.99999999999997,
+        -200.07528580178825,
+        61.292591855942646,
+        -196.20489138520793,
+        36.85588324586928,
+        -189.80136779587735,
+        12.95760786302165,
+        -180.93487337826457,
+        -10.140399786470027,
+        -169.7025513006422,
+        -32.18507309722908,
+        -156.22746523420733,
+        -52.934886015318256,
+        -140.65725104174658,
+        -72.16249924822966,
+        -123.16249924822955,
+        -89.65725104174669,
+        -103.93488601531817,
+        -105.22746523420733,
+        -83.18507309722895,
+        -118.70255130064228,
+        -61.14039978646997,
+        -129.93487337826463,
+        -38.042392136978265,
+        -138.80136779587738,
+        -14.144116754130664,
+        -145.20489138520796,
+        10.292591855942646,
+        -149.07528580178825,
+        35,
+        -150.370146194458,
+        59.707408144057354,
+        -149.07528580178823,
+        84.14411675413066,
+        -145.20489138520796,
+        108.04239213697838,
+        -138.80136779587735,
+        131.14039978646997,
+        -129.93487337826463,
+        153.18507309722918,
+        -118.70255130064223,
+        173.93488601531817,
+        -105.22746523420733,
+        193.16249924822978,
+        -89.65725104174663,
+        210.6572510417468,
+        -72.16249924822961,
+        226.22746523420733,
+        -52.934886015318256,
+        239.7025513006422,
+        -32.18507309722895,
+        250.93487337826468,
+        -10.140399786469914,
+        259.80136779587747,
+        12.957607863021764,
+        266.20489138520793,
+        36.85588324586931,
+        270.07528580178814,
+        61.29259185594279,
+        271.3701461944579,
+        86.00000000000011,
+        270.07528580178814,
+        110.7074081440573,
+        266.20489138520793,
+        135.14411675413078,
+        259.80136779587724,
+        159.04239213697844,
+        250.93487337826468,
+        182.14039978647,
+        239.7025513006422,
+        204.18507309722906,
+        226.22746523420733,
+        224.93488601531828,
+        210.65725104174658,
+        244.16249924822966,
+        193.16249924822955,
+        261.6572510417467,
+        173.93488601531817,
+        277.22746523420733,
+        153.18507309722895,
+        290.7025513006423,
+        131.14039978646997,
+        301.9348733782646,
+        108.04239213697838,
+        310.80136779587735,
+        84.14411675413066,
+        317.204891385208,
+        59.707408144057126,
+        321.07528580178825,
+        35,
+        322.370146194458,
+        10.292591855942646,
+        321.07528580178825,
+        -14.144116754130778,
+        317.20489138520793,
+        -38.042392136978265,
+        310.80136779587735,
+        -61.140399786470084,
+        301.93487337826457,
+        -83.18507309722906,
+        290.70255130064226,
+        -103.9348860153184,
+        277.2274652342072,
+        -123.16249924822978,
+        261.6572510417466,
+        -140.6572510417467,
+        244.1624992482296,
+        -156.22746523420744,
+        224.93488601531806,
+        -169.7025513006423,
+        204.1850730972289,
+        -180.93487337826468,
+        182.14039978646994,
+        -189.80136779587747,
+        159.04239213697815,
+        -196.20489138520793,
+        135.1441167541306,
+        -200.07528580178825,
+        110.70740814405724,
+      ],
+      id: 'bng__177066395c4_0.844fc02d550df8',
+    };
 
+    // React to changes to current scene
+    Hooks.on('updateScene', (scene, data) => this.updateSceneHandler(scene, data));
     // this.layer = BloodLayer.getCanvasContainer();
     // this.addChild(this.layer);
+  }
+
+  initialize(): void {
+    this.collection = canvas.scene.getFlag(MODULE_ID, 'sceneSplats') || [];
   }
 
   // static getCanvasContainer() {
@@ -72,7 +238,7 @@ export default class BloodLayer extends TilesLayer {
       // //@ts-expect-error definition missing
       zIndex: 11,
       canDragCreate: false,
-      objectClass: Splat,
+      objectClass: TileSplat,
       sortActiveTop: false,
       rotatableObjects: true,
       sheetClass: TileConfig,
@@ -80,17 +246,50 @@ export default class BloodLayer extends TilesLayer {
     });
   }
 
+  /**
+   * Handler called when scene data updated. Draws splats from scene data flags.
+   * @category GMandPC
+   * @function
+   * @param scene - reference to the current scene
+   * @param changes - changes
+   */
+  public updateSceneHandler(scene, changes): void {
+    if (!scene.active || BloodNGuts.disabled || !changes.flags || changes.flags[MODULE_ID]?.sceneSplats === undefined)
+      return;
+    log(LogLevel.DEBUG, 'updateSceneHandler');
+    if (changes.flags[MODULE_ID]?.sceneSplats === null) {
+      BloodNGuts.wipeSceneSplats();
+      return;
+    }
+    this.collection = BloodNGuts.trimTileSplatData(duplicate(changes.flags[MODULE_ID]?.sceneSplats));
+  }
+
   _onClickLeft(e) {
     const p = e.data.getLocalPosition(canvas.app.stage);
     // Round positions to nearest pixel
     p.x = Math.round(p.x);
     p.y = Math.round(p.y);
-    const d = duplicate(this.defaults);
-    d.x = p.x;
-    d.y = p.y;
-    const obj: Splat = new Splat(d, canvas.scene);
-    this.collection.push(obj.data);
-    obj.zIndex = this.defaults.z || 0;
+
+    const tileSplatData: TileSplatData = {
+      // img: string; //not used
+      width: 100,
+      height: 100,
+      scale: 1,
+      x: p.x,
+      y: p.y,
+      // z: number;
+      rotation: 0,
+      hidden: false,
+      locked: false,
+      drips: this.splatData.splats,
+      styleData: this.splatData.styleData,
+      offset: this.splatData.offset,
+      maskPolygon: this.splatData.maskPolygon,
+    };
+    const obj: TileSplat = new TileSplat(tileSplatData, canvas.scene);
+    obj.zIndex = obj.z || 0;
+    this.collection.push(tileSplatData);
+
     //@ts-expect-error definition missing
     this.objects.addChild(obj);
 
@@ -118,9 +317,10 @@ export default class BloodLayer extends TilesLayer {
     this.preview = this.addChild(new PIXI.Container());
 
     // Create and draw objects
-    const dataArray = [this.defaults]; //[canvas.scene.data['flags'][MODULE_ID].sceneSplats] || [];
+    //const dataArray = [this.defaults]; //[canvas.scene.data['flags'][MODULE_ID].sceneSplats] || [];
+    if (!this.collection || !this.collection.length) return;
 
-    const promises = dataArray.map((data) => {
+    const promises = this.collection.map((data) => {
       //@ts-expect-error missing definition
       const obj = this.createObject(data);
       // //@ts-expect-error definition missing
@@ -161,6 +361,11 @@ export default class BloodLayer extends TilesLayer {
   }
 
   async updateMany(data, options = {} as any) {
+    // //@ts-expect-error definition missing
+    this.updateNonEmbeddedEntity(data, options);
+  }
+
+  public updateNonEmbeddedEntity(data, options = {} as any) {
     const user = game.user;
     options = mergeObject({ diff: true }, options);
 
@@ -200,12 +405,11 @@ export default class BloodLayer extends TilesLayer {
     if (!updates.length) return [];
 
     updates.forEach((update) => {
-      debugger;
       //@ts-expect-error definition missing
       const s = this.get(update._id);
       s.data = mergeObject(s.data, update);
+      s.refresh();
     });
-    // //@ts-expect-error definition missing
   }
 
   // }
