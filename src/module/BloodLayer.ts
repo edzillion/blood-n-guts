@@ -303,6 +303,16 @@ export default class BloodLayer extends TilesLayer {
   // });
 
   /** @override */
+  _onDragLeftStart(event) {
+    debugger;
+    // super._onDragLeftStart(event);
+    super.super._onDragLeftStart(event);
+    // const tile = Tile.createPreview(event.data.origin);
+    // event.data.preview = this.preview.addChild(tile);
+    // this.preview._creating = false;
+  }
+
+  /** @override */
   async draw(): Promise<any> {
     //await super.draw();
 

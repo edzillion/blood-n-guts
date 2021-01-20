@@ -74,8 +74,7 @@ interface TileSplatData {
   drips: SplatDripData[];
   styleData: SplatStyleData;
   offset: PIXI.Point;
-  maskPolygon: [];
-  tokenId: never;
+  maskPolygon: number[];
 }
 
 interface TokenSplatData {
@@ -83,6 +82,7 @@ interface TokenSplatData {
   id?: string;
   alpha?: number;
   tokenId: string;
+  drips: SplatDripData[];
 }
 
 interface SplatStyleData {

@@ -5,7 +5,7 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import {
-  alignSplatsGetOffsetAndDimensions,
+  alignDripsGetOffsetAndDimensions,
   computeSightFromPoint,
   getRandomBoxMuller,
   getRandomGlyph,

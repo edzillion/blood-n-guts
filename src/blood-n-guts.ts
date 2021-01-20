@@ -19,7 +19,6 @@ import {
   getRandomGlyph,
   computeSightFromPoint,
   getRandomBoxMuller,
-  alignSplatsGetOffsetAndDimensions,
   getPointOnCurve,
   getUID,
   getRGBA,
@@ -28,12 +27,13 @@ import {
   lookupTokenBloodColor,
   isFirstActiveGM,
   isTokenSplatData,
+  alignDripsGetOffsetAndDimensions,
 } from './module/helpers';
 import { MODULE_ID, MODULE_TITLE } from './constants';
 import SplatToken from './module/SplatToken';
 import BloodLayer from './module/BloodLayer';
 import * as splatFonts from './data/splatFonts';
-import { SplatData, TokenSplatData } from './globals';
+// import { SplatData, TokenSplatData } from './globals';
 
 // CONFIG.debug.hooks = true;
 CONFIG[MODULE_ID] = { logLevel: 2 };
@@ -145,7 +145,7 @@ export class BloodNGuts {
    * @param {SplatDataObject[]} splats - original splat array
    * @returns {SplatDataObject[]} - trimmed splat array
    */
-  public static trimTileSplatData(splats: SplatData[]): TokenSplatData[] {
+  public static trimTileSplatData(splats: SplatData[]): TileSplatData[] {
     log(LogLevel.DEBUG, 'getTrimmedSceneSplats');
     const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
     if (splats.length > maxPoolSize) {
@@ -170,7 +170,7 @@ export class BloodNGuts {
       LogLevel.DEBUG,
       `getTrimmedSceneSplats sceneSplatPool:${splats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
     );
-    const trimmedSplats: TokenSplatData = splats.filter((s) => !isTokenSplatData(s));
+    const trimmedSplats: TileSplatData[] = splats.filter((s): s is TileSplatData => !isTokenSplatData(s));
     return trimmedSplats;
   }
 
@@ -401,12 +401,12 @@ export class BloodNGuts {
       return dripData;
     });
 
-    const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatDataObj.splats);
-    splatDataObj.offset = offset;
-    splatDataObj.x = offset.x;
-    splatDataObj.y = offset.y;
+    const { dripsOffset, dripsWidth, dripsHeight } = alignDripsGetOffsetAndDimensions(splatDataObj.splats);
+    splatDataObj.offset = dripsOffset;
+    splatDataObj.x = dripsOffset.x;
+    splatDataObj.y = dripsOffset.y;
 
-    const maxDistance = Math.max(width, height);
+    const maxDistance = Math.max(dripsWidth, dripsHeight);
     const tokenCenter = splatToken.getCenter();
     const sight = computeSightFromPoint(tokenCenter, maxDistance);
 
@@ -445,20 +445,20 @@ export class BloodNGuts {
     log(LogLevel.DEBUG, 'generateTrailSplats');
     log(LogLevel.DEBUG, 'generateTrailSplats severity', splatToken.bleedingSeverity);
 
-    const splatDataObj: Partial<SplatDataObject> = {};
-    splatDataObj.splats = [];
-    // scale the splats based on token size and severity
+    const tileSplatData: Partial<TileSplatData> = {};
+    tileSplatData.drips = [];
+    // scale the drips based on token size and severity
     const fontSize = Math.round(
       size * ((splatToken.spriteWidth + splatToken.spriteHeight) / canvas.grid.size / 2) * splatToken.bleedingSeverity,
     );
     log(LogLevel.DEBUG, 'generateTrailSplats fontSize', fontSize);
-    splatDataObj.styleData = {
+    tileSplatData.styleData = {
       fontFamily: font.name,
       fontSize: fontSize,
       fill: splatToken.tokenSettings.bloodColor,
       align: 'center',
     };
-    const style = new PIXI.TextStyle(splatDataObj.styleData);
+    const style = new PIXI.TextStyle(tileSplatData.styleData);
 
     //todo: improve this
     //horiz or vert movement
@@ -501,12 +501,12 @@ export class BloodNGuts {
     // amount is based on density and severity
     const glyphArray: Array<string> = Array.from({ length: distances.length }, () => getRandomGlyph(font));
 
-    // create our splats for later drawing.
+    // create our drips for later drawing.
     for (let i = 0; i < glyphArray.length; i++) {
       const glyph = glyphArray[i];
       const tm = PIXI.TextMetrics.measureText(glyph, style);
       const pt = getPointOnCurve(splatToken.lastPos, controlPt, splatToken.currPos, distances[i]);
-      splatDataObj.splats.push({
+      tileSplatData.drips.push({
         x: Math.round(pt.x - tm.width / 2) - splatToken.currPos.x,
         y: Math.round(pt.y - tm.height / 2) - splatToken.currPos.y,
         angle: Math.round(Math.random() * 360),
@@ -515,20 +515,22 @@ export class BloodNGuts {
         glyph: glyph,
       });
     }
-    log(LogLevel.DEBUG, 'generateTrailSplats splatDataObj.splats', splatDataObj.splats);
+    log(LogLevel.DEBUG, 'generateTrailSplats tileSplatData.drips', tileSplatData.drips);
 
-    const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatDataObj.splats);
+    const { dripsOffset, dripsWidth, dripsHeight } = alignDripsGetOffsetAndDimensions(tileSplatData.drips);
 
-    splatDataObj.offset = offset;
-    splatDataObj.x = offset.x;
-    splatDataObj.y = offset.y;
+    tileSplatData.offset = dripsOffset;
+    tileSplatData.x = dripsOffset.x;
+    tileSplatData.y = dripsOffset.y;
+    tileSplatData.height = dripsHeight;
+    tileSplatData.width = dripsWidth;
 
-    // account for 45deg rotated splats
-    const maxDistance = Math.max(width * 1.414, height * 1.414);
+    // account for 45deg rotated drips
+    const maxDistance = Math.max(tileSplatData.width * 1.414, tileSplatData.height * 1.414);
 
     const tokenCenter = splatToken.getCenter();
     const sight = computeSightFromPoint(tokenCenter, maxDistance);
-    splatDataObj.maskPolygon = sight;
+    tileSplatData.maskPolygon = sight;
 
     // const trailCenter = getPointOnCurve(splatToken.lastPos, controlPt, splatToken.currPos, 0.5);
     // const moveTo = new PIXI.Point(trailCenter.x - splatToken.currPos.x, trailCenter.y - splatToken.currPos.y);
@@ -540,14 +542,15 @@ export class BloodNGuts {
     // since we don't want to add the mask to the container yet (as that will
     // screw up our alignment) we need to move it by editing the x,y points directly
     for (let i = 0; i < sight.length; i += 2) {
-      sight[i] -= splatDataObj.offset.x;
-      sight[i + 1] -= splatDataObj.offset.y;
+      sight[i] -= tileSplatData.offset.x;
+      sight[i + 1] -= tileSplatData.offset.y;
     }
 
-    splatDataObj.x += tokenCenter.x;
-    splatDataObj.y += tokenCenter.y;
-    splatDataObj.id = getUID();
-    BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
+    tileSplatData.x += tokenCenter.x;
+    tileSplatData.y += tokenCenter.y;
+    tileSplatData.id = getUID();
+    this.layer.collection.push(tileSplatData as TileSplatData);
+    // BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
   }
 
   /**
@@ -557,7 +560,7 @@ export class BloodNGuts {
    * @param {HTMLElement} html - the HTMLElement to draw splats on.
    * @param {SplatFont=tokenSplatFont} font - the font to use for splats
    * @param {number} size - the size of splats.
-   * @param {number} density - the amount of splats.
+   * @param {number} density - the amount of drips.
    * @param {string='blood'} bloodColor - splat color, can be a css color name or RBGA string e.g. '[255,255,0,0.5]'
    */
   public static drawDOMSplats(
@@ -700,12 +703,12 @@ export class BloodNGuts {
       };
     });
 
-    const { offset, width, height } = alignSplatsGetOffsetAndDimensions(splatDataObj.splats);
-    splatDataObj.offset = offset;
-    splatDataObj.x = offset.x;
-    splatDataObj.y = offset.y;
+    const { dripsOffset, dripsWidth, dripsHeight } = alignDripsGetOffsetAndDimensions(splatDataObj.splats);
+    splatDataObj.offset = dripsOffset;
+    splatDataObj.x = dripsOffset.x;
+    splatDataObj.y = dripsOffset.y;
 
-    const maxDistance = Math.max(width, height);
+    const maxDistance = Math.max(dripsWidth, dripsHeight);
     const clickPt = new PIXI.Point(canvasX, canvasY);
     const sight = computeSightFromPoint(clickPt, maxDistance);
 

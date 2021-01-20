@@ -65,14 +65,14 @@ export default class TileSplat extends Tile {
     // }
 
     const style = new PIXI.TextStyle(this.data.styleData);
-    // all scene splats have a .maskPolgyon.
+    // all scene drips have a .maskPolgyon.
     if (this.data.maskPolygon) {
-      this.data.splats.forEach((splat) => {
-        const text = new PIXI.Text(splat.glyph, style);
-        text.x = splat.x + splat.width / 2;
-        text.y = splat.y + splat.height / 2;
-        text.pivot.set(splat.width / 2, splat.height / 2);
-        text.angle = splat.angle;
+      this.data.drips.forEach((drip) => {
+        const text = new PIXI.Text(drip.glyph, style);
+        text.x = drip.x + drip.width / 2;
+        text.y = drip.y + drip.height / 2;
+        text.pivot.set(drip.width / 2, drip.height / 2);
+        text.angle = drip.angle;
         this.container.addChild(text);
         return text;
       });

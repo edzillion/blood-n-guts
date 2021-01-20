@@ -5,7 +5,7 @@ import { MODULE_ID } from '../constants';
 import {
   getRandomGlyph,
   getRandomBoxMuller,
-  alignSplatsGetOffsetAndDimensions,
+  alignDripsGetOffsetAndDimensions,
   getDirectionNrml,
   getUID,
   distanceBetween,
@@ -374,11 +374,11 @@ export default class SplatToken {
         glyph: glyph,
       };
     });
-    const { offset } = alignSplatsGetOffsetAndDimensions(splatDataObj.splats);
-    splatDataObj.offset = offset;
+    const { dripsOffset } = alignDripsGetOffsetAndDimensions(splatDataObj.splats);
+    splatDataObj.offset = dripsOffset;
     splatDataObj.splats.forEach((s) => {
-      s.x += offset.x + this.spriteHeight / 2;
-      s.y += offset.y + this.spriteWidth / 2;
+      s.x += dripsOffset.x + this.spriteHeight / 2;
+      s.y += dripsOffset.y + this.spriteWidth / 2;
     });
 
     splatDataObj.id = getUID();

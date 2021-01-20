@@ -23,9 +23,9 @@ export const isTokenSplatData = (splatData: SplatData): splatData is TokenSplatD
  * @param {Array<Splat>} splats - array of `Splat` to be aligned.
  * @returns {PIXI.Point, number, number} - offset, width, height
  */
-export const alignSplatsGetOffsetAndDimensions = (
+export const alignDripsGetOffsetAndDimensions = (
   splats: Array<any>,
-): { offset: PIXI.Point; width: number; height: number } => {
+): { dripsOffset: PIXI.Point; dripsWidth: number; dripsHeight: number } => {
   let lowestX = canvas.dimensions.sceneWidth;
   let lowestY = canvas.dimensions.sceneHeight;
   let highestX = 0;
@@ -42,9 +42,9 @@ export const alignSplatsGetOffsetAndDimensions = (
     splats[j].y -= lowestY;
   }
   return {
-    offset: new PIXI.Point(lowestX, lowestY),
-    width: highestX - lowestX,
-    height: highestY - lowestY,
+    dripsOffset: new PIXI.Point(lowestX, lowestY),
+    dripsWidth: highestX - lowestX,
+    dripsHeight: highestY - lowestY,
   };
 };
 
