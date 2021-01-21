@@ -1,3 +1,5 @@
+import BloodLayer from './BloodLayer';
+
 /**
  * The Drawing object is an implementation of the :class:`PlaceableObject` container.
  * Each Drawing is a placeable object in the :class:`DrawingsLayer`.
@@ -26,6 +28,25 @@
  * });
  */
 export default class BloodDrawing extends PlaceableObject {
+  drawing: any;
+  frame: any;
+  _drawTime: number;
+  _sampleTime: number;
+  _fixedPoints: any;
+  _onkeydown: any;
+  _creating: any;
+  _dragHandle: any;
+  _original: any;
+  SAMPLE_RATE: number;
+  splatData: {
+    splats: { x: number; y: number; angle: number; width: number; height: number; glyph: string }[];
+    styleData: { fontFamily: string; fontSize: number; fill: string; align: string };
+    offset: { x: number; y: number };
+    x: number;
+    y: number;
+    maskPolygon: number[];
+    id: string;
+  };
   constructor(...args) {
     //@ts-expect-error why this args problem?
     super(...args);
@@ -37,22 +58,182 @@ export default class BloodDrawing extends PlaceableObject {
     this.drawing = null;
 
     /**
-     * The primary drawing shape
-     * @type {PIXI.Graphics}
-     */
-    this.shape = null;
-
-    /**
-     * Text content, if included
-     * @type {PIXI.Text}
-     */
-    this.text = null;
-
-    /**
      * The Graphics outer frame and handles
      * @type {PIXI.Container}
      */
     this.frame = null;
+
+    this.splatData = {
+      splats: [
+        {
+          x: 52,
+          y: 4,
+          angle: 303,
+          width: 115.16417694091797,
+          height: 141,
+          glyph: 'c',
+        },
+        {
+          x: 49,
+          y: 0,
+          angle: 89,
+          width: 72.37313079833984,
+          height: 141,
+          glyph: 'S',
+        },
+        {
+          x: 38,
+          y: 4,
+          angle: 315,
+          width: 44.55223846435547,
+          height: 141,
+          glyph: '*',
+        },
+        {
+          x: 0,
+          y: 16,
+          angle: 65,
+          width: 70.07462310791016,
+          height: 141,
+          glyph: 'u',
+        },
+      ],
+      styleData: {
+        fontFamily: 'Signika',
+        fontSize: 50,
+        fill: '#FFFFFF',
+        align: 'center',
+      },
+      offset: {
+        x: -35,
+        y: -86,
+      },
+      x: 1015,
+      y: 64,
+      maskPolygon: [
+        -201.37014619445802,
+        85.99999999999997,
+        -200.07528580178825,
+        61.292591855942646,
+        -196.20489138520793,
+        36.85588324586928,
+        -189.80136779587735,
+        12.95760786302165,
+        -180.93487337826457,
+        -10.140399786470027,
+        -169.7025513006422,
+        -32.18507309722908,
+        -156.22746523420733,
+        -52.934886015318256,
+        -140.65725104174658,
+        -72.16249924822966,
+        -123.16249924822955,
+        -89.65725104174669,
+        -103.93488601531817,
+        -105.22746523420733,
+        -83.18507309722895,
+        -118.70255130064228,
+        -61.14039978646997,
+        -129.93487337826463,
+        -38.042392136978265,
+        -138.80136779587738,
+        -14.144116754130664,
+        -145.20489138520796,
+        10.292591855942646,
+        -149.07528580178825,
+        35,
+        -150.370146194458,
+        59.707408144057354,
+        -149.07528580178823,
+        84.14411675413066,
+        -145.20489138520796,
+        108.04239213697838,
+        -138.80136779587735,
+        131.14039978646997,
+        -129.93487337826463,
+        153.18507309722918,
+        -118.70255130064223,
+        173.93488601531817,
+        -105.22746523420733,
+        193.16249924822978,
+        -89.65725104174663,
+        210.6572510417468,
+        -72.16249924822961,
+        226.22746523420733,
+        -52.934886015318256,
+        239.7025513006422,
+        -32.18507309722895,
+        250.93487337826468,
+        -10.140399786469914,
+        259.80136779587747,
+        12.957607863021764,
+        266.20489138520793,
+        36.85588324586931,
+        270.07528580178814,
+        61.29259185594279,
+        271.3701461944579,
+        86.00000000000011,
+        270.07528580178814,
+        110.7074081440573,
+        266.20489138520793,
+        135.14411675413078,
+        259.80136779587724,
+        159.04239213697844,
+        250.93487337826468,
+        182.14039978647,
+        239.7025513006422,
+        204.18507309722906,
+        226.22746523420733,
+        224.93488601531828,
+        210.65725104174658,
+        244.16249924822966,
+        193.16249924822955,
+        261.6572510417467,
+        173.93488601531817,
+        277.22746523420733,
+        153.18507309722895,
+        290.7025513006423,
+        131.14039978646997,
+        301.9348733782646,
+        108.04239213697838,
+        310.80136779587735,
+        84.14411675413066,
+        317.204891385208,
+        59.707408144057126,
+        321.07528580178825,
+        35,
+        322.370146194458,
+        10.292591855942646,
+        321.07528580178825,
+        -14.144116754130778,
+        317.20489138520793,
+        -38.042392136978265,
+        310.80136779587735,
+        -61.140399786470084,
+        301.93487337826457,
+        -83.18507309722906,
+        290.70255130064226,
+        -103.9348860153184,
+        277.2274652342072,
+        -123.16249924822978,
+        261.6572510417466,
+        -140.6572510417467,
+        244.1624992482296,
+        -156.22746523420744,
+        224.93488601531806,
+        -169.7025513006423,
+        204.1850730972289,
+        -180.93487337826468,
+        182.14039978646994,
+        -189.80136779587747,
+        159.04239213697815,
+        -196.20489138520793,
+        135.1441167541306,
+        -200.07528580178825,
+        110.70740814405724,
+      ],
+      id: 'bng__177066395c4_0.844fc02d550df8',
+    };
 
     /**
      * Internal timestamp for the previous freehand draw time, to limit sampling
@@ -61,6 +242,7 @@ export default class BloodDrawing extends PlaceableObject {
      */
     this._drawTime = 0;
     this._sampleTime = 0;
+    this.SAMPLE_RATE = 75;
 
     /**
      * Internal flag for the permanent points of the polygon
@@ -99,24 +281,12 @@ export default class BloodDrawing extends PlaceableObject {
     return game.user.isGM || this.data.author === game.user._id;
   }
 
-  /* -------------------------------------------- */
-
   /**
-   * A Boolean flag for whether or not the Drawing utilizes a tiled texture background
-   * @type {boolean}
+   * Provide a reference to the canvas layer which contains placeable objects of this type
+   * @type {BloodLayer}
    */
-  get isTiled() {
-    return this.data.fillType === CONST.DRAWING_FILL_TYPES.PATTERN;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * A Boolean flag for whether or not the Drawing is a Polygon type (either linear or freehand)
-   * @type {boolean}
-   */
-  get isPolygon() {
-    return [CONST.DRAWING_TYPES.POLYGON, CONST.DRAWING_TYPES.FREEHAND].includes(this.data.type);
+  static get layer(): BloodLayer {
+    return canvas.blood;
   }
 
   /* -------------------------------------------- */
@@ -124,16 +294,16 @@ export default class BloodDrawing extends PlaceableObject {
   /* -------------------------------------------- */
 
   /** @override */
-  async draw() {
+  async draw(): Promise<PlaceableObject> {
     this.clear();
-    this._pendingText = this.data.text ?? '';
 
+    // todo: perhaps the font loading should go here
     // Load the background texture, if one is defined
-    if (this.data.texture) {
-      this.texture = await loadTexture(this.data.texture, { fallback: 'icons/svg/hazard.svg' });
-    } else {
-      this.texture = null;
-    }
+    // if (this.data.texture) {
+    //   this.texture = await loadTexture(this.data.texture, { fallback: 'icons/svg/hazard.svg' });
+    // } else {
+    //   this.texture = null;
+    // }
 
     // Create the inner Drawing container
     this._createDrawing();
@@ -146,7 +316,8 @@ export default class BloodDrawing extends PlaceableObject {
 
     // Enable Interactivity, if this is a true Drawing
     if (this.id) this.activateListeners();
-    return this;
+    // @ts-expect-error I think this is caused by bad definitions
+    return this as PlaceableObject;
   }
 
   /* -------------------------------------------- */
@@ -157,49 +328,6 @@ export default class BloodDrawing extends PlaceableObject {
   _createDrawing() {
     // Drawing container
     this.drawing = this.addChild(new PIXI.Container());
-
-    // Drawing Shape
-    this.shape = this.drawing.addChild(new PIXI.Graphics());
-
-    // Overlay Text
-    const hasText = this.data.type === CONST.DRAWING_TYPES.TEXT || this.data.text;
-    this.text = hasText ? this.drawing.addChild(this._createText()) : null;
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Create elements for the foreground text
-   * @private
-   */
-  _createText() {
-    if (this.text && !this.text._destroyed) {
-      this.text.destroy();
-      this.text = null;
-    }
-    const isText = this.data.type === CONST.DRAWING_TYPES.TEXT;
-    const stroke = Math.max(Math.round(this.data.fontSize / 32), 2);
-
-    // Define the text style
-    const textStyle = new PIXI.TextStyle({
-      fontFamily: this.data.fontFamily || CONFIG.defaultFontFamily,
-      fontSize: this.data.fontSize,
-      fill: this.data.textColor || '#FFFFFF',
-      stroke: '#111111',
-      strokeThickness: stroke,
-      dropShadow: true,
-      dropShadowColor: '#000000',
-      dropShadowBlur: Math.max(Math.round(this.data.fontSize / 16), 2),
-      dropShadowAngle: 0,
-      dropShadowDistance: 0,
-      align: isText ? 'left' : 'center',
-      wordWrap: !isText,
-      wordWrapWidth: 1.5 * this.data.width,
-      padding: stroke,
-    });
-
-    // Create the text container
-    return new PreciseText(this.data.text, textStyle);
   }
 
   /* -------------------------------------------- */
@@ -211,74 +339,18 @@ export default class BloodDrawing extends PlaceableObject {
   _createFrame() {
     this.frame = this.addChild(new PIXI.Container());
     this.frame.border = this.frame.addChild(new PIXI.Graphics());
+    //@ts-expect-error missing definition
     this.frame.handle = this.frame.addChild(new ResizeHandle([1, 1]));
   }
 
   /* -------------------------------------------- */
 
   /** @override */
+  // @ts-expect-error definition wrong
   refresh() {
-    if (this._destroyed || this.shape._destroyed) return;
-    const isTextPreview = this.data.type === CONST.DRAWING_TYPES.TEXT && this._controlled;
-    this.shape.clear();
+    if (this._destroyed) return;
 
-    // Outer Stroke
-    if (this.data.strokeWidth || isTextPreview) {
-      const sc = colorStringToHex(this.data.strokeColor || '#FFFFFF');
-      this.shape.lineStyle(this.data.strokeWidth || 8, sc, this.data.strokeAlpha || 1);
-    }
-
-    // Fill Color or Texture
-    if (this.data.fillType || isTextPreview) {
-      const fc = colorStringToHex(this.data.fillColor || '#FFFFFF');
-      if (this.data.fillType === CONST.DRAWING_FILL_TYPES.PATTERN && this.texture) {
-        this.shape.beginTextureFill({
-          texture: this.texture,
-          color: fc || 0xffffff,
-          alpha: fc ? this.data.fillAlpha : 1,
-        });
-      } else {
-        const fa = isTextPreview ? 0.25 : this.data.fillAlpha;
-        this.shape.beginFill(fc, fa);
-      }
-    }
-
-    // Draw the shape
-    switch (this.data.type) {
-      case CONST.DRAWING_TYPES.RECTANGLE:
-      case CONST.DRAWING_TYPES.TEXT:
-        this._drawRectangle();
-        break;
-      case CONST.DRAWING_TYPES.ELLIPSE:
-        this._drawEllipse();
-        break;
-      case CONST.DRAWING_TYPES.POLYGON:
-        this._drawPolygon();
-        break;
-      case CONST.DRAWING_TYPES.FREEHAND:
-        this._drawFreehand();
-        break;
-    }
-
-    // Conclude fills
-    this.shape.lineStyle(0x000000, 0.0).closePath();
-    this.shape.endFill();
-
-    // Set shape rotation, pivoting about the non-rotated center
-    this.shape.pivot.set(this.data.width / 2, this.data.height / 2);
-    this.shape.position.set(this.data.width / 2, this.data.height / 2);
-    this.shape.rotation = toRadians(this.data.rotation || 0);
-
-    // Update text position and visibility
-    if (this.text) {
-      this.text.alpha = this.data.textAlpha || 1.0;
-      this.text.pivot.set(this.text.width / 2, this.text.height / 2);
-      this.text.position.set(
-        this.text.width / 2 + (this.data.width - this.text.width) / 2,
-        this.text.height / 2 + (this.data.height - this.text.height) / 2,
-      );
-      this.text.rotation = this.shape.rotation;
-    }
+    this._drawFreehand();
 
     // Determine shape bounds and update the frame
     const bounds = this.drawing.getLocalBounds();
@@ -295,145 +367,28 @@ export default class BloodDrawing extends PlaceableObject {
   /* -------------------------------------------- */
 
   /**
-   * Draw rectangular shapes
-   * @private
-   */
-  _drawRectangle() {
-    const hs = this.data.strokeWidth / 2;
-    this.shape.drawRect(hs, hs, this.data.width - 2 * hs, this.data.height - 2 * hs);
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Draw ellipsoid shapes
-   * @private
-   */
-  _drawEllipse() {
-    const hw = this.data.width / 2,
-      hh = this.data.height / 2,
-      hs = this.data.strokeWidth / 2;
-    this.shape.drawEllipse(hw, hh, Math.abs(hw) - hs, Math.abs(hh) - hs);
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Draw polygonal shapes
-   * @private
-   */
-  _drawPolygon() {
-    const points = this.data.points || [];
-    if (points.length < 2) return;
-    else if (points.length === 2) this.shape.endFill();
-
-    // Get drawing points
-    const last = points[points.length - 1];
-    const isClosed = points[0].equals(last);
-
-    // If the polygon is closed, or if we are filling it, we can shortcut using the drawPolygon helper
-    if (points.length > 2 && (isClosed || this.data.fillType)) this.shape.drawPolygon(points.deepFlatten());
-    // Otherwise, draw each line individually
-    else {
-      this.shape.moveTo(...points[0]);
-      for (const p of points.slice(1)) {
-        this.shape.lineTo(...p);
-      }
-    }
-  }
-
-  /* -------------------------------------------- */
-
-  /**
    * Draw freehand shapes with bezier spline smoothing
    * @private
    */
   _drawFreehand() {
-    const factor = this.data.bezierFactor ?? 0.5;
-
     // Get drawing points
-    let points = this.data.points;
+    const points = this.data.points;
     const last = points[points.length - 1];
-    const isClosed = points[0].equals(last);
-
-    // Handle edge cases
-    this.shape.moveTo(...points[0]);
-    if (points.length < 2) return;
-    else if (points.length === 2) {
-      this.shape.lineTo(...points[1]);
-      return;
-    }
 
     // Set initial conditions
-    let [previous, point] = points.slice(0, 2);
-    if (this.data.fillType) points = points.concat([previous, point]);
-    let cp0 = this._getBezierControlPoints(factor, last, previous, point).next_cp0;
-    let cp1, next_cp0, next;
+    const [previous, point] = points.slice(0, 2);
+    // if (this.data.fillType) points = points.concat([previous, point]); //what is this doing?
 
+    const style = new PIXI.TextStyle(this.splatData.styleData);
     // Begin iteration
-    for (let i = 1; i < points.length; i++) {
-      next = points[i + 1];
-      if (next) {
-        const bp = this._getBezierControlPoints(factor, previous, point, next);
-        cp1 = bp.cp1;
-        next_cp0 = bp.next_cp0;
-      }
-
-      // First point
-      if (i === 1 && !isClosed) {
-        this.shape.quadraticCurveTo(cp1.x, cp1.y, point[0], point[1]);
-      }
-
-      // Last Point
-      else if (i === points.length - 1 && !isClosed) {
-        this.shape.quadraticCurveTo(cp0.x, cp0.y, point[0], point[1]);
-      }
-
-      // Bezier points
-      else {
-        this.shape.bezierCurveTo(cp0.x, cp0.y, cp1.x, cp1.y, point[0], point[1]);
-      }
-
-      // Increment
-      previous = point;
-      point = next;
-      cp0 = next_cp0;
+    for (let i = 0; i < points.length; i++) {
+      const text = new PIXI.Text('a', style);
+      text.x = points[i][0]; // + splat.width / 2;
+      text.y = points[i][1]; // + splat.height / 2;
+      //text.pivot.set(splat.width / 2, splat.height / 2);
+      //text.angle = splat.angle;
+      this.drawing.addChild(text);
     }
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Attribution: The equations for how to calculate the bezier control points are derived from Rob Spencer's article:
-   * http://scaledinnovation.com/analytics/splines/aboutSplines.html
-   * @param {number} factor       The smoothing factor
-   * @param {number[]} previous   The prior point
-   * @param {number[]} point      The current point
-   * @param {number[]} next       The next point
-   * @private
-   */
-  _getBezierControlPoints(factor, previous, point, next) {
-    // Calculate distance vectors
-    const vector = { x: next[0] - previous[0], y: next[1] - previous[1] },
-      preDistance = Math.hypot(previous[0] - point[0], previous[1] - point[1]),
-      postDistance = Math.hypot(next[0] - point[0], next[1] - point[1]),
-      distance = preDistance + postDistance;
-
-    // Compute control point locations
-    const cp0d = distance === 0 ? 0 : factor * (preDistance / distance),
-      cp1d = distance === 0 ? 0 : factor * (postDistance / distance);
-
-    // Return points
-    return {
-      cp1: {
-        x: point[0] - vector.x * cp0d,
-        y: point[1] - vector.y * cp0d,
-      },
-      next_cp0: {
-        x: point[0] + vector.x * cp1d,
-        y: point[1] + vector.y * cp1d,
-      },
-    };
   }
 
   /* -------------------------------------------- */
@@ -502,18 +457,19 @@ export default class BloodDrawing extends PlaceableObject {
 
   /* -------------------------------------------- */
 
-  /** @override */
-  _onControl(options) {
-    super._onControl(options);
-    if (this.data.type === CONST.DRAWING_TYPES.TEXT) {
-      this._onkeydown = this._onDrawingTextKeydown.bind(this);
-      if (!options.isNew) this._pendingText = this.data.text;
-      document.addEventListener('keydown', this._onkeydown);
-    }
-  }
+  // /** @override */
+  // _onControl(options) {
+  //   super._onControl(options);
+  //   if (this.data.type === CONST.DRAWING_TYPES.TEXT) {
+  //     this._onkeydown = this._onDrawingTextKeydown.bind(this);
+  //     if (!options.isNew) this._pendingText = this.data.text;
+  //     document.addEventListener('keydown', this._onkeydown);
+  //   }
+  // }
 
   /* -------------------------------------------- */
 
+  // todo: perhaps remove
   /** @override */
   _onRelease(options) {
     super._onRelease(options);
@@ -521,86 +477,18 @@ export default class BloodDrawing extends PlaceableObject {
       document.removeEventListener('keydown', this._onkeydown);
       this._onkeydown = null;
     }
-    if (this.data.type === DRAWING_TYPES.TEXT) {
-      const text = this._pendingText ?? this.data.text;
-      if (text === '') return this.delete();
-      if (this._pendingText) {
-        // Submit pending text
-        this.update({ text: this._pendingText, width: this.data.width, height: this.data.height });
-        this._pendingText = '';
-      }
-    }
   }
 
   /* -------------------------------------------- */
 
   /** @override */
   _onDelete(...args) {
+    //@ts-expect-error missing definitions
     super._onDelete(...args);
     if (this._onkeydown) document.removeEventListener('keydown', this._onkeydown);
   }
 
   /* -------------------------------------------- */
-
-  /**
-   * Handle text entry in an active text tool
-   * @param {KeyboardEvent} event
-   * @private
-   */
-  _onDrawingTextKeydown(event) {
-    // Ignore events when an input is focused, or when ALT or CTRL modifiers are applied
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-    if (game.keyboard.hasFocus) return;
-
-    // Track refresh or conclusion conditions
-    const conclude = ['Escape', 'Enter'].includes(event.key);
-    let refresh = false;
-
-    // Submitting the change, update or delete
-    if (event.key === 'Enter') {
-      if (this._pendingText) {
-        const updateData = { text: this._pendingText, width: this.data.width, height: this.data.height };
-        return this.update(updateData, { diff: false }).then(() => this.release());
-      } else return this.delete();
-    }
-
-    // Cancelling the change
-    else if (event.key === 'Escape') {
-      this._pendingText = this.data.text;
-      refresh = true;
-    }
-
-    // Deleting a character
-    else if (event.key === 'Backspace') {
-      this._pendingText = this._pendingText.slice(0, -1);
-      refresh = true;
-    }
-
-    // Typing text (any single char)
-    else if (/^.$/.test(event.key)) {
-      this._pendingText += event.key;
-      refresh = true;
-    }
-
-    // Stop propagation if the event was handled
-    if (refresh || conclude) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    // Refresh the display
-    if (refresh) {
-      this.text.text = this._pendingText;
-      this.data.width = this.text.width + 100;
-      this.data.height = this.text.height + 50;
-      this.refresh();
-    }
-
-    // Conclude the workflow
-    if (conclude) {
-      this.release();
-    }
-  }
 
   /* -------------------------------------------- */
   /*  Socket Listeners and Handlers               */
@@ -680,49 +568,20 @@ export default class BloodDrawing extends PlaceableObject {
    */
   _onMouseDraw(event) {
     const { destination, originalEvent } = event.data;
-    const isShift = originalEvent.shiftKey;
-    const isAlt = originalEvent.altKey;
 
     // Determine position
-    let position = destination;
-    if (!isShift && this.data.type !== CONST.DRAWING_TYPES.FREEHAND) {
-      position = canvas.grid.getSnappedPosition(position.x, position.y, this.layer.gridPrecision);
-    } else {
-      position = { x: parseInt(position.x), y: parseInt(position.y) };
+    const position = { x: parseInt(destination.x), y: parseInt(destination.y) };
+
+    const now = Date.now();
+
+    // If the time since any drawing activity last occurred exceeds the sample rate - upgrade the prior point
+    if (now - this._drawTime >= this.SAMPLE_RATE) {
+      this._sampleTime = now;
     }
 
-    // Drag differently depending on shape type
-    switch (this.data.type) {
-      // Freehand Shapes
-      case CONST.DRAWING_TYPES.FREEHAND:
-        const now = Date.now();
-
-        // If the time since any drawing activity last occurred exceeds the sample rate - upgrade the prior point
-        if (now - this._drawTime >= this.constructor.FREEHAND_SAMPLE_RATE) {
-          this._sampleTime = now;
-        }
-
-        // Determine whether the new point should be permanent based on the time since last sample
-        const takeSample = now - this._drawTime >= this.constructor.FREEHAND_SAMPLE_RATE;
-        this._addPoint(position, !takeSample);
-        break;
-
-      // Polygon Shapes
-      case CONST.DRAWING_TYPES.POLYGON:
-        this._addPoint(position, true);
-        break;
-
-      // Geometric Shapes
-      default:
-        let dx = position.x - this.data.x || canvas.dimensions.size * Math.sign(this.data.width) * 0.5;
-        let dy = position.y - this.data.y || canvas.dimensions.size * Math.sign(this.data.height) * 0.5;
-        if (isAlt) {
-          dx = Math.abs(dy) < Math.abs(dx) ? Math.abs(dy) * Math.sign(dx) : dx;
-          dy = Math.abs(dx) < Math.abs(dy) ? Math.abs(dx) * Math.sign(dy) : dy;
-        }
-        this.data.width = dx;
-        this.data.height = dy;
-    }
+    // Determine whether the new point should be permanent based on the time since last sample
+    const takeSample = now - this._drawTime >= this.SAMPLE_RATE;
+    this._addPoint(position, !takeSample);
 
     // Refresh the display
     this.refresh();
@@ -735,7 +594,6 @@ export default class BloodDrawing extends PlaceableObject {
   /** @override */
   _onDragLeftStart(event) {
     if (this._dragHandle) return this._onHandleDragStart(event);
-    if (this._pendingText) this.data.text = this._pendingText;
     return super._onDragLeftStart(event);
   }
 
@@ -756,10 +614,7 @@ export default class BloodDrawing extends PlaceableObject {
     // Update each dragged Drawing, confirming pending text
     const clones = event.data.clones || [];
     const updates = clones.map((c) => {
-      let dest = { x: c.data.x, y: c.data.y };
-      if (!event.data.originalEvent.shiftKey) {
-        dest = canvas.grid.getSnappedPosition(c.data.x, c.data.y, this.layer.options.gridPrecision);
-      }
+      const dest = { x: c.data.x, y: c.data.y };
 
       // Define the update
       const update = {
@@ -767,19 +622,15 @@ export default class BloodDrawing extends PlaceableObject {
         x: dest.x,
         y: dest.y,
         rotation: c.data.rotation,
-        text: c._original._pendingText ? c._original._pendingText : c.data.text,
+        text: 'A',
       };
-
-      // Commit pending text
-      if (c._original._pendingText) {
-        update.text = c._original._pendingText;
-      }
 
       // Hide the original until after the update processes
       c._original.visible = false;
       return update;
     });
-    return canvas.scene.updateEmbeddedEntity(this.constructor.name, updates, { diff: false });
+    //@ts-expect-error definitions wrong
+    return this.layer.updateNonEmbeddedEntity(updates, { diff: false });
   }
 
   /* -------------------------------------------- */
@@ -875,10 +726,7 @@ export default class BloodDrawing extends PlaceableObject {
    * @private
    */
   _onHandleDragDrop(event) {
-    let { destination, handle, origin, originalEvent } = event.data;
-    if (!originalEvent.shiftKey) {
-      destination = canvas.grid.getSnappedPosition(destination.x, destination.y, this.layer.gridPrecision);
-    }
+    const { destination, origin } = event.data;
 
     // Update dimensions
     const dx = destination.x - origin.x;
@@ -913,30 +761,15 @@ export default class BloodDrawing extends PlaceableObject {
    * @private
    */
   _rescaleDimensions(original, dx, dy) {
-    let { points, width, height } = original;
-    width += dx;
-    height += dy;
-
-    // Rescale polygon points
-    if (this.isPolygon) {
-      const scaleX = 1 + dx / original.width;
-      const scaleY = 1 + dy / original.height;
-      points = points.map((p) => [p[0] * scaleX, p[1] * scaleY]);
-    }
-
-    // Constrain drawing bounds by the contained text size
-    if (this.data.text) {
-      const textBounds = this.text.getLocalBounds();
-      width = Math.max(textBounds.width + 16, width);
-      height = Math.max(textBounds.height + 8, height);
-    }
+    const { points, width, height } = original;
 
     // Normalize the shape
+    //@ts-expect-error todo: how to deal with .constructor props?
     const update = this.constructor.normalizeShape({
       x: original.x,
       y: original.y,
-      width: width,
-      height: height,
+      width: width + dy,
+      height: height + dx,
       points: points,
     });
     return update;

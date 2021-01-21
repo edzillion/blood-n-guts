@@ -1,5 +1,6 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
+import BloodDrawing from './BloodDrawing';
 import { log, LogLevel } from './logging';
 import TileSplat from './TileSplat';
 
@@ -237,11 +238,12 @@ export default class BloodLayer extends TilesLayer {
     return mergeObject(super.layerOptions, {
       // //@ts-expect-error definition missing
       zIndex: 11,
-      canDragCreate: false,
+      canDragCreate: true,
       objectClass: TileSplat,
       sortActiveTop: false,
       rotatableObjects: true,
       sheetClass: TileConfig,
+      snapToGrid: false,
       controllableObjects: true,
     });
   }
@@ -264,37 +266,54 @@ export default class BloodLayer extends TilesLayer {
     this.collection = BloodNGuts.trimTileSplatData(duplicate(changes.flags[MODULE_ID]?.sceneSplats));
   }
 
-  _onClickLeft(e) {
-    const p = e.data.getLocalPosition(canvas.app.stage);
-    // Round positions to nearest pixel
-    p.x = Math.round(p.x);
-    p.y = Math.round(p.y);
+  // _onClickLeft(e) {
+  //   const p = e.data.getLocalPosition(canvas.app.stage);
+  //   // Round positions to nearest pixel
+  //   p.x = Math.round(p.x);
+  //   p.y = Math.round(p.y);
 
-    const tileSplatData: TileSplatData = {
-      // img: string; //not used
-      width: 100,
-      height: 100,
-      scale: 1,
-      x: p.x,
-      y: p.y,
-      // z: number;
-      rotation: 0,
-      hidden: false,
-      locked: false,
-      drips: this.splatData.splats,
-      styleData: this.splatData.styleData,
-      offset: this.splatData.offset,
-      maskPolygon: this.splatData.maskPolygon,
-    };
-    const obj: TileSplat = new TileSplat(tileSplatData, canvas.scene);
-    obj.zIndex = obj.z || 0;
-    this.collection.push(tileSplatData);
+  //   const tileSplatData: TileSplatData = {
+  //     // img: string; //not used
+  //     width: 100,
+  //     height: 100,
+  //     scale: 1,
+  //     x: p.x,
+  //     y: p.y,
+  //     // z: number;
+  //     rotation: 0,
+  //     hidden: false,
+  //     locked: false,
+  //     drips: this.splatData.splats,
+  //     styleData: this.splatData.styleData,
+  //     offset: this.splatData.offset,
+  //     maskPolygon: this.splatData.maskPolygon,
+  //   };
+  //   const obj: TileSplat = new TileSplat(tileSplatData, canvas.scene);
+  //   obj.zIndex = obj.z || 0;
+  //   this.collection.push(tileSplatData);
 
-    //@ts-expect-error definition missing
-    this.objects.addChild(obj);
+  //   //@ts-expect-error definition missing
+  //   this.objects.addChild(obj);
 
-    obj.draw();
+  //   obj.draw();
+  // }
+
+  /** @override */
+  _onClickLeft(event) {
+    const { preview, createState } = event.data;
+
+    // Continue polygon point placement
+    if (createState >= 1) {
+      const point = event.data.destination;
+      preview._addPoint(point, false);
+      preview._chain = true; // Note that we are now in chain mode
+      return preview.refresh();
+    }
+
+    // Standard left-click handling
+    super._onClickLeft(event);
   }
+
   //return this.constructor.placeableClass.create(this.defaults);
   //this.createObject(this.defaults);
   // const t = new Tile(this.defaults, canvas.scene);
@@ -304,12 +323,80 @@ export default class BloodLayer extends TilesLayer {
 
   /** @override */
   _onDragLeftStart(event) {
-    debugger;
     // super._onDragLeftStart(event);
-    super.super._onDragLeftStart(event);
+    //@ts-expect-error definition missing
+    const grandparentCall = PlaceablesLayer.prototype._onDragLeftStart.bind(this);
+    grandparentCall(event);
+    //super.__proto__.__proto__.__proto__._onDragLeftStart(event);
+    const data = this._getNewDrawingData(event.data.origin);
+
+    const drawing = new BloodDrawing(data);
+    //@ts-expect-error definition missing
+    event.data.preview = this.preview.addChild(drawing);
+    drawing.draw();
     // const tile = Tile.createPreview(event.data.origin);
     // event.data.preview = this.preview.addChild(tile);
     // this.preview._creating = false;
+  }
+
+  /** @override */
+  _onDragLeftMove(event) {
+    const { preview, createState } = event.data;
+    if (!preview) return;
+    if (preview.parent === null) {
+      // In theory this should never happen, but rarely does
+      // @ts-expect-error missing def
+      this.preview.addChild(preview);
+    }
+    if (createState >= 1) {
+      preview._onMouseDraw(event);
+    }
+  }
+
+  /**
+   * Conclude a left-click drag workflow originating from the Canvas stage.
+   * @see {Canvas#_onDragLeftDrop}
+   */
+  _onDragLeftDrop(event) {
+    const object = event.data.preview;
+    if (object) {
+      const tileSplatData: TileSplatData = {
+        // img: string; //not used
+        width: 100,
+        height: 100,
+        scale: 1,
+        x: object.data.x,
+        y: object.data.y,
+        // z: number;
+        rotation: 0,
+        hidden: false,
+        locked: false,
+        drips: [],
+        styleData: this.splatData.styleData,
+        offset: this.splatData.offset,
+        maskPolygon: this.splatData.maskPolygon,
+      };
+
+      // Begin iteration
+      for (let i = 0; i < object.data.points.length; i++) {
+        const dripData: SplatDripData = {
+          x: object.data.points[i][0],
+          y: object.data.points[i][1],
+          angle: 0,
+          width: 100,
+          height: 100,
+          glyph: 'a',
+        };
+
+        tileSplatData.drips.push(dripData);
+      }
+
+      const obj: TileSplat = new TileSplat(tileSplatData, canvas.scene);
+      obj.zIndex = obj.z || 0;
+      this.collection.push(object.data);
+      this.draw();
+      // this.constructor.placeableClass.create(object.data);
+    }
   }
 
   /** @override */
@@ -454,4 +541,86 @@ export default class BloodLayer extends TilesLayer {
   //   // Return the created Entities
   //   return entities;
   // }
+
+  /**
+   * Get initial data for a new drawing.
+   * Start with some global defaults, apply user default config, then apply mandatory overrides per tool.
+   * @param {Object} origin     The initial coordinate
+   * @return {Object}           The new drawing data
+   * @private
+   */
+  _getNewDrawingData(origin) {
+    const tool = game.activeTool;
+
+    // Update with User Defaults
+
+    // Get User Settings
+    //const saved = game.settings.get('core', this.constructor.DEFAULT_CONFIG_SETTING);
+
+    // Get defaults
+    //const defaults = mergeObject(CONST.DRAWING_DEFAULT_VALUES, saved, { inplace: false });
+
+    const data = {
+      author: '',
+      bezierFactor: 0,
+      fillAlpha: 0.5,
+      fillColor: '#ffffff',
+      fillType: 0,
+      fontFamily: 'Signika',
+      fontSize: 48,
+      height: 0,
+      hidden: false,
+      locked: false,
+      mltDisabled: false,
+      mltIn: false,
+      mltLevel: false,
+      mltMacroEnter: false,
+      mltMacroLeave: false,
+      mltMacroMove: false,
+      mltOut: false,
+      mltSource: false,
+      mltTarget: false,
+      mltTintColor: '',
+      points: [],
+      rotation: 0,
+      strokeAlpha: 1,
+      strokeColor: '#ffffff',
+      strokeWidth: 1,
+      text: '',
+      textAlpha: 1,
+      textColor: '#FFFFFF',
+      texture: '',
+      type: 'f',
+      width: 0,
+      x: 1000,
+      y: 1000,
+      z: 0,
+    };
+
+    // Optional client overrides
+    // const data = mergeObject(
+    //   defaults,
+    //   {
+    //     fillColor: game.user.color,
+    //     strokeColor: game.user.color,
+    //     fontFamily: CONFIG.defaultFontFamily,
+    //   },
+    //   { overwrite: false },
+    // );
+
+    // Mandatory additions
+    data.x = origin.x;
+    data.y = origin.y;
+    data.author = game.user._id;
+
+    // Tool-based settings
+    switch (tool) {
+      case 'freehand':
+        data.type = CONST.DRAWING_TYPES.FREEHAND;
+        data.points = [[0, 0]];
+        data.bezierFactor = 0.5;
+        break;
+    }
+    return data;
+  }
 }

@@ -182,9 +182,9 @@ export default class TileSplat extends Tile {
     // this.refresh();
   }
 
+  //todo: move this to a hook
   /** @override */
   _onUpdate = (data) => {
-    debugger;
     log(LogLevel.INFO, '_onUpdate data', data);
     const changed_keys = new Set(Object.keys(data));
     log(LogLevel.INFO, '_onUpdate changed', changed_keys);
@@ -194,7 +194,6 @@ export default class TileSplat extends Tile {
 
     // update flags with data
     changed_keys.forEach((ck) => {
-      debugger;
       switch (ck) {
         case 'initial':
           // mergeObject(tile.data.parallaxia.initial, data.initial);
