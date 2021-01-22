@@ -1,6 +1,7 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import BloodDrawing from './BloodDrawing';
+import { getRGBA } from './helpers';
 import { log, LogLevel } from './logging';
 import TileSplat from './TileSplat';
 
@@ -11,6 +12,16 @@ export default class BloodLayer extends TilesLayer {
   layer: PIXI.Container;
   collection: TileSplatData[];
   splatData: any;
+  DEFAULTS: {
+    visible: boolean;
+    brushSize: number;
+    brushAlpha: number;
+    previewAlpha: number;
+    brushColor: string;
+    brushFont: string;
+    brushSpread: number;
+    brushDensity: number;
+  };
   // _objects: [];
   constructor() {
     super();
@@ -199,6 +210,17 @@ export default class BloodLayer extends TilesLayer {
         110.70740814405724,
       ],
       id: 'bng__177066395c4_0.844fc02d550df8',
+    };
+
+    this.DEFAULTS = {
+      visible: true,
+      brushSize: 50,
+      brushAlpha: 0.7,
+      previewAlpha: 0.4,
+      brushColor: '#8A0707',
+      brushFont: 'splatter',
+      brushSpread: 1.0,
+      brushDensity: 1,
     };
 
     // React to changes to current scene
@@ -541,6 +563,29 @@ export default class BloodLayer extends TilesLayer {
   //   // Return the created Entities
   //   return entities;
   // }
+
+  getSetting(name) {
+    let setting = canvas.scene.getFlag(MODULE_ID, name);
+    // if (setting === undefined) setting = this.getUserSetting(name);
+    if (setting === undefined) setting = this.DEFAULTS[name];
+    return this.DEFAULTS[name]; //setting;
+  }
+
+  async setSetting(name, value) {
+    const v = await canvas.scene.setFlag(MODULE_ID, name, value);
+    return v;
+  }
+
+  getUserSetting(name) {
+    let setting = game.user.getFlag(MODULE_ID, name);
+    if (setting === undefined) setting = this.DEFAULTS[name];
+    return setting;
+  }
+
+  async setUserSetting(name, value) {
+    const v = await game.user.setFlag(MODULE_ID, name, value);
+    return v;
+  }
 
   /**
    * Get initial data for a new drawing.

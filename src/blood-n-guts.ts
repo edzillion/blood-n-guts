@@ -425,6 +425,89 @@ export class BloodNGuts {
   }
 
   /**
+   * Generate splats on the floor beneath a token.
+   * @category GMOnly
+   * @function
+   * @param {Token} token - the token to generate splats for.
+   * @param {SplatFont} font - the font to use for splats.
+   * @param {number} size - the size of splats.
+   * @param {number} density - the amount of splats.
+   * @param {number} spread - the distance from centre point to spread the splats.
+   */
+  public static generateFloorSplats2(
+    font: SplatFont,
+    size: number,
+    color: string,
+    density: number,
+    spread: number,
+    origin: PIXI.Point,
+  ): TileSplatData {
+    if (!density) return;
+    log(LogLevel.DEBUG, 'generateFloorSplats2');
+
+    const tileSplatData: Partial<TileSplatData> = {};
+
+    // todo: move this into token
+    // const fontSize = Math.round(
+    //   size * ((splatToken.spriteWidth + splatToken.spriteWidth) / canvas.grid.size / 2) * splatToken.hitSeverity,
+    // );
+    log(LogLevel.DEBUG, 'generateFloorSplats fontSize', size);
+    tileSplatData.styleData = {
+      fontFamily: font.name,
+      fontSize: size,
+      fill: color,
+      align: 'center',
+    };
+    const style = new PIXI.TextStyle(tileSplatData.styleData);
+
+    // amount of splats is based on density and severity
+    const amount = density;
+    // get a random glyph and then get a random (x,y) spread away from the token.
+    const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
+    const pixelSpreadX = canvas.grid.size * spread;
+    const pixelSpreadY = canvas.grid.size * spread;
+    log(LogLevel.DEBUG, 'generateFloorSplats amount', amount);
+    log(LogLevel.DEBUG, 'generateFloorSplats pixelSpread', pixelSpreadX, pixelSpreadY);
+
+    // create our splats for later drawing.
+    tileSplatData.drips = glyphArray.map((glyph) => {
+      const tm = PIXI.TextMetrics.measureText(glyph, style);
+      const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
+      const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
+      const dripData: SplatDripData = {
+        x: Math.round(randX - tm.width / 2),
+        y: Math.round(randY - tm.height / 2),
+        angle: Math.round(Math.random() * 360),
+        width: tm.width,
+        height: tm.height,
+        glyph: glyph,
+      };
+      return dripData;
+    });
+
+    const { dripsOffset, dripsWidth, dripsHeight } = alignDripsGetOffsetAndDimensions(tileSplatData.drips);
+    tileSplatData.offset = dripsOffset;
+    tileSplatData.x = dripsOffset.x;
+    tileSplatData.y = dripsOffset.y;
+
+    const maxDistance = Math.max(dripsWidth, dripsHeight);
+    const sight = computeSightFromPoint(origin, maxDistance);
+
+    // since we don't want to add the mask to the container yet (as that will
+    // screw up our alignment) we need to move it by editing the x,y points directly
+    for (let i = 0; i < sight.length; i += 2) {
+      sight[i] -= tileSplatData.offset.x;
+      sight[i + 1] -= tileSplatData.offset.y;
+    }
+
+    tileSplatData.x += origin.x;
+    tileSplatData.y += origin.y;
+    tileSplatData.maskPolygon = sight;
+    tileSplatData.id = getUID();
+    return tileSplatData as TileSplatData;
+  }
+
+  /**
    * Generate splats in a trail on the floor behind a moving token.
    * @category GMOnly
    * @function
@@ -946,74 +1029,84 @@ export class BloodNGuts {
     tokenConfig.setPosition({ height: 'auto' });
   }
 
-  /**
-   * Handler called when left button bar is drawn
-   * @category GMOnly
-   * @function
-   * @param buttons - reference to the buttons controller
-   */
-  public static getSceneControlButtonsHandler(controls): void {
-    if (!isFirstActiveGM()) return;
-    log(LogLevel.DEBUG, 'getSceneControlButtonsHandler');
+  // /**
+  //  * Handler called when left button bar is drawn
+  //  * @category GMOnly
+  //  * @function
+  //  * @param buttons - reference to the buttons controller
+  //  */
+  // public static getSceneControlButtonsHandler(controls): void {
+  //   if (!isFirstActiveGM()) return;
+  //   log(LogLevel.DEBUG, 'getSceneControlButtonsHandler');
 
-    if (game.user.isGM) {
-      controls.push({
-        name: 'blood',
-        title: MODULE_TITLE,
-        icon: 'fas fa-tint',
-        layer: 'BloodLayer',
-        tools: [
-          {
-            name: 'toggle',
-            title: 'Toggle ' + MODULE_TITLE + ' on/off',
-            icon: 'fas fa-eye',
-            onClick: () => {
-              canvas.blood.toggle();
-            },
-            active: false, //canvas.blood.visible,
-            toggle: true,
-          },
-          {
-            name: 'select',
-            title: 'Select blood splats',
-            icon: 'fas fa-expand',
-          },
-          {
-            name: 'tile',
-            title: 'Draw blood splats to the scene',
-            icon: 'fas fa-tint',
-            //onClick: BloodNGuts.togglePaintSceneSplatTool,
-          },
-          {
-            name: 'wipe',
-            title: 'Wipe all blood splats from this scene',
-            icon: 'fas fa-tint-slash',
-            button: true,
-            onClick: BloodNGuts.wipeAllFlags,
-          },
-        ],
-        activeTool: 'tile',
-      });
+  //   if (game.user.isGM) {
+  //     controls.push({
+  //       name: 'blood',
+  //       title: MODULE_TITLE,
+  //       icon: 'fas fa-tint',
+  //       layer: 'BloodLayer',
+  //       tools: [
+  //         {
+  //           name: 'toggle',
+  //           title: 'Toggle ' + MODULE_TITLE + ' on/off',
+  //           icon: 'fas fa-eye',
+  //           onClick: () => {
+  //             canvas.blood.toggle();
+  //           },
+  //           active: canvas.simplefog.visible,
+  //           toggle: true,
+  //         },
+  //         {
+  //           name: 'toggle',
+  //           title: 'Toggle ' + MODULE_TITLE + ' on/off',
+  //           icon: 'fas fa-eye',
+  //           onClick: () => {
+  //             canvas.blood.toggle();
+  //           },
+  //           active: false, //canvas.blood.visible,
+  //           toggle: true,
+  //         },
+  //         {
+  //           name: 'select',
+  //           title: 'Select blood splats',
+  //           icon: 'fas fa-expand',
+  //         },
+  //         {
+  //           name: 'tile',
+  //           title: 'Draw blood splats to the scene',
+  //           icon: 'fas fa-tint',
+  //           //onClick: BloodNGuts.togglePaintSceneSplatTool,
+  //         },
+  //         {
+  //           name: 'wipe',
+  //           title: 'Wipe all blood splats from this scene',
+  //           icon: 'fas fa-tint-slash',
+  //           button: true,
+  //           onClick: BloodNGuts.wipeAllFlags,
+  //         },
+  //       ],
+  //       activeTool: 'tile',
+  //     });
 
-      // if (tileButtons) {
-      //   tileButtons.tools.push({
-      //     name: MODULE_ID + '-paint',
-      //     title: 'Draw blood splats.',
-      //     icon: 'fas fa-tint',
-      //     active: false,
-      //     visible: true,
+  //     // if (tileButtons) {
+  //     //   tileButtons.tools.push({
+  //     //     name: MODULE_ID + '-paint',
+  //     //     title: 'Draw blood splats.',
+  //     //     icon: 'fas fa-tint',
+  //     //     active: false,
+  //     //     visible: true,
 
-      //   });
-      //   tileButtons.tools.push({
-      //     name: MODULE_ID + '-wipe',
-      //     title: 'Wipe all blood splats from this scene.',
-      //     icon: 'fas fa-tint-slash',
-      //     active: false,
-      //     visible: true,
+  //     //   });
+  //     //   tileButtons.tools.push({
+  //     //     name: MODULE_ID + '-wipe',
+  //     //     title: 'Wipe all blood splats from this scene.',
+  //     //     icon: 'fas fa-tint-slash',
+  //     //     active: false,
+  //     //     visible: true,
 
-      //   });
-    }
-  }
+  //     //   });
+  //   }
+  // }
 
   /**
    * Handler called when user logs in/out. Used to make sure there is a GM online and disable if not.
@@ -1110,7 +1203,7 @@ Hooks.on('updateActor', (actor, changes) => {
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
 // Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
-Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
+// Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
 Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
 
 Hooks.on('renderSceneControls', (sceneControls, html, controls) => {

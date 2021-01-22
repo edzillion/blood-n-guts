@@ -1,4 +1,6 @@
+import { BloodNGuts } from 'src/blood-n-guts';
 import BloodLayer from './BloodLayer';
+import { getRGBA } from './helpers';
 
 /**
  * The Drawing object is an implementation of the :class:`PlaceableObject` container.
@@ -47,6 +49,7 @@ export default class BloodDrawing extends PlaceableObject {
     maskPolygon: number[];
     id: string;
   };
+  drips: SplatDripData[];
   constructor(...args) {
     //@ts-expect-error why this args problem?
     super(...args);
@@ -250,6 +253,8 @@ export default class BloodDrawing extends PlaceableObject {
      * @private
      */
     this._fixedPoints = duplicate(this.data.points || []);
+
+    this.drips = [];
   }
 
   /* -------------------------------------------- */
@@ -444,6 +449,22 @@ export default class BloodDrawing extends PlaceableObject {
     }
   }
 
+  _addDrips(position) {
+    const splatData = BloodNGuts.generateFloorSplats2(
+      //@ts-expect-error definitions wrong
+      BloodNGuts.allFonts[this.layer.getSetting('brushFont')],
+      //@ts-expect-error definitions wrong
+      this.layer.getSetting('brushSize'),
+      getRGBA('blood'),
+      //@ts-expect-error definitions wrong
+      this.layer.getSetting('brushDensity'),
+      //@ts-expect-error definitions wrong
+      this.layer.getSetting('brushSpread'),
+      new PIXI.Point(position.x - this.data.x, position.y - this.data.y),
+    );
+    splatData.drips.forEach((drip) => this.drips.push(drip));
+  }
+
   /* -------------------------------------------- */
 
   /**
@@ -581,7 +602,8 @@ export default class BloodDrawing extends PlaceableObject {
 
     // Determine whether the new point should be permanent based on the time since last sample
     const takeSample = now - this._drawTime >= this.SAMPLE_RATE;
-    this._addPoint(position, !takeSample);
+    //this._addPoint(position, !takeSample);
+    this._addDrips(position);
 
     // Refresh the display
     this.refresh();
