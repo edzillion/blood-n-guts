@@ -467,8 +467,8 @@ export class BloodNGuts {
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
       const dripData: SplatDripData = {
-        x: 0, //Math.round(randX - tm.width / 2),
-        y: 0, //Math.round(randY - tm.height / 2),
+        x: origin.x, //Math.round(randX - tm.width / 2),
+        y: origin.y, //Math.round(randY - tm.height / 2),
         angle: Math.round(Math.random() * 360),
         width: tm.width,
         height: tm.height,

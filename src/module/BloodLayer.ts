@@ -322,23 +322,17 @@ export default class BloodLayer extends TilesLayer {
 
   /** @override */
   _onClickLeft(event) {
+    const p = event.data.getLocalPosition(canvas.app.stage);
+    // Round positions to nearest pixel
+    p.x = Math.round(p.x);
+    p.y = Math.round(p.y);
+
     if (game.activeTool === 'brush') {
       const data = this._getNewDrawingData(event.data.origin);
       const drawing = new BloodDrawing(data);
       //@ts-expect-error definition missing
       event.data.preview = this.preview.addChild(drawing);
       drawing.draw();
-      drawing._onMouseClick(event);
-    }
-
-    const { preview, createState } = event.data;
-
-    // Continue polygon point placement
-    if (createState >= 1) {
-      const point = event.data.destination;
-      preview._addDrips(point, false);
-      preview._chain = true; // Note that we are now in chain mode
-      return preview.refresh();
     }
 
     // Standard left-click handling
@@ -646,8 +640,8 @@ export default class BloodLayer extends TilesLayer {
       texture: '',
       type: 'f',
       width: 0,
-      x: 1000,
-      y: 1000,
+      x: origin.x,
+      y: origin.y,
       z: 0,
     };
 
@@ -663,18 +657,16 @@ export default class BloodLayer extends TilesLayer {
     // );
 
     // Mandatory additions
-    data.x = origin.x;
-    data.y = origin.y;
     data.author = game.user._id;
 
     // Tool-based settings
-    switch (tool) {
-      case 'freehand':
-        data.type = CONST.DRAWING_TYPES.FREEHAND;
-        data.points = [[0, 0]];
-        data.bezierFactor = 0.5;
-        break;
-    }
+    // switch (tool) {
+    //   case 'brush':
+    //     data.type = CONST.DRAWING_TYPES.FREEHAND;
+    //     data.points = [[0, 0]];
+    //     data.bezierFactor = 0.5;
+    //     break;
+    // }
     return data;
   }
 }

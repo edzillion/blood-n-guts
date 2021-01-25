@@ -251,7 +251,31 @@ export default class BloodDrawing extends PlaceableObject {
     this._sampleTime = 0;
     this.SAMPLE_RATE = 75;
 
-    this.drips = this.data.drips || [];
+    // @ts-expect-error bad def
+    const font = this.layer.getSetting('brushFont');
+
+    const styleData = {
+      fontFamily: font,
+      // @ts-expect-error bad def
+      fontSize: this.layer.getSetting('brushSize'),
+      // @ts-expect-error bad def
+      fill: this.layer.getSetting('brushColor'),
+      align: 'center',
+    };
+    this.style = new PIXI.TextStyle(styleData);
+    this.font = splatFonts.fonts[font];
+
+    const startDrip = BloodNGuts.generateFloorSplats2(
+      this.style,
+      this.font,
+      //@ts-expect-error definitions wrong
+      this.layer.getSetting('brushDensity'),
+      //@ts-expect-error definitions wrong
+      this.layer.getSetting('brushSpread'),
+      new PIXI.Point(0, 0),
+    );
+
+    this.drips = this.data.drips || startDrip;
   }
 
   /* -------------------------------------------- */
@@ -330,20 +354,6 @@ export default class BloodDrawing extends PlaceableObject {
   _createDrawing() {
     // Drawing container
     this.drawing = this.addChild(new PIXI.Container());
-
-    // @ts-expect-error bad def
-    const font = this.layer.getSetting('brushFont');
-
-    const styleData = {
-      fontFamily: font,
-      // @ts-expect-error bad def
-      fontSize: this.layer.getSetting('brushSize'),
-      // @ts-expect-error bad def
-      fill: this.layer.getSetting('brushColor'),
-      align: 'center',
-    };
-    this.style = new PIXI.TextStyle(styleData);
-    this.font = splatFonts.fonts[font];
   }
 
   /* -------------------------------------------- */
@@ -466,7 +476,6 @@ export default class BloodDrawing extends PlaceableObject {
   }
 
   _addDrips(position) {
-    console.log(this.data.x, this.data.y);
     const drips = BloodNGuts.generateFloorSplats2(
       this.style,
       this.font,
@@ -474,7 +483,7 @@ export default class BloodDrawing extends PlaceableObject {
       this.layer.getSetting('brushDensity'),
       //@ts-expect-error definitions wrong
       this.layer.getSetting('brushSpread'),
-      new PIXI.Point(position.x - this.data.x, position.y - this.data.y),
+      position,
     );
     drips.forEach((drip) => this.drips.push(drip));
   }
