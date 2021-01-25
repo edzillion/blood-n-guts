@@ -322,12 +322,21 @@ export default class BloodLayer extends TilesLayer {
 
   /** @override */
   _onClickLeft(event) {
+    if (game.activeTool === 'brush') {
+      const data = this._getNewDrawingData(event.data.origin);
+      const drawing = new BloodDrawing(data);
+      //@ts-expect-error definition missing
+      event.data.preview = this.preview.addChild(drawing);
+      drawing.draw();
+      drawing._onMouseClick(event);
+    }
+
     const { preview, createState } = event.data;
 
     // Continue polygon point placement
     if (createState >= 1) {
       const point = event.data.destination;
-      preview._addPoint(point, false);
+      preview._addDrips(point, false);
       preview._chain = true; // Note that we are now in chain mode
       return preview.refresh();
     }

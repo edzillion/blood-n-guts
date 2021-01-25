@@ -435,76 +435,51 @@ export class BloodNGuts {
    * @param {number} spread - the distance from centre point to spread the splats.
    */
   public static generateFloorSplats2(
+    style: PIXI.TextStyle,
     font: SplatFont,
-    size: number,
-    color: string,
     density: number,
     spread: number,
     origin: PIXI.Point,
-  ): TileSplatData {
+  ): SplatDripData[] {
     if (!density) return;
+    log(LogLevel.INFO, 'generateFloorSplats2 origin', origin);
     log(LogLevel.DEBUG, 'generateFloorSplats2');
 
-    const tileSplatData: Partial<TileSplatData> = {};
+    //const tileSplatData: Partial<TileSplatData> = {};
+
+    const drips: SplatDripData[] = [];
 
     // todo: move this into token
     // const fontSize = Math.round(
     //   size * ((splatToken.spriteWidth + splatToken.spriteWidth) / canvas.grid.size / 2) * splatToken.hitSeverity,
     // );
-    log(LogLevel.DEBUG, 'generateFloorSplats fontSize', size);
-    tileSplatData.styleData = {
-      fontFamily: font.name,
-      fontSize: size,
-      fill: color,
-      align: 'center',
-    };
-    const style = new PIXI.TextStyle(tileSplatData.styleData);
 
-    // amount of splats is based on density and severity
-    const amount = density;
     // get a random glyph and then get a random (x,y) spread away from the token.
-    const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
+    const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
     const pixelSpreadX = canvas.grid.size * spread;
     const pixelSpreadY = canvas.grid.size * spread;
-    log(LogLevel.DEBUG, 'generateFloorSplats amount', amount);
+    log(LogLevel.DEBUG, 'generateFloorSplats density', density);
     log(LogLevel.DEBUG, 'generateFloorSplats pixelSpread', pixelSpreadX, pixelSpreadY);
 
     // create our splats for later drawing.
-    tileSplatData.drips = glyphArray.map((glyph) => {
+    glyphArray.forEach((glyph) => {
       const tm = PIXI.TextMetrics.measureText(glyph, style);
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
       const dripData: SplatDripData = {
-        x: Math.round(randX - tm.width / 2),
-        y: Math.round(randY - tm.height / 2),
+        x: 0, //Math.round(randX - tm.width / 2),
+        y: 0, //Math.round(randY - tm.height / 2),
         angle: Math.round(Math.random() * 360),
         width: tm.width,
         height: tm.height,
         glyph: glyph,
       };
-      return dripData;
+      // dripData.x += origin.x;
+      // dripData.y += origin.y;
+      drips.push(dripData);
     });
 
-    const { dripsOffset, dripsWidth, dripsHeight } = alignDripsGetOffsetAndDimensions(tileSplatData.drips);
-    tileSplatData.offset = dripsOffset;
-    tileSplatData.x = dripsOffset.x;
-    tileSplatData.y = dripsOffset.y;
-
-    const maxDistance = Math.max(dripsWidth, dripsHeight);
-    const sight = computeSightFromPoint(origin, maxDistance);
-
-    // since we don't want to add the mask to the container yet (as that will
-    // screw up our alignment) we need to move it by editing the x,y points directly
-    for (let i = 0; i < sight.length; i += 2) {
-      sight[i] -= tileSplatData.offset.x;
-      sight[i + 1] -= tileSplatData.offset.y;
-    }
-
-    tileSplatData.x += origin.x;
-    tileSplatData.y += origin.y;
-    tileSplatData.maskPolygon = sight;
-    tileSplatData.id = getUID();
-    return tileSplatData as TileSplatData;
+    return drips;
   }
 
   /**

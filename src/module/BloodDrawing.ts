@@ -1,6 +1,8 @@
-import { BloodNGuts } from 'src/blood-n-guts';
+import { BloodNGuts } from '../blood-n-guts';
 import BloodLayer from './BloodLayer';
 import { getRGBA } from './helpers';
+import { log, LogLevel } from './logging';
+import * as splatFonts from '../data/splatFonts';
 
 /**
  * The Drawing object is an implementation of the :class:`PlaceableObject` container.
@@ -50,6 +52,8 @@ export default class BloodDrawing extends PlaceableObject {
     id: string;
   };
   drips: SplatDripData[];
+  style: PIXI.TextStyle;
+  font: any;
   constructor(...args) {
     //@ts-expect-error why this args problem?
     super(...args);
@@ -247,14 +251,7 @@ export default class BloodDrawing extends PlaceableObject {
     this._sampleTime = 0;
     this.SAMPLE_RATE = 75;
 
-    /**
-     * Internal flag for the permanent points of the polygon
-     * @type {boolean}
-     * @private
-     */
-    this._fixedPoints = duplicate(this.data.points || []);
-
-    this.drips = [];
+    this.drips = this.data.drips || [];
   }
 
   /* -------------------------------------------- */
@@ -333,6 +330,20 @@ export default class BloodDrawing extends PlaceableObject {
   _createDrawing() {
     // Drawing container
     this.drawing = this.addChild(new PIXI.Container());
+
+    // @ts-expect-error bad def
+    const font = this.layer.getSetting('brushFont');
+
+    const styleData = {
+      fontFamily: font,
+      // @ts-expect-error bad def
+      fontSize: this.layer.getSetting('brushSize'),
+      // @ts-expect-error bad def
+      fill: this.layer.getSetting('brushColor'),
+      align: 'center',
+    };
+    this.style = new PIXI.TextStyle(styleData);
+    this.font = splatFonts.fonts[font];
   }
 
   /* -------------------------------------------- */
@@ -376,22 +387,27 @@ export default class BloodDrawing extends PlaceableObject {
    * @private
    */
   _drawFreehand() {
-    // Get drawing points
-    const points = this.data.points;
-    const last = points[points.length - 1];
+    // Get drawing drips
+    const drips = this.drips;
 
-    // Set initial conditions
-    const [previous, point] = points.slice(0, 2);
-    // if (this.data.fillType) points = points.concat([previous, point]); //what is this doing?
-
-    const style = new PIXI.TextStyle(this.splatData.styleData);
+    const styleData = {
+      // @ts-expect-error bad def
+      fontFamily: this.layer.getSetting('brushFont'),
+      // @ts-expect-error bad def
+      fontSize: this.layer.getSetting('brushSize'),
+      // @ts-expect-error bad def
+      fill: this.layer.getSetting('brushColor'),
+      align: 'center',
+    };
+    const style = new PIXI.TextStyle(styleData);
     // Begin iteration
-    for (let i = 0; i < points.length; i++) {
-      const text = new PIXI.Text('a', style);
-      text.x = points[i][0]; // + splat.width / 2;
-      text.y = points[i][1]; // + splat.height / 2;
-      //text.pivot.set(splat.width / 2, splat.height / 2);
-      //text.angle = splat.angle;
+    for (let i = 0; i < drips.length; i++) {
+      log(LogLevel.INFO, drips[i].x, drips[i].y);
+      const text = new PIXI.Text(drips[i].glyph, style);
+      text.x = drips[i].x; // + splat.width / 2;
+      text.y = drips[i].y; // + splat.height / 2;
+      text.pivot.set(drips[i].width / 2, drips[i].height / 2);
+      text.angle = drips[i].angle;
       this.drawing.addChild(text);
     }
   }
@@ -450,19 +466,17 @@ export default class BloodDrawing extends PlaceableObject {
   }
 
   _addDrips(position) {
-    const splatData = BloodNGuts.generateFloorSplats2(
-      //@ts-expect-error definitions wrong
-      BloodNGuts.allFonts[this.layer.getSetting('brushFont')],
-      //@ts-expect-error definitions wrong
-      this.layer.getSetting('brushSize'),
-      getRGBA('blood'),
+    console.log(this.data.x, this.data.y);
+    const drips = BloodNGuts.generateFloorSplats2(
+      this.style,
+      this.font,
       //@ts-expect-error definitions wrong
       this.layer.getSetting('brushDensity'),
       //@ts-expect-error definitions wrong
       this.layer.getSetting('brushSpread'),
       new PIXI.Point(position.x - this.data.x, position.y - this.data.y),
     );
-    splatData.drips.forEach((drip) => this.drips.push(drip));
+    drips.forEach((drip) => this.drips.push(drip));
   }
 
   /* -------------------------------------------- */
@@ -582,6 +596,15 @@ export default class BloodDrawing extends PlaceableObject {
 
   /* -------------------------------------------- */
 
+  _onMouseClick(event) {
+    const position = event.data.origin;
+    this._addDrips(position);
+
+    // Refresh the display
+    this.refresh();
+  }
+  /* -------------------------------------------- */
+
   /**
    * Handle mouse movement which modifies the dimensions of the drawn shape
    * @param {PIXI.interaction.InteractionEvent} event
@@ -591,8 +614,8 @@ export default class BloodDrawing extends PlaceableObject {
     const { destination, originalEvent } = event.data;
 
     // Determine position
-    const position = { x: parseInt(destination.x), y: parseInt(destination.y) };
-
+    const position = { x: parseInt(destination.x) - this.x, y: parseInt(destination.y) - this.y };
+    console.log('draw pos', position);
     const now = Date.now();
 
     // If the time since any drawing activity last occurred exceeds the sample rate - upgrade the prior point
@@ -603,6 +626,7 @@ export default class BloodDrawing extends PlaceableObject {
     // Determine whether the new point should be permanent based on the time since last sample
     const takeSample = now - this._drawTime >= this.SAMPLE_RATE;
     //this._addPoint(position, !takeSample);
+    console.log('adddrips', position);
     this._addDrips(position);
 
     // Refresh the display
@@ -632,6 +656,21 @@ export default class BloodDrawing extends PlaceableObject {
   /** @override */
   _onDragLeftDrop(event) {
     if (this._dragHandle) return this._onHandleDragDrop(event);
+
+    //todo: wrapup
+    //const maxDistance = Math.max(dripsWidth, dripsHeight);
+    //const sight = computeSightFromPoint(origin, maxDistance);
+    // since we don't want to add the mask to the container yet (as that will
+    // screw up our alignment) we need to move it by editing the x,y points directly
+    // for (let i = 0; i < sight.length; i += 2) {
+    //   sight[i] -= tileSplatData.offset.x;
+    //   sight[i + 1] -= tileSplatData.offset.y;
+    // }
+
+    // tileSplatData.x += origin.x;
+    // tileSplatData.y += origin.y;
+    // tileSplatData.maskPolygon = sight;
+    // tileSplatData.id = getUID();
 
     // Update each dragged Drawing, confirming pending text
     const clones = event.data.clones || [];
