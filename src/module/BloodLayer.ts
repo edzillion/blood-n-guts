@@ -27,18 +27,6 @@ export default class BloodLayer extends TilesLayer {
     super();
     //this._registerMouseListeners();
     //this.dataArray = 'flags["blood-n-guts"].sceneSplats';
-    this.defaults = {
-      img: 'Chiyomaru.jpeg',
-      width: 100,
-      height: 100,
-      scale: 1,
-      x: 500,
-      y: 500,
-      z: 370,
-      rotation: 45,
-      hidden: false,
-      locked: false,
-    };
 
     this.splatData = {
       splats: [

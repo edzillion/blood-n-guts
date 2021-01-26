@@ -379,7 +379,7 @@ export default class BloodDrawing extends PlaceableObject {
     this._drawFreehand();
 
     // Determine shape bounds and update the frame
-    const bounds = this.getLocalBounds(this.drawing);
+    const bounds = this.drawing.getLocalBounds();
     if (this.id && this._controlled) this._refreshFrame(bounds);
     else this.frame.visible = false;
 
@@ -388,18 +388,6 @@ export default class BloodDrawing extends PlaceableObject {
     this.drawing.hitArea = bounds;
     this.alpha = this.data.hidden ? 0.5 : 1.0;
     this.visible = !this.data.hidden || game.user.isGM;
-  }
-
-  public getLocalBounds(drawing): Rectangle {
-    for (let i = 0, j = drawing.children.length; i < j; ++i) {
-      const child = drawing.children[i];
-
-      if (child.visible) {
-        child.updateTransform();
-      }
-    }
-
-    return result;
   }
 
   /* -------------------------------------------- */
@@ -712,7 +700,7 @@ export default class BloodDrawing extends PlaceableObject {
       return update;
     });
     //@ts-expect-error definitions wrong
-    return this.layer.updateNonEmbeddedEntity(updates, { diff: false });
+    this.layer.updateNonEmbeddedEntity(updates, { diff: false });
   }
 
   /* -------------------------------------------- */
