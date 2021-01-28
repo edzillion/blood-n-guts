@@ -72,10 +72,30 @@ interface TileSplatData {
   hidden: boolean;
   locked: boolean;
   drips: SplatDripData[];
-  styleData: SplatStyleData;
+  styleData: SplatStyle;
   offset: PIXI.Point;
   maskPolygon: number[];
 }
+
+// interface TileSplatData {
+//   _id?: string;
+//   id?: string;
+//   alpha?: number;
+//   img?: string; //not used
+//   width: number;
+//   height: number;
+//   scale: number;
+//   x: number;
+//   y: number;
+//   z?: number;
+//   rotation: number;
+//   hidden: boolean;
+//   locked: boolean;
+//   drips: SplatDripData[];
+//   styleData: SplatStyle;
+//   offset: PIXI.Point;
+//   maskPolygon: number[];
+// }
 
 interface TokenSplatData {
   _id?: string;
@@ -85,9 +105,20 @@ interface TokenSplatData {
   drips: SplatDripData[];
 }
 
-interface SplatStyleData {
+interface SplatStyle {
   fontFamily: string;
   fontSize: number;
   fill: string;
   align: string;
+}
+
+interface BrushSettings {
+  visible: boolean;
+  brushSize: number;
+  brushAlpha: number;
+  previewAlpha: number;
+  brushColor: string;
+  brushFont: string;
+  brushSpread: number;
+  brushDensity: number;
 }

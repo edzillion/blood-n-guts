@@ -1,9 +1,10 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
-import TileDrawingSplat from './TileDrawingSplat';
+import TileSplat from './TileSplat';
 import { getRGBA } from './helpers';
 import { log, LogLevel } from './logging';
-import TileSplat from './TileSplat';
+
+import * as splatFonts from '../data/splatFonts';
 
 //@ts-expect-error missing definition
 export default class BloodLayer extends TilesLayer {
@@ -12,193 +13,12 @@ export default class BloodLayer extends TilesLayer {
   layer: PIXI.Container;
   collection: TileSplatData[];
   splatData: any;
-  DEFAULTS: {
-    visible: boolean;
-    brushSize: number;
-    brushAlpha: number;
-    previewAlpha: number;
-    brushColor: string;
-    brushFont: string;
-    brushSpread: number;
-    brushDensity: number;
-  };
-  // _objects: [];
+  DEFAULTS: BrushSettings;
+  DEFAULTS_TILESPLAT: TileSplatData;
   constructor() {
     super();
     //this._registerMouseListeners();
     //this.dataArray = 'flags["blood-n-guts"].sceneSplats';
-
-    this.splatData = {
-      splats: [
-        {
-          x: 52,
-          y: 4,
-          angle: 303,
-          width: 115.16417694091797,
-          height: 141,
-          glyph: 'c',
-        },
-        {
-          x: 49,
-          y: 0,
-          angle: 89,
-          width: 72.37313079833984,
-          height: 141,
-          glyph: 'S',
-        },
-        {
-          x: 38,
-          y: 4,
-          angle: 315,
-          width: 44.55223846435547,
-          height: 141,
-          glyph: '*',
-        },
-        {
-          x: 0,
-          y: 16,
-          angle: 65,
-          width: 70.07462310791016,
-          height: 141,
-          glyph: 'u',
-        },
-      ],
-      styleData: {
-        fontFamily: 'WC Rhesus A Bta',
-        fontSize: 110,
-        fill: 'rgba(138, 7, 7, 0.7)',
-        align: 'center',
-      },
-      offset: {
-        x: -35,
-        y: -86,
-      },
-      x: 1015,
-      y: 64,
-      maskPolygon: [
-        -201.37014619445802,
-        85.99999999999997,
-        -200.07528580178825,
-        61.292591855942646,
-        -196.20489138520793,
-        36.85588324586928,
-        -189.80136779587735,
-        12.95760786302165,
-        -180.93487337826457,
-        -10.140399786470027,
-        -169.7025513006422,
-        -32.18507309722908,
-        -156.22746523420733,
-        -52.934886015318256,
-        -140.65725104174658,
-        -72.16249924822966,
-        -123.16249924822955,
-        -89.65725104174669,
-        -103.93488601531817,
-        -105.22746523420733,
-        -83.18507309722895,
-        -118.70255130064228,
-        -61.14039978646997,
-        -129.93487337826463,
-        -38.042392136978265,
-        -138.80136779587738,
-        -14.144116754130664,
-        -145.20489138520796,
-        10.292591855942646,
-        -149.07528580178825,
-        35,
-        -150.370146194458,
-        59.707408144057354,
-        -149.07528580178823,
-        84.14411675413066,
-        -145.20489138520796,
-        108.04239213697838,
-        -138.80136779587735,
-        131.14039978646997,
-        -129.93487337826463,
-        153.18507309722918,
-        -118.70255130064223,
-        173.93488601531817,
-        -105.22746523420733,
-        193.16249924822978,
-        -89.65725104174663,
-        210.6572510417468,
-        -72.16249924822961,
-        226.22746523420733,
-        -52.934886015318256,
-        239.7025513006422,
-        -32.18507309722895,
-        250.93487337826468,
-        -10.140399786469914,
-        259.80136779587747,
-        12.957607863021764,
-        266.20489138520793,
-        36.85588324586931,
-        270.07528580178814,
-        61.29259185594279,
-        271.3701461944579,
-        86.00000000000011,
-        270.07528580178814,
-        110.7074081440573,
-        266.20489138520793,
-        135.14411675413078,
-        259.80136779587724,
-        159.04239213697844,
-        250.93487337826468,
-        182.14039978647,
-        239.7025513006422,
-        204.18507309722906,
-        226.22746523420733,
-        224.93488601531828,
-        210.65725104174658,
-        244.16249924822966,
-        193.16249924822955,
-        261.6572510417467,
-        173.93488601531817,
-        277.22746523420733,
-        153.18507309722895,
-        290.7025513006423,
-        131.14039978646997,
-        301.9348733782646,
-        108.04239213697838,
-        310.80136779587735,
-        84.14411675413066,
-        317.204891385208,
-        59.707408144057126,
-        321.07528580178825,
-        35,
-        322.370146194458,
-        10.292591855942646,
-        321.07528580178825,
-        -14.144116754130778,
-        317.20489138520793,
-        -38.042392136978265,
-        310.80136779587735,
-        -61.140399786470084,
-        301.93487337826457,
-        -83.18507309722906,
-        290.70255130064226,
-        -103.9348860153184,
-        277.2274652342072,
-        -123.16249924822978,
-        261.6572510417466,
-        -140.6572510417467,
-        244.1624992482296,
-        -156.22746523420744,
-        224.93488601531806,
-        -169.7025513006423,
-        204.1850730972289,
-        -180.93487337826468,
-        182.14039978646994,
-        -189.80136779587747,
-        159.04239213697815,
-        -196.20489138520793,
-        135.1441167541306,
-        -200.07528580178825,
-        110.70740814405724,
-      ],
-      id: 'bng__177066395c4_0.844fc02d550df8',
-    };
 
     this.DEFAULTS = {
       visible: true,
@@ -209,6 +29,27 @@ export default class BloodLayer extends TilesLayer {
       brushFont: 'splatter',
       brushSpread: 1.0,
       brushDensity: 1,
+    };
+
+    this.DEFAULTS_TILESPLAT = {
+      alpha: 0.7,
+      width: 0,
+      height: 0,
+      scale: 1,
+      x: 0,
+      y: 0,
+      rotation: 0,
+      hidden: false,
+      locked: false,
+      drips: [],
+      styleData: {
+        fontFamily: 'splatter',
+        fontSize: 50,
+        fill: getRGBA('blood'),
+        align: 'center',
+      },
+      offset: new PIXI.Point(0),
+      maskPolygon: [],
     };
 
     // React to changes to current scene
@@ -230,17 +71,6 @@ export default class BloodLayer extends TilesLayer {
   //   container.y = 0;
   //   container.zIndex = 0;
   //   return container;
-  // }
-
-  // /**
-  //  * Adds the mouse listeners to the layer
-  //  */
-  // _registerMouseListeners() {
-  //   this.addListener('pointerdown', this._pointerDown);
-  //   // this.addListener('pointerup', this._pointerUp);
-  //   // this.addListener('pointermove', this._pointerMove);
-  //   // this.dragging = false;
-  //   // this.brushing = false;
   // }
 
   /** @override */
@@ -276,38 +106,6 @@ export default class BloodLayer extends TilesLayer {
   //   this.collection = BloodNGuts.trimTileSplatData(duplicate(changes.flags[MODULE_ID]?.sceneSplats));
   // }
 
-  // _onClickLeft(e) {
-  //   const p = e.data.getLocalPosition(canvas.app.stage);
-  //   // Round positions to nearest pixel
-  //   p.x = Math.round(p.x);
-  //   p.y = Math.round(p.y);
-
-  //   const tileSplatData: TileSplatData = {
-  //     // img: string; //not used
-  //     width: 100,
-  //     height: 100,
-  //     scale: 1,
-  //     x: p.x,
-  //     y: p.y,
-  //     // z: number;
-  //     rotation: 0,
-  //     hidden: false,
-  //     locked: false,
-  //     drips: this.splatData.splats,
-  //     styleData: this.splatData.styleData,
-  //     offset: this.splatData.offset,
-  //     maskPolygon: this.splatData.maskPolygon,
-  //   };
-  //   const obj: TileSplat = new TileSplat(tileSplatData, canvas.scene);
-  //   obj.zIndex = obj.z || 0;
-  //   this.collection.push(tileSplatData);
-
-  //   //@ts-expect-error definition missing
-  //   this.objects.addChild(obj);
-
-  //   obj.draw();
-  // }
-
   /** @override */
   _onClickLeft(event) {
     const p = event.data.getLocalPosition(canvas.app.stage);
@@ -317,7 +115,7 @@ export default class BloodLayer extends TilesLayer {
 
     if (game.activeTool === 'brush') {
       const data = this._getNewDrawingData(event.data.origin);
-      const drawing = new TileDrawingSplat(data);
+      const drawing = new TileSplat(data);
       this.collection.push(data);
       this.draw();
       ////@ts-expect-error definition missing
@@ -329,13 +127,6 @@ export default class BloodLayer extends TilesLayer {
     super._onClickLeft(event);
   }
 
-  //return this.constructor.placeableClass.create(this.defaults);
-  //this.createObject(this.defaults);
-  // const t = new Tile(this.defaults, canvas.scene);
-  // SplatTile(t).then((st) => {
-  //   debugger;
-  // });
-
   /** @override */
   _onDragLeftStart(event) {
     // super._onDragLeftStart(event);
@@ -345,7 +136,7 @@ export default class BloodLayer extends TilesLayer {
     //super.__proto__.__proto__.__proto__._onDragLeftStart(event);
     const data = this._getNewDrawingData(event.data.origin);
 
-    const drawing = new TileDrawingSplat(data);
+    const drawing = new TileSplat(data);
     //@ts-expect-error definition missing
     event.data.preview = this.preview.addChild(drawing);
     drawing.draw();
@@ -448,7 +239,7 @@ export default class BloodLayer extends TilesLayer {
    * @return {PlaceableObject}
    */
   createObject(data) {
-    const obj = new TileDrawingSplat(data);
+    const obj = new TileSplat(data);
     obj.zIndex = data.z || 0;
     // @ts-expect-error missing def
     this.objects.addChild(obj);
@@ -589,6 +380,21 @@ export default class BloodLayer extends TilesLayer {
   //   return entities;
   // }
 
+  get brushStyle(): SplatStyle {
+    const brushSettings: Partial<BrushSettings> = {};
+    // Update with User Defaults
+    ['brushFont', 'brushSize', 'brushColor', 'brushAlpha'].forEach((setting) => {
+      brushSettings[setting] = this.getUserSetting(setting) || this.getSetting(setting) || this.DEFAULTS[setting];
+    });
+
+    return {
+      fontFamily: brushSettings.brushFont,
+      fontSize: brushSettings.brushSize,
+      fill: hexToRGBAString(parseInt(brushSettings.brushColor.slice(1), 16), brushSettings.brushAlpha),
+      align: 'center',
+    };
+  }
+
   getSetting(name) {
     let setting = canvas.scene.getFlag(MODULE_ID, name);
     // if (setting === undefined) setting = this.getUserSetting(name);
@@ -622,7 +428,16 @@ export default class BloodLayer extends TilesLayer {
   _getNewDrawingData(origin): any {
     const tool = game.activeTool;
 
-    // Update with User Defaults
+    const tileData = mergeObject(this.DEFAULTS_TILESPLAT, {
+      styleData: this.brushStyle,
+      drips: BloodNGuts.generateDrips(
+        new PIXI.TextStyle(this.brushStyle),
+        BloodNGuts.allFonts[this.brushStyle.fontFamily],
+        this.getUserSetting('brushDensity') || this.getSetting('brushDensity') || this.DEFAULTS['brushDensity'],
+        this.getUserSetting('brushSpread') || this.getSetting('brushSpread') || this.DEFAULTS['brushSpread'],
+        new PIXI.Point(0),
+      ),
+    } as any);
 
     // Get User Settings
     //const saved = game.settings.get('core', this.constructor.DEFAULT_CONFIG_SETTING);
@@ -632,35 +447,14 @@ export default class BloodLayer extends TilesLayer {
 
     const data = {
       author: '',
-      bezierFactor: 0,
-      fillAlpha: 0.5,
-      fillColor: '#ffffff',
-      fillType: 0,
       fontFamily: 'Signika',
       fontSize: 48,
       height: 0,
       hidden: false,
       locked: false,
-      mltDisabled: false,
-      mltIn: false,
-      mltLevel: false,
-      mltMacroEnter: false,
-      mltMacroLeave: false,
-      mltMacroMove: false,
-      mltOut: false,
-      mltSource: false,
-      mltTarget: false,
-      mltTintColor: '',
-      points: [],
       rotation: 0,
-      strokeAlpha: 1,
-      strokeColor: '#ffffff',
-      strokeWidth: 1,
       text: '',
-      textAlpha: 1,
-      textColor: '#FFFFFF',
       texture: '',
-      type: 'f',
       width: 0,
       x: origin.x,
       y: origin.y,
@@ -679,7 +473,7 @@ export default class BloodLayer extends TilesLayer {
     // );
 
     // Mandatory additions
-    data.author = game.user._id;
+    tileData.author = game.user._id;
 
     // Tool-based settings
     // switch (tool) {
@@ -689,6 +483,6 @@ export default class BloodLayer extends TilesLayer {
     //     data.bezierFactor = 0.5;
     //     break;
     // }
-    return data;
+    return tileData;
   }
 }

@@ -434,7 +434,7 @@ export class BloodNGuts {
    * @param {number} density - the amount of splats.
    * @param {number} spread - the distance from centre point to spread the splats.
    */
-  public static generateFloorSplats2(
+  public static generateDrips(
     style: PIXI.TextStyle,
     font: SplatFont,
     density: number,
@@ -442,8 +442,8 @@ export class BloodNGuts {
     origin: PIXI.Point,
   ): SplatDripData[] {
     if (!density) return;
-    log(LogLevel.INFO, 'generateFloorSplats2 origin', origin);
-    log(LogLevel.DEBUG, 'generateFloorSplats2');
+    log(LogLevel.INFO, 'generateDrips origin', origin);
+    log(LogLevel.DEBUG, 'generateDrips');
 
     //const tileSplatData: Partial<TileSplatData> = {};
 
@@ -458,8 +458,8 @@ export class BloodNGuts {
     const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
     const pixelSpreadX = canvas.grid.size * spread;
     const pixelSpreadY = canvas.grid.size * spread;
-    log(LogLevel.DEBUG, 'generateFloorSplats density', density);
-    log(LogLevel.DEBUG, 'generateFloorSplats pixelSpread', pixelSpreadX, pixelSpreadY);
+    log(LogLevel.DEBUG, 'generateDrips density', density);
+    log(LogLevel.DEBUG, 'generateDrips pixelSpread', pixelSpreadX, pixelSpreadY);
 
     // create our splats for later drawing.
     glyphArray.forEach((glyph) => {
@@ -467,8 +467,8 @@ export class BloodNGuts {
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
       const dripData: SplatDripData = {
-        x: origin.x, //Math.round(randX - tm.width / 2),
-        y: origin.y, //Math.round(randY - tm.height / 2),
+        x: Math.round(randX - origin.x / 2),
+        y: Math.round(randY - origin.y / 2),
         angle: Math.round(Math.random() * 360),
         width: tm.width,
         height: tm.height,

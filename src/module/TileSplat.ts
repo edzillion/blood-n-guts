@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
+import { BloodNGuts } from '../blood-n-guts';
 import { getUID } from './helpers';
 import { log, LogLevel } from './logging';
+import * as splatFonts from '../data/splatFonts';
+import BloodLayer from './BloodLayer';
 
 /**
  * A Splat is an implementation of PlaceableObject which represents a static piece of artwork or prop within the Scene.
@@ -26,24 +29,52 @@ import { log, LogLevel } from './logging';
  * @see {@link TileHUD}
  */
 
+// @ts-expect-error incorrect extends
 export default class TileSplat extends Tile {
-  container: any;
   frame: any;
   data: any;
-  constructor(data: TileSplatData, scene) {
+  _drawTime: number;
+  _sampleTime: number;
+  SAMPLE_RATE: number;
+  style: any;
+  font: any;
+  tile: any;
+  texture: any;
+  position: any;
+  hitArea: any;
+  _controlled: any;
+  alpha: number;
+  visible: any;
+  drips: any;
+  _dragHandle: any;
+  x: number;
+  y: number;
+  constructor(data: TileSplatData, scene = canvas.scene) {
     super(data, scene);
 
-    /**
-     * The Splat image container
-     * @type {PIXI.Container|null}
-     */
-    this.container = new PIXI.Container();
+    // /**
+    //  * The Splat image container
+    //  * @type {PIXI.Container|null}
+    //  */
+    // //this.container = new PIXI.Container();
 
     this.data._id = getUID();
+
+    /**
+     * Internal timestamp for the previous freehand draw time, to limit sampling
+     * @type {number}
+     * @private
+     */
+    this._drawTime = 0;
+    this._sampleTime = 0;
+    this.SAMPLE_RATE = 75;
+
+    this.style = new PIXI.TextStyle(this.data.styleData);
+    this.font = splatFonts.fonts[this.data.styleData.fontFamily];
   }
 
   /** @override */
-  async draw() {
+  async draw(): Promise<any> {
     this.clear();
 
     // Create the outer frame for the border and interaction handles
@@ -64,42 +95,46 @@ export default class TileSplat extends Tile {
     //this.tile.bg = this.addChild(new PIXI.Graphics());
     // }
 
-    const style = new PIXI.TextStyle(this.data.styleData);
-    // all scene drips have a .maskPolgyon.
-    if (this.data.maskPolygon) {
-      this.data.drips.forEach((drip) => {
-        const text = new PIXI.Text(drip.glyph, style);
-        text.x = drip.x + drip.width / 2;
-        text.y = drip.y + drip.height / 2;
-        text.pivot.set(drip.width / 2, drip.height / 2);
-        text.angle = drip.angle;
-        this.container.addChild(text);
-        return text;
-      });
+    this.drawBlood();
 
-      log(LogLevel.DEBUG, 'drawSceneSplats: data.maskPolygon');
-      const sightMask = new PIXI.Graphics();
-      sightMask.beginFill(1, 1);
-      sightMask.drawPolygon(this.data.maskPolygon);
-      sightMask.endFill();
-      this.container.addChild(sightMask);
-      this.container.mask = sightMask;
+    // const container = new PIXI.Container();
 
-      // this.container.x = this.data.x;
-      // this.container.y = this.data.y;
-      // this.container.alpha = this.data.alpha || 1;
-      // we don't want to save alpha to flags
-      //delete this.data.alpha;
-      this.tile = this.addChild(this.container);
+    // const style = new PIXI.TextStyle(this.data.styleData);
+    // // all scene drips have a .maskPolgyon.
+    // if (this.data.maskPolygon) {
+    //   this.data.drips.forEach((drip) => {
+    //     const text = new PIXI.Text(drip.glyph, style);
+    //     text.x = drip.x + drip.width / 2;
+    //     text.y = drip.y + drip.height / 2;
+    //     text.pivot.set(drip.width / 2, drip.height / 2);
+    //     text.angle = drip.angle;
+    //     container.addChild(text);
+    //     return text;
+    //   });
 
-      //   //if it's in the pool already update it otherwise add new entry
-      //   if (existingIds.includes(data.id))
-      //     BloodNGuts.scenePool.find((p) => p.data.id === data.id).container = container;
-      //   else BloodNGuts.scenePool.push({ data: data, container: container });
-      // } else {
-      //   log(LogLevel.ERROR, 'drawSceneSplats: dataObject has no .maskPolygon!');
-      // }
-    }
+    //   // log(LogLevel.DEBUG, 'drawSceneSplats: data.maskPolygon');
+    //   // const sightMask = new PIXI.Graphics();
+    //   // sightMask.beginFill(1, 1);
+    //   // sightMask.drawPolygon(this.data.maskPolygon);
+    //   // sightMask.endFill();
+    //   // container.addChild(sightMask);
+    //   // container.mask = sightMask;
+
+    //   // this.container.x = this.data.x;
+    //   // this.container.y = this.data.y;
+    //   // this.container.alpha = this.data.alpha || 1;
+    //   // we don't want to save alpha to flags
+    //   //delete this.data.alpha;
+    //   this.tile = this.addChild(container);
+
+    //   //if it's in the pool already update it otherwise add new entry
+    //   if (existingIds.includes(data.id))
+    //     BloodNGuts.scenePool.find((p) => p.data.id === data.id).container = container;
+    //   else BloodNGuts.scenePool.push({ data: data, container: container });
+    // } else {
+    //   log(LogLevel.ERROR, 'drawSceneSplats: dataObject has no .maskPolygon!');
+    // }
+    //}
 
     // Refresh the current display
     this.refresh();
@@ -110,24 +145,122 @@ export default class TileSplat extends Tile {
   }
 
   /** @override */
-  refresh() {
-    // Set Tile position
+  refresh(): any {
+    //this.drawBlood();
+
+    // Determine shape bounds and update the frame
+    const bounds = this.tile.getLocalBounds();
+    if (this.id && this._controlled) this._refreshFrame(bounds);
+    else this.frame.visible = false;
+
+    // Toggle visibility
     this.position.set(this.data.x, this.data.y);
-
-    // Draw the sprite image
-    const bounds = new NormalizedRectangle(0, 0, this.data.width, this.data.height);
-
-    // Allow some extra padding to detect handle hover interactions
-    this.hitArea = this._controlled ? bounds.clone().pad(20) : bounds;
-
-    // Update border frame
-    this._refreshBorder(bounds);
-    this._refreshHandle(bounds);
-
-    // Set visibility
-    this.alpha = 1;
+    this.hitArea = bounds;
+    this.alpha = this.data.hidden ? 0.5 : 1.0;
     this.visible = !this.data.hidden || game.user.isGM;
-    return this;
+
+    // Set Tile position
+    //this.position.set(this.data.x, this.data.y);
+
+    // // Draw the sprite image
+    // //const bounds = new NormalizedRectangle(0, 0, this.data.width, this.data.height);
+    // const bounds = this.tile.getLocalBounds();
+
+    // if (this.id && this._controlled) this._refreshFrame(bounds);
+    // else this.frame.visible = false;
+
+    // // Allow some extra padding to detect handle hover interactions
+    // this.hitArea = bounds; //this._controlled ? bounds.clone().pad(20) : bounds;
+
+    // // Update border frame
+    // this._refreshBorder(bounds);
+    // this._refreshHandle(bounds);
+
+    // // Set visibility
+    // this.alpha = 1;
+    // this.visible = !this.data.hidden || game.user.isGM;
+    // return this;
+  }
+
+  /**
+   * Refresh the boundary frame which outlines the Drawing shape
+   * @private
+   */
+  _refreshFrame({ x, y, width, height }) {
+    // Determine the border color
+    const colors = CONFIG.Canvas.dispositionColors;
+    let bc = colors.INACTIVE;
+    if (this._controlled) {
+      bc = this.data.locked ? colors.HOSTILE : colors.CONTROLLED;
+    }
+
+    // Draw the border
+    const pad = 6;
+    const t = CONFIG.Canvas.objectBorderThickness;
+    const h = Math.round(t / 2);
+    const o = Math.round(h / 2) + pad;
+    this.frame.border
+      .clear()
+      .lineStyle(t, 0x000000)
+      .drawRect(x - o, y - o, width + 2 * o, height + 2 * o)
+      .lineStyle(h, bc)
+      .drawRect(x - o, y - o, width + 2 * o, height + 2 * o);
+
+    // Draw the handle
+    this.frame.handle.position.set(x + width + o, y + height + o);
+    this.frame.handle
+      .clear()
+      .beginFill(0x000000, 1.0)
+      .lineStyle(h, 0x000000)
+      .drawCircle(0, 0, pad + h)
+      .lineStyle(h, bc)
+      .drawCircle(0, 0, pad);
+    this.frame.visible = true;
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Draw freehand shapes with bezier spline smoothing
+   * @private
+   */
+  drawBlood() {
+    // Get drawing drips
+    const drips = this.data.drips;
+
+    // const styleData = {
+    //   // @ts-expect-error bad def
+    //   fontFamily: this.layer.getSetting('brushFont'),
+    //   // @ts-expect-error bad def
+    //   fontSize: this.layer.getSetting('brushSize'),
+    //   // @ts-expect-error bad def
+    //   fill: this.layer.getSetting('brushColor'),
+    //   align: 'center',
+    // };
+    const style = new PIXI.TextStyle(this.data.styleData);
+    // Begin iteration
+    for (let i = 0; i < drips.length; i++) {
+      log(LogLevel.INFO, drips[i].x, drips[i].y);
+      const text = new PIXI.Text(drips[i].glyph, style);
+      text.x = drips[i].x; // + splat.width / 2;
+      text.y = drips[i].y; // + splat.height / 2;
+      text.pivot.set(drips[i].width / 2, drips[i].height / 2);
+      text.angle = drips[i].angle;
+      this.tile.addChild(text);
+    }
+  }
+
+  _addDrips(position) {
+    const drips = BloodNGuts.generateDrips(
+      this.style,
+      this.font,
+      //@ts-expect-error definitions wrong
+      this.layer.getSetting('brushDensity'),
+      //@ts-expect-error definitions wrong
+      this.layer.getSetting('brushSpread'),
+      position,
+    );
+    drips.forEach((drip) => this.drips.push(drip));
   }
 
   /* -------------------------------------------- */
@@ -139,23 +272,28 @@ export default class TileSplat extends Tile {
 
   /**
    * Provide a reference to the canvas layer which contains placeable objects of this type
-   * @type {PlaceablesLayer}
+   * @type {BloodLayer}
    */
-  static get layer() {
+  static get layer(): BloodLayer {
     return canvas.blood;
   }
 
   /** @override */
-  async update(data, options = {}) {
+  async update(data, options = {}): Promise<any> {
     data['_id'] = this.id;
     //@ts-expect-error todo: why does it not recognise that layer is returning a BloodLayer?
     await this.layer.updateNonEmbeddedEntity(data, options);
     return this;
   }
 
-  _onDragLeftDrop(event) {
+  /* interaction */
+
+  _onDragLeftDrop(event): any {
     if (this._dragHandle) return this._onHandleDragDrop(event);
     return this._onDragLeftDrop2(event);
+  }
+  _onHandleDragDrop(event: any) {
+    throw new Error('Method not implemented.');
   }
 
   /**
@@ -182,79 +320,42 @@ export default class TileSplat extends Tile {
     // this.refresh();
   }
 
-  //todo: move this to a hook
-  /** @override */
-  _onUpdate = (data) => {
-    log(LogLevel.INFO, '_onUpdate data', data);
-    const changed_keys = new Set(Object.keys(data));
-    log(LogLevel.INFO, '_onUpdate changed', changed_keys);
+  /**
+   * Handle mouse movement which modifies the dimensions of the drawn shape
+   * @param {PIXI.interaction.InteractionEvent} event
+   * @private
+   */
+  _onMouseDraw(event) {
+    const { destination, originalEvent } = event.data;
 
-    // Release control if the Tile was locked
-    if (data.locked) this.tile.release();
+    // Determine position
+    const position = { x: parseInt(destination.x) - this.x, y: parseInt(destination.y) - this.y };
+    console.log('draw pos', position);
+    const now = Date.now();
 
-    // update flags with data
-    changed_keys.forEach((ck) => {
-      switch (ck) {
-        case 'initial':
-          // mergeObject(tile.data.parallaxia.initial, data.initial);
-          // paraldbg('Saving initial state changes:', tile.data.parallaxia.initial);
+    // If the time since any drawing activity last occurred exceeds the sample rate - upgrade the prior point
+    if (now - this._drawTime >= this.SAMPLE_RATE) {
+      this._sampleTime = now;
+    }
 
-          // // save this new state into the Tile entity flags
-          // console.log('Pre-safe: ', tile.data.parallaxia.initial.texture.path);
-          // if (game.user.isGM) {
-          //   const texPath = data.initial?.texture?.path;
-          //   if (texPath && tile.data.img !== texPath) tile.update({ img: texPath });
-          //   tile._saveInitialState().then((r) => {
-          //     paraldbg('Saving complete.', r);
-          //   });
-          // }
-          break;
+    // Determine whether the new point should be permanent based on the time since last sample
+    const takeSample = now - this._drawTime >= this.SAMPLE_RATE;
+    //this._addPoint(position, !takeSample);
+    console.log('adddrips', position);
+    this._addDrips(position);
 
-        // these come not from configuring the tile from our side, but
-        // from foundry, e.g. dragging a tile. We want to pick up on those
-        // by overriding our own config
-        // case 'x':
-        //   tile.data.parallaxia.initial.position.x = data.x;
-        //   // tile.data.parallaxia.current.position.x = data.x;
-        //   break;
-        // case 'y':
-        //   tile.data.parallaxia.initial.position.y = data.y;
-        //   // tile.data.parallaxia.current.position.y = data.y;
-        //   break;
-        // case 'rotation':
-        //   tile.data.parallaxia.initial.rotation.z = toRadians(data.rotation);
-        //   // tile.data.parallaxia.current.rotation.z = toRadians(data.rotation);
-        //   break;
-        // case 'img':
-        //   // texture swapping should happen here?
-        //   paraldbg('img update with', data.img);
-        //   break;
-        case '_id':
-          break;
-      }
-    });
+    // Refresh the display
+    this.refresh();
+  }
 
-    // if image path has changed, swap out the texture!
-    // if (changed_keys.has('initial') && data.initial.texture && data.initial.texture.path) {
-    //   if (tile.data.img !== data.initial.texture.path) {
-    //     paraldbg(`Swapping "${tile.data.img}" to "${data.initial.texture.path}".`);
-    //     tile._loadTexture(data.initial.texture.path).then((texture) => {
-    //       tile._swapTexture(texture);
-    //     });
-    //   }
-    // }
-
-    // tile._resetCurrentState();
-    // tile._advanceState(Date.now(), 0);
-
-    // if (changed_keys.has('ptransform')) {
-    //   paraldbg('Custom tile update function changed _onUpdate!');
-    //   tile._ptransformSetup(data['ptransform']);
-    //   if (game.user.isGM) tile.setFlag('parallaxia', 'ptransform', data.ptransform);
-    // }
-
-    // // Update the sheet if it's visible. In contrast to the current values being updated, this
-    // // completely re-renders, updating also the initial state and other fields.
-    // if (tile._sheet && tile._sheet.rendered) tile.sheet.render();
-  };
+  /**
+   * Define additional steps taken when an existing placeable object of this type is deleted
+   * @private
+   */
+  _onDelete() {
+    this.release({ trigger: false });
+    const layer = this.layer;
+    // @ts-expect-error hover property?
+    if (layer._hover === this) layer._hover = null;
+  }
 }
