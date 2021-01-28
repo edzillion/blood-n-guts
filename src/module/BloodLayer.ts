@@ -487,6 +487,28 @@ export default class BloodLayer extends TilesLayer {
     this.updateNonEmbeddedEntity(data, options);
   }
 
+  async deleteMany(data, options = {}) {
+    const collection = this.collection;
+    const user = game.user;
+
+    // Structure the input data
+    data = data instanceof Array ? data : [data];
+    const ids = new Set(data);
+
+    this.collection = collection.filter((splat) => !ids.has(splat._id));
+
+    // // Iterate over elements of the collection
+    // const deletions = collection.reduce((arr, d) => {
+    //   if (!ids.has(d._id)) return arr;
+
+    //   // Add the id to the pending array
+    //   arr.push(d._id);
+    //   return arr;
+    // }, []);
+    this.draw();
+    //if (!deletions.length) return [];
+  }
+
   public updateNonEmbeddedEntity(data, options = {} as any) {
     const user = game.user;
     options = mergeObject({ diff: true }, options);

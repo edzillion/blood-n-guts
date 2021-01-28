@@ -368,4 +368,15 @@ export default class TileDrawingSplat extends Tile {
     // Refresh the display
     this.refresh();
   }
+
+  /**
+   * Define additional steps taken when an existing placeable object of this type is deleted
+   * @private
+   */
+  _onDelete() {
+    this.release({ trigger: false });
+    const layer = this.layer;
+    // @ts-expect-error hover property?
+    if (layer._hover === this) layer._hover = null;
+  }
 }
