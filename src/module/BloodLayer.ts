@@ -593,7 +593,7 @@ export default class BloodLayer extends TilesLayer {
     let setting = canvas.scene.getFlag(MODULE_ID, name);
     // if (setting === undefined) setting = this.getUserSetting(name);
     if (setting === undefined) setting = this.DEFAULTS[name];
-    return this.DEFAULTS[name]; //setting;
+    return setting;
   }
 
   async setSetting(name, value) {

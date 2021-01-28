@@ -6,7 +6,7 @@ export default class BloodConfig extends FormApplication {
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
       closeOnSubmit: false,
-      submitOnChange: true,
+      submitOnChange: false,
       submitOnClose: true,
       popOut: true,
       editable: game.user.isGM,
@@ -60,6 +60,9 @@ export default class BloodConfig extends FormApplication {
    * @private
    */
   async _updateObject(event, formData) {
+    // drop the #
+    formData.brushRGBA = hexToRGBAString(formData.brushColor.slice(1), formData.brushAlpha);
+
     Object.entries(formData).forEach(async ([key, val]: [string, number]) => {
       // // If setting is an opacity slider, convert from 1-100 to 0-1
       // if (['gmAlpha', 'playerAlpha', 'vThreshold'].includes(key)) val /= 100;
