@@ -591,17 +591,17 @@ export default class BloodDrawing extends PlaceableObject {
   /* -------------------------------------------- */
 
   /** @override */
-  activateListeners() {
-    super.activateListeners();
-    this.frame.handle
-      .off('mouseover')
-      .off('mouseout')
-      .off('mousedown')
-      .on('mouseover', this._onHandleHoverIn.bind(this))
-      .on('mouseout', this._onHandleHoverOut.bind(this))
-      .on('mousedown', this._onHandleMouseDown.bind(this));
-    this.frame.handle.interactive = true;
-  }
+  // activateListeners() {
+  //   super.activateListeners();
+  //   this.frame.handle
+  //     .off('mouseover')
+  //     .off('mouseout')
+  //     .off('mousedown')
+  //     .on('mouseover', this._onHandleHoverIn.bind(this))
+  //     .on('mouseout', this._onHandleHoverOut.bind(this))
+  //     .on('mousedown', this._onHandleMouseDown.bind(this));
+  //   this.frame.handle.interactive = true;
+  // }
 
   /* -------------------------------------------- */
 
@@ -612,6 +612,11 @@ export default class BloodDrawing extends PlaceableObject {
     // Refresh the display
     this.refresh();
   }
+
+  _onClickLeft(event): any {
+    debugger;
+  }
+
   /* -------------------------------------------- */
 
   /**
@@ -662,46 +667,47 @@ export default class BloodDrawing extends PlaceableObject {
 
   /* -------------------------------------------- */
 
-  /** @override */
-  _onDragLeftDrop(event) {
-    if (this._dragHandle) return this._onHandleDragDrop(event);
+  // /** @override */
+  // _onDragLeftDrop(event) {
+  //   if (this._dragHandle) return this._onHandleDragDrop(event);
 
-    //todo: wrapup
-    //const maxDistance = Math.max(dripsWidth, dripsHeight);
-    //const sight = computeSightFromPoint(origin, maxDistance);
-    // since we don't want to add the mask to the container yet (as that will
-    // screw up our alignment) we need to move it by editing the x,y points directly
-    // for (let i = 0; i < sight.length; i += 2) {
-    //   sight[i] -= tileSplatData.offset.x;
-    //   sight[i + 1] -= tileSplatData.offset.y;
-    // }
+  //   //todo: wrapup
+  //   //const maxDistance = Math.max(dripsWidth, dripsHeight);
+  //   //const sight = computeSightFromPoint(origin, maxDistance);
+  //   // since we don't want to add the mask to the container yet (as that will
+  //   // screw up our alignment) we need to move it by editing the x,y points directly
+  //   // for (let i = 0; i < sight.length; i += 2) {
+  //   //   sight[i] -= tileSplatData.offset.x;
+  //   //   sight[i + 1] -= tileSplatData.offset.y;
+  //   // }
 
-    // tileSplatData.x += origin.x;
-    // tileSplatData.y += origin.y;
-    // tileSplatData.maskPolygon = sight;
-    // tileSplatData.id = getUID();
+  //   // tileSplatData.x += origin.x;
+  //   // tileSplatData.y += origin.y;
+  //   // tileSplatData.maskPolygon = sight;
+  //   // tileSplatData.id = getUID();
 
-    // Update each dragged Drawing, confirming pending text
-    const clones = event.data.clones || [];
-    const updates = clones.map((c) => {
-      const dest = { x: c.data.x, y: c.data.y };
+  //   // Update each dragged Drawing, confirming pending text
+  //   const clones = event.data.clones || [];
+  //   const updates = clones.map((c) => {
+  //     const dest = { x: c.data.x, y: c.data.y };
 
-      // Define the update
-      const update = {
-        _id: c._original.id,
-        x: dest.x,
-        y: dest.y,
-        rotation: c.data.rotation,
-        text: 'A',
-      };
+  //     // Define the update
+  //     const update = {
+  //       _id: c._original.id,
+  //       x: dest.x,
+  //       y: dest.y,
+  //       rotation: c.data.rotation,
+  //       text: 'A',
+  //     };
 
-      // Hide the original until after the update processes
-      c._original.visible = false;
-      return update;
-    });
-    //@ts-expect-error definitions wrong
-    this.layer.updateNonEmbeddedEntity(updates, { diff: false });
-  }
+  //     // Hide the original until after the update processes
+  //     c._original.visible = false;
+  //     return update;
+  //   });
+  //   //@ts-expect-error definitions wrong
+  //   this.layer.updateNonEmbeddedEntity(updates, { diff: false });
+  //   return this as Entity;
+  // }
 
   /* -------------------------------------------- */
 

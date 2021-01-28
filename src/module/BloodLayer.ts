@@ -1,6 +1,6 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
-import BloodDrawing from './BloodDrawing';
+import TileDrawingSplat from './TileDrawingSplat';
 import { getRGBA } from './helpers';
 import { log, LogLevel } from './logging';
 import TileSplat from './TileSplat';
@@ -212,7 +212,7 @@ export default class BloodLayer extends TilesLayer {
     };
 
     // React to changes to current scene
-    Hooks.on('updateScene', (scene, data) => this.updateSceneHandler(scene, data));
+    // Hooks.on('updateScene', (scene, data) => this.updateSceneHandler(scene, data));
     // this.layer = BloodLayer.getCanvasContainer();
     // this.addChild(this.layer);
   }
@@ -258,23 +258,23 @@ export default class BloodLayer extends TilesLayer {
     });
   }
 
-  /**
-   * Handler called when scene data updated. Draws splats from scene data flags.
-   * @category GMandPC
-   * @function
-   * @param scene - reference to the current scene
-   * @param changes - changes
-   */
-  public updateSceneHandler(scene, changes): void {
-    if (!scene.active || BloodNGuts.disabled || !changes.flags || changes.flags[MODULE_ID]?.sceneSplats === undefined)
-      return;
-    log(LogLevel.DEBUG, 'updateSceneHandler');
-    if (changes.flags[MODULE_ID]?.sceneSplats === null) {
-      BloodNGuts.wipeSceneSplats();
-      return;
-    }
-    this.collection = BloodNGuts.trimTileSplatData(duplicate(changes.flags[MODULE_ID]?.sceneSplats));
-  }
+  // /**
+  //  * Handler called when scene data updated. Draws splats from scene data flags.
+  //  * @category GMandPC
+  //  * @function
+  //  * @param scene - reference to the current scene
+  //  * @param changes - changes
+  //  */
+  // public updateSceneHandler(scene, changes): void {
+  //   if (!scene.active || BloodNGuts.disabled || !changes.flags || changes.flags[MODULE_ID]?.sceneSplats === undefined)
+  //     return;
+  //   log(LogLevel.DEBUG, 'updateSceneHandler');
+  //   if (changes.flags[MODULE_ID]?.sceneSplats === null) {
+  //     BloodNGuts.wipeSceneSplats();
+  //     return;
+  //   }
+  //   this.collection = BloodNGuts.trimTileSplatData(duplicate(changes.flags[MODULE_ID]?.sceneSplats));
+  // }
 
   // _onClickLeft(e) {
   //   const p = e.data.getLocalPosition(canvas.app.stage);
@@ -317,10 +317,12 @@ export default class BloodLayer extends TilesLayer {
 
     if (game.activeTool === 'brush') {
       const data = this._getNewDrawingData(event.data.origin);
-      const drawing = new BloodDrawing(data);
-      //@ts-expect-error definition missing
-      event.data.preview = this.preview.addChild(drawing);
-      drawing.draw();
+      const drawing = new TileDrawingSplat(data);
+      this.collection.push(data);
+      this.draw();
+      ////@ts-expect-error definition missing
+      // event.data.preview = this.preview.addChild(drawing);
+      // drawing.draw();
     }
 
     // Standard left-click handling
@@ -343,7 +345,7 @@ export default class BloodLayer extends TilesLayer {
     //super.__proto__.__proto__.__proto__._onDragLeftStart(event);
     const data = this._getNewDrawingData(event.data.origin);
 
-    const drawing = new BloodDrawing(data);
+    const drawing = new TileDrawingSplat(data);
     //@ts-expect-error definition missing
     event.data.preview = this.preview.addChild(drawing);
     drawing.draw();
@@ -431,9 +433,7 @@ export default class BloodLayer extends TilesLayer {
     if (!this.collection || !this.collection.length) return;
 
     const promises = this.collection.map((data) => {
-      //@ts-expect-error missing definition
       const obj = this.createObject(data);
-      // //@ts-expect-error definition missing
       return obj.draw();
     });
 
@@ -441,6 +441,18 @@ export default class BloodLayer extends TilesLayer {
     //@ts-expect-error missing definition
     this.visible = true;
     return Promise.all(promises);
+  }
+
+  /**
+   * Draw a single placeable object
+   * @return {PlaceableObject}
+   */
+  createObject(data) {
+    const obj = new TileDrawingSplat(data);
+    obj.zIndex = data.z || 0;
+    // @ts-expect-error missing def
+    this.objects.addChild(obj);
+    return obj;
   }
 
   /** @override */
@@ -585,7 +597,7 @@ export default class BloodLayer extends TilesLayer {
    * @return {Object}           The new drawing data
    * @private
    */
-  _getNewDrawingData(origin) {
+  _getNewDrawingData(origin): any {
     const tool = game.activeTool;
 
     // Update with User Defaults
