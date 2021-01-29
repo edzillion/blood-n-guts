@@ -384,7 +384,7 @@ export default class BloodLayer extends TilesLayer {
     const brushSettings: Partial<BrushSettings> = {};
     // Update with User Defaults
     ['brushFont', 'brushSize', 'brushColor', 'brushAlpha'].forEach((setting) => {
-      brushSettings[setting] = this.getUserSetting(setting) || this.getSetting(setting) || this.DEFAULTS[setting];
+      brushSettings[setting] = this.findSetting(setting);
     });
 
     return {
@@ -395,10 +395,19 @@ export default class BloodLayer extends TilesLayer {
     };
   }
 
+  findSetting(name) {
+    let setting = this.getUserSetting(name);
+    if (setting == null) setting = this.getSetting(name);
+    if (setting == null) {
+      setting = this.DEFAULTS[name];
+      log(LogLevel.INFO, 'findSetting default', name, setting);
+    }
+    return setting;
+  }
+
   getSetting(name) {
-    let setting = canvas.scene.getFlag(MODULE_ID, name);
-    // if (setting === undefined) setting = this.getUserSetting(name);
-    if (setting === undefined) setting = this.DEFAULTS[name];
+    const setting = canvas.scene.getFlag(MODULE_ID, name);
+    if (setting != undefined) log(LogLevel.INFO, 'getSetting', name, setting);
     return setting;
   }
 
@@ -408,8 +417,8 @@ export default class BloodLayer extends TilesLayer {
   }
 
   getUserSetting(name) {
-    let setting = game.user.getFlag(MODULE_ID, name);
-    if (setting === undefined) setting = this.DEFAULTS[name];
+    const setting = game.user.getFlag(MODULE_ID, name);
+    if (setting != undefined) log(LogLevel.INFO, 'getUserSetting', name, setting);
     return setting;
   }
 
@@ -428,15 +437,19 @@ export default class BloodLayer extends TilesLayer {
   _getNewDrawingData(origin): any {
     const tool = game.activeTool;
 
+    const style = this.brushStyle;
+
     const tileData = mergeObject(this.DEFAULTS_TILESPLAT, {
-      styleData: this.brushStyle,
+      styleData: style,
       drips: BloodNGuts.generateDrips(
-        new PIXI.TextStyle(this.brushStyle),
-        BloodNGuts.allFonts[this.brushStyle.fontFamily],
-        this.getUserSetting('brushDensity') || this.getSetting('brushDensity') || this.DEFAULTS['brushDensity'],
-        this.getUserSetting('brushSpread') || this.getSetting('brushSpread') || this.DEFAULTS['brushSpread'],
+        new PIXI.TextStyle(style),
+        BloodNGuts.allFonts[style.fontFamily],
+        this.findSetting('brushDensity'),
+        this.findSetting('brushSpread'),
         new PIXI.Point(0),
       ),
+      x: origin.x,
+      y: origin.y,
     } as any);
 
     // Get User Settings
