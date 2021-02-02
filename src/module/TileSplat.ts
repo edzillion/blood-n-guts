@@ -49,6 +49,7 @@ export default class TileSplat extends Tile {
   _dragHandle: any;
   x: number;
   y: number;
+  counter: number;
   constructor(data: TileSplatData, scene = canvas.scene) {
     super(data, scene);
 
@@ -68,6 +69,8 @@ export default class TileSplat extends Tile {
     this._drawTime = 0;
     this._sampleTime = 0;
     this.SAMPLE_RATE = 75;
+
+    this.counter = 0;
 
     this.style = new PIXI.TextStyle(this.data.styleData);
     this.font = splatFonts.fonts[this.data.styleData.fontFamily];
@@ -240,8 +243,8 @@ export default class TileSplat extends Tile {
     const style = new PIXI.TextStyle(this.data.styleData);
     // Begin iteration
     for (let i = 0; i < drips.length; i++) {
-      log(LogLevel.INFO, drips[i].x, drips[i].y);
       const text = new PIXI.Text(drips[i].glyph, style);
+      text.name = 'drip ' + this.counter++;
       text.x = drips[i].x; // + splat.width / 2;
       text.y = drips[i].y; // + splat.height / 2;
       text.pivot.set(drips[i].width / 2, drips[i].height / 2);
@@ -255,19 +258,20 @@ export default class TileSplat extends Tile {
       this.style,
       this.font,
       //@ts-expect-error definitions wrong
-      this.layer.getSetting('brushDensity'),
+      this.layer.findSetting('brushDensity'),
       //@ts-expect-error definitions wrong
-      this.layer.getSetting('brushSpread'),
+      this.layer.findSetting('brushSpread'),
       position,
     );
-    drips.forEach((drip) => this.drips.push(drip));
+    log(LogLevel.INFO, '_addDrips', drips[0].x, drips[0].y);
+    drips.forEach((drip) => this.data.drips.push(drip));
   }
 
   /* -------------------------------------------- */
 
   /** @override */
   static get embeddedName() {
-    return 'Splat';
+    return 'TileSplat';
   }
 
   /**
@@ -291,9 +295,6 @@ export default class TileSplat extends Tile {
   _onDragLeftDrop(event): any {
     if (this._dragHandle) return this._onHandleDragDrop(event);
     return this._onDragLeftDrop2(event);
-  }
-  _onHandleDragDrop(event: any) {
-    throw new Error('Method not implemented.');
   }
 
   /**
@@ -329,8 +330,10 @@ export default class TileSplat extends Tile {
     const { destination, originalEvent } = event.data;
 
     // Determine position
-    const position = { x: parseInt(destination.x) - this.x, y: parseInt(destination.y) - this.y };
-    console.log('draw pos', position);
+    const position = {
+      x: Math.round(parseInt(destination.x) - this.x),
+      y: Math.round(parseInt(destination.y) - this.y),
+    };
     const now = Date.now();
 
     // If the time since any drawing activity last occurred exceeds the sample rate - upgrade the prior point
@@ -341,8 +344,11 @@ export default class TileSplat extends Tile {
     // Determine whether the new point should be permanent based on the time since last sample
     const takeSample = now - this._drawTime >= this.SAMPLE_RATE;
     //this._addPoint(position, !takeSample);
-    console.log('adddrips', position);
-    this._addDrips(position);
+    if (takeSample) {
+      this._addDrips(position);
+      this._drawTime = Date.now();
+      this.draw();
+    }
 
     // Refresh the display
     this.refresh();

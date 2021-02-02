@@ -26,8 +26,6 @@ export default class BloodConfig extends FormApplication {
   getData() {
     // Return data to the template
     return {
-      // gmAlpha: Math.round(canvas.blood.getSetting('gmAlpha') * 100),
-      // gmTint: hexToWeb(canvas.blood.getSetting('gmTint')),
       brushAlpha: canvas.blood.findSetting('brushAlpha'),
       brushColor: canvas.blood.findSetting('brushColor'),
       visible: canvas.blood.findSetting('visible'),
@@ -37,15 +35,6 @@ export default class BloodConfig extends FormApplication {
       fonts: BloodNGuts.allFonts,
       brushSpread: canvas.blood.findSetting('brushSpread'),
       brushDensity: canvas.blood.findSetting('brushDensity'),
-      // playerAlpha: Math.round(canvas.blood.getSetting('playerAlpha') * 100),
-      // playerTint: hexToWeb(canvas.blood.getSetting('playerTint')),
-      // transition: canvas.blood.getSetting('transition'),
-      // transitionSpeed: canvas.blood.getSetting('transitionSpeed'),
-      // blurRadius: canvas.blood.getSetting('blurRadius'),
-      // blurQuality: canvas.blood.getSetting('blurQuality'),
-      // autoVisibility: canvas.blood.getSetting('autoVisibility'),
-      // autoVisGM: canvas.blood.getSetting('autoVisGM'),
-      // vThreshold: Math.round(canvas.blood.getSetting('vThreshold') * 100),
     };
   }
 

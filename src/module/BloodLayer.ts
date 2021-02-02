@@ -108,20 +108,21 @@ export default class BloodLayer extends TilesLayer {
 
   /** @override */
   _onClickLeft(event) {
+    log(LogLevel.INFO, '_onClickLeft createState', event.createState);
     const p = event.data.getLocalPosition(canvas.app.stage);
     // Round positions to nearest pixel
     p.x = Math.round(p.x);
     p.y = Math.round(p.y);
 
-    if (game.activeTool === 'brush') {
-      const data = this._getNewDrawingData(event.data.origin);
-      const drawing = new TileSplat(data);
-      this.collection.push(data);
-      this.draw();
-      ////@ts-expect-error definition missing
-      // event.data.preview = this.preview.addChild(drawing);
-      // drawing.draw();
-    }
+    // if (game.activeTool === 'brush') {
+    //   const data = this._getNewDrawingData(event.data.origin);
+    //   //const drawing = new TileSplat(data);
+    //   this.collection.push(data);
+    //   this.draw();
+    //   ////@ts-expect-error definition missing
+    //   // event.data.preview = this.preview.addChild(drawing);
+    //   // drawing.draw();
+    // }
 
     // Standard left-click handling
     super._onClickLeft(event);
@@ -130,6 +131,7 @@ export default class BloodLayer extends TilesLayer {
   /** @override */
   _onDragLeftStart(event) {
     // super._onDragLeftStart(event);
+    log(LogLevel.INFO, '_onDragLeftStart createState', event.createState);
     //@ts-expect-error definition missing
     const grandparentCall = PlaceablesLayer.prototype._onDragLeftStart.bind(this);
     grandparentCall(event);
@@ -148,6 +150,7 @@ export default class BloodLayer extends TilesLayer {
   /** @override */
   _onDragLeftMove(event) {
     const { preview, createState } = event.data;
+    log(LogLevel.INFO, '_onDragLeftMove createState', createState);
     if (!preview) return;
     if (preview.parent === null) {
       // In theory this should never happen, but rarely does
@@ -166,39 +169,39 @@ export default class BloodLayer extends TilesLayer {
   _onDragLeftDrop(event) {
     const object = event.data.preview;
     if (object) {
-      const tileSplatData: TileSplatData = {
-        // img: string; //not used
-        width: 100,
-        height: 100,
-        scale: 1,
-        x: object.data.x,
-        y: object.data.y,
-        // z: number;
-        rotation: 0,
-        hidden: false,
-        locked: false,
-        drips: [],
-        styleData: this.splatData.styleData,
-        offset: this.splatData.offset,
-        maskPolygon: this.splatData.maskPolygon,
-      };
+      // const tileSplatData: TileSplatData = {
+      //   // img: string; //not used
+      //   width: 100,
+      //   height: 100,
+      //   scale: 1,
+      //   x: object.data.x,
+      //   y: object.data.y,
+      //   // z: number;
+      //   rotation: 0,
+      //   hidden: false,
+      //   locked: false,
+      //   drips: [],
+      //   styleData: this.splatData.styleData,
+      //   offset: this.splatData.offset,
+      //   maskPolygon: this.splatData.maskPolygon,
+      // };
 
       // Begin iteration
-      for (let i = 0; i < object.data.points.length; i++) {
-        const dripData: SplatDripData = {
-          x: object.data.points[i][0],
-          y: object.data.points[i][1],
-          angle: 0,
-          width: 100,
-          height: 100,
-          glyph: 'a',
-        };
+      // for (let i = 0; i < object.data.points.length; i++) {
+      //   const dripData: SplatDripData = {
+      //     x: object.data.points[i][0],
+      //     y: object.data.points[i][1],
+      //     angle: 0,
+      //     width: 100,
+      //     height: 100,
+      //     glyph: 'a',
+      //   };
 
-        tileSplatData.drips.push(dripData);
-      }
+      //   tileSplatData.drips.push(dripData);
+      // }
 
-      const obj: TileSplat = new TileSplat(tileSplatData, canvas.scene);
-      obj.zIndex = obj.z || 0;
+      //const obj: TileSplat = new TileSplat(tileSplatData, canvas.scene);
+      object.zIndex = object.z || 0;
       this.collection.push(object.data);
       this.draw();
       // this.constructor.placeableClass.create(object.data);
@@ -243,6 +246,7 @@ export default class BloodLayer extends TilesLayer {
     obj.zIndex = data.z || 0;
     // @ts-expect-error missing def
     this.objects.addChild(obj);
+    log(LogLevel.DEBUG, 'createObject', obj.id, obj.data._id);
     return obj;
   }
 
@@ -400,14 +404,14 @@ export default class BloodLayer extends TilesLayer {
     if (setting == null) setting = this.getSetting(name);
     if (setting == null) {
       setting = this.DEFAULTS[name];
-      log(LogLevel.INFO, 'findSetting default', name, setting);
+      log(LogLevel.DEBUG, 'findSetting default', name, setting);
     }
     return setting;
   }
 
   getSetting(name) {
     const setting = canvas.scene.getFlag(MODULE_ID, name);
-    if (setting != undefined) log(LogLevel.INFO, 'getSetting', name, setting);
+    if (setting != undefined) log(LogLevel.DEBUG, 'getSetting', name, setting);
     return setting;
   }
 
@@ -418,7 +422,7 @@ export default class BloodLayer extends TilesLayer {
 
   getUserSetting(name) {
     const setting = game.user.getFlag(MODULE_ID, name);
-    if (setting != undefined) log(LogLevel.INFO, 'getUserSetting', name, setting);
+    if (setting != undefined) log(LogLevel.DEBUG, 'getUserSetting', name, setting);
     return setting;
   }
 

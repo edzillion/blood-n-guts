@@ -442,7 +442,6 @@ export class BloodNGuts {
     origin: PIXI.Point,
   ): SplatDripData[] {
     if (!density) return;
-    log(LogLevel.INFO, 'generateDrips origin', origin);
     log(LogLevel.DEBUG, 'generateDrips');
 
     //const tileSplatData: Partial<TileSplatData> = {};
@@ -464,18 +463,16 @@ export class BloodNGuts {
     // create our splats for later drawing.
     glyphArray.forEach((glyph) => {
       const tm = PIXI.TextMetrics.measureText(glyph, style);
-      const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
-      const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
+      // const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
+      //const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
       const dripData: SplatDripData = {
-        x: Math.round(randX - origin.x / 2),
-        y: Math.round(randY - origin.y / 2),
+        x: origin.x, //Math.round(randX - origin.x / 2),
+        y: origin.y, //Math.round(randY - origin.y / 2),
         angle: Math.round(Math.random() * 360),
-        width: tm.width,
-        height: tm.height,
+        width: Math.round(tm.width),
+        height: Math.round(tm.height),
         glyph: glyph,
       };
-      // dripData.x += origin.x;
-      // dripData.y += origin.y;
       drips.push(dripData);
     });
 
