@@ -65,10 +65,11 @@ Hooks.on('renderSceneControls', (controls) => {
   // Switching to layer
   if (controls.activeControl === 'blood') {
     // Open brush tools if not already open
-    // @ts-expect-error defintions wrong
-    if (!$('#blood-brush-controls').length) new BrushControls().render(true);
+    if (!$('#blood-brush-controls').length) {
+      canvas.blood.createBrushControls();
+    }
     // Set active tool
-    const tool = controls.controls.find((control) => control.name === 'blood').activeTool;
+    //const tool = controls.controls.find((control) => control.name === 'blood').activeTool;
     // canvas.blood.setActiveTool(tool);
   }
   // Switching away from layer

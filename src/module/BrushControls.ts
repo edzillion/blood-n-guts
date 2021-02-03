@@ -1,6 +1,13 @@
 import { hexToPercent, percentToHex } from './helpers';
 
 export default class BrushControls extends FormApplication {
+  current: { brushSize: number; brushAlpha: number; brushDensity: number; brushSpread: number };
+  // constructor(object: any, options?: FormApplicationOptions) {
+  //   super(object, options);
+  //   // game.settings.sheet.close();
+  //   // game.users.apps.push(this);
+  // }
+
   static get defaultOptions() {
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
@@ -22,11 +29,16 @@ export default class BrushControls extends FormApplication {
    * @return {Object}   The data provided to the template when rendering the form
    */
   getData() {
-    // Return data to the template
-    return {
-      brushSize: canvas.blood.getUserSetting('brushSize'),
-      brushOpacity: hexToPercent(canvas.blood.getUserSetting('brushOpacity')),
-    };
+    return canvas.blood.brushSettings;
+    // this.current = {
+    //   brushSize: canvas.blood.findSetting('brushSize'),
+    //   brushAlpha: canvas.blood.findSetting('brushAlpha'),
+    //   brushDensity: canvas.blood.findSetting('brushDensity'),
+    //   brushSpread: canvas.blood.findSetting('brushSpread'),
+    // };
+
+    // // Return data to the template
+    // return this.current;
   }
 
   /* -------------------------------------------- */
@@ -45,8 +57,11 @@ export default class BrushControls extends FormApplication {
    * @private
    */
   async _updateObject(event, formData) {
-    canvas.blood.setUserSetting('brushSize', formData.brushSize);
-    await canvas.blood.setUserSetting('brushOpacity', percentToHex(formData.brushOpacity));
-    canvas.blood.setPreviewTint();
+    const updated = diffObject(canvas.blood.brushSettings, formData);
+    Object.entries(updated).map(([name, val]) => {
+      canvas.blood.setSetting(false, name, val);
+    });
+    // update brush controls html
+    this.render();
   }
 }

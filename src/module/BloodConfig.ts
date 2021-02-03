@@ -1,4 +1,5 @@
 import { BloodNGuts } from '../blood-n-guts';
+import BrushControls from './BrushControls';
 import { webToHex, hexToWeb } from './helpers';
 
 export default class BloodConfig extends FormApplication {
@@ -25,17 +26,7 @@ export default class BloodConfig extends FormApplication {
    */
   getData() {
     // Return data to the template
-    return {
-      brushAlpha: canvas.blood.findSetting('brushAlpha'),
-      brushColor: canvas.blood.findSetting('brushColor'),
-      visible: canvas.blood.findSetting('visible'),
-      brushSize: canvas.blood.findSetting('brushSize'),
-      previewAlpha: canvas.blood.findSetting('previewAlpha'),
-      brushFont: canvas.blood.findSetting('brushFont'),
-      fonts: BloodNGuts.allFonts,
-      brushSpread: canvas.blood.findSetting('brushSpread'),
-      brushDensity: canvas.blood.findSetting('brushDensity'),
-    };
+    return canvas.blood.brushSettings;
   }
 
   /* -------------------------------------------- */
@@ -50,20 +41,23 @@ export default class BloodConfig extends FormApplication {
    */
   async _updateObject(event, formData) {
     // drop the #
-    formData.brushRGBA = hexToRGBAString(formData.brushColor.slice(1), formData.brushAlpha);
-
-    Object.entries(formData).forEach(async ([key, val]: [string, number]) => {
-      // // If setting is an opacity slider, convert from 1-100 to 0-1
-      // if (['gmAlpha', 'playerAlpha', 'vThreshold'].includes(key)) val /= 100;
-      // // If setting is a color value, convert webcolor to hex before saving
-      // if (['gmTint', 'playerTint'].includes(key)) val = webToHex(val);
-      // Save settings to scene
-      await canvas.blood.setSetting(key, val);
-      // If saveDefaults button clicked, also save to user's defaults
-      if (event.submitter?.name === 'saveDefaults') {
-        canvas.blood.setUserSetting(key, val);
-      }
+    //formData.brushRGBA = hexToRGBAString(formData.brushColor.slice(1), formData.brushAlpha);
+    Object.entries(formData).forEach(async ([name, val]: [string, number]) => {
+      const saveToFlag = event.submitter?.name === 'saveDefaults';
+      await canvas.blood.setSetting(saveToFlag, name, val);
     });
+
+    canvas.blood.brushControls.render();
+
+    // Object.entries(formData).forEach(async ([key, val]: [string, number]) => {
+    //   // // If setting is an opacity slider, convert from 1-100 to 0-1
+    //   // if (['gmAlpha', 'playerAlpha', 'vThreshold'].includes(key)) val /= 100;
+    //   // // If setting is a color value, convert webcolor to hex before saving
+    //   // if (['gmTint', 'playerTint'].includes(key)) val = webToHex(val);
+    //   // Save settings to scene
+    //   canvas.blood.setTempSetting(key, val);
+    //   // If saveDefaults button clicked, also save to user's defaults
+    // });
 
     // If save button was clicked, close app
     if (event.submitter?.name === 'submit') {
@@ -71,6 +65,8 @@ export default class BloodConfig extends FormApplication {
         if (val.id === 'blood-scene-config') val.close();
       });
     }
+
+    // // @ts-ignore
 
     // Update sight layer
     // canvas.sight.update();

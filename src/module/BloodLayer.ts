@@ -5,6 +5,7 @@ import { getRGBA } from './helpers';
 import { log, LogLevel } from './logging';
 
 import * as splatFonts from '../data/splatFonts';
+import BrushControls from './BrushControls';
 
 //@ts-expect-error missing definition
 export default class BloodLayer extends TilesLayer {
@@ -15,20 +16,25 @@ export default class BloodLayer extends TilesLayer {
   splatData: any;
   DEFAULTS: BrushSettings;
   DEFAULTS_TILESPLAT: TileSplatData;
+  brushControls: BrushControls;
+  brushSettings: BrushSettings;
   constructor() {
     super();
     //this._registerMouseListeners();
     //this.dataArray = 'flags["blood-n-guts"].sceneSplats';
 
-    this.DEFAULTS = {
-      visible: true,
-      brushSize: 50,
+    this.brushSettings = this.DEFAULTS = {
       brushAlpha: 0.7,
-      previewAlpha: 0.4,
       brushColor: '#8A0707',
-      brushFont: 'splatter',
-      brushSpread: 1.0,
       brushDensity: 1,
+      brushFont: 'splatter',
+      brushOpacity: 0,
+      brushRGBA: 0,
+      brushSize: 50,
+      brushSpread: 1.0,
+      fonts: BloodNGuts.allFonts,
+      previewAlpha: 0.4,
+      visible: true,
     };
 
     this.DEFAULTS_TILESPLAT = {
@@ -251,7 +257,30 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /** @override */
-  activate() {
+  async activate(): Promise<any> {
+    this.loadSceneSettings();
+
+    // const promises = [];
+    // Object.keys(this.DEFAULTS).map((key: string) => {
+    //   promises.push(game.user.unsetFlag(MODULE_ID, key), canvas.scene.unsetFlag(MODULE_ID, key));
+    // });
+
+    // await Promise.all(promises);
+
+    // Set default flags if they dont exist already
+    // if (game.user.isGM) {
+    //   Object.keys(this.DEFAULTS).forEach((key) => {
+    //     // Check for existing scene specific setting
+    //     if (this.getSetting(key) !== undefined) return;
+    //     // Check for custom default
+    //     const def = this.getUserSetting(key);
+    //     // If user has custom default, set it for scene
+    //     if (def !== undefined) this.setSetting(key, def);
+    //     // Otherwise fall back to module default
+    //     else this.setSetting(key, this.DEFAULTS[key]);
+    //   });
+    // }
+
     //super.activate();
     CanvasLayer.prototype.activate.apply(this);
     //@ts-expect-error definition missing
@@ -404,31 +433,38 @@ export default class BloodLayer extends TilesLayer {
     if (setting == null) setting = this.getSetting(name);
     if (setting == null) {
       setting = this.DEFAULTS[name];
-      log(LogLevel.DEBUG, 'findSetting default', name, setting);
+      log(LogLevel.INFO, 'findSetting default', name, setting);
     }
     return setting;
   }
 
   getSetting(name) {
     const setting = canvas.scene.getFlag(MODULE_ID, name);
-    if (setting != undefined) log(LogLevel.DEBUG, 'getSetting', name, setting);
+    if (setting != undefined) log(LogLevel.INFO, 'getSetting', name, setting);
     return setting;
   }
 
-  async setSetting(name, value) {
-    const v = await canvas.scene.setFlag(MODULE_ID, name, value);
-    return v;
+  async setSetting(saveToFlag, name, value) {
+    this.brushSettings[name] = value;
+    log(LogLevel.INFO, 'setSetting brushSettings', name, value);
+    if (!saveToFlag) return;
+    log(LogLevel.INFO, 'setSetting setFlag');
+    return await canvas.scene.setFlag(MODULE_ID, name, value);
   }
 
-  getUserSetting(name) {
-    const setting = game.user.getFlag(MODULE_ID, name);
-    if (setting != undefined) log(LogLevel.DEBUG, 'getUserSetting', name, setting);
-    return setting;
+  getTempSetting(name) {
+    return this.brushSettings[name];
   }
 
-  async setUserSetting(name, value) {
-    const v = await game.user.setFlag(MODULE_ID, name, value);
-    return v;
+  setTempSetting(name, value) {
+    this.brushSettings[name] = value;
+  }
+
+  loadSceneSettings() {
+    //this.brushSettings = {
+    Object.keys(this.DEFAULTS).forEach((name) => {
+      if (this.getSetting(name) !== undefined) this.brushSettings[name] = this.getSetting(name);
+    });
   }
 
   /**
@@ -501,5 +537,10 @@ export default class BloodLayer extends TilesLayer {
     //     break;
     // }
     return tileData;
+  }
+
+  createBrushControls() {
+    // @ts-expect-error bad def
+    this.brushControls = new BrushControls().render(true);
   }
 }

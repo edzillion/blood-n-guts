@@ -113,12 +113,15 @@ interface SplatStyle {
 }
 
 interface BrushSettings {
-  visible: boolean;
-  brushSize: number;
   brushAlpha: number;
-  previewAlpha: number;
   brushColor: string;
-  brushFont: string;
-  brushSpread: number;
   brushDensity: number;
+  brushFont: string;
+  brushOpacity: number;
+  brushRGBA: number;
+  brushSize: number;
+  brushSpread: number;
+  fonts: SplatFont[];
+  previewAlpha: number;
+  visible: boolean;
 }

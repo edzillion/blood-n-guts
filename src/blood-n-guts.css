@@ -65,3 +65,31 @@
 ::-webkit-color-swatch {
   opacity: 1;
 }
+
+#blood-brush-controls {
+  position: absolute;
+  left: 120px;
+  width: 180px;
+  text-align: center;
+}
+
+#blood-brush-controls h3,
+#blood-brush-controls .label {
+  color: #FFF;
+  text-shadow: 1px 1px 0 #000;
+}
+
+#blood-brush-controls .label {
+  position: absolute;
+  top: 14px;
+}
+#blood-brush-controls .brush-alpha {
+  position: relative;
+  margin-bottom:10px;
+}
+#blood-brush-controls .right-label {
+  right: 0;
+}
+#blood-brush-controls .left-label {
+  left: 0;
+}
