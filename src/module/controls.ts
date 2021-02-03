@@ -21,7 +21,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
           onClick: () => {
             canvas.blood.toggle();
           },
-          active: false, //canvas.blood.visible, //todo: why is canvas available here in SimpleFog?
+          active: true, //canvas.blood.visible, //todo: why is canvas available here in SimpleFog?
           toggle: true,
         },
         {
@@ -32,7 +32,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
         {
           name: 'brush',
           title: 'Draw blood splats to the scene',
-          icon: 'fas fa-tint',
+          icon: 'fas fa-paint-brush',
         },
         {
           name: 'sceneConfig',
@@ -47,9 +47,27 @@ Hooks.on('getSceneControlButtons', (controls) => {
         {
           name: 'wipe',
           title: 'Wipe all blood splats from this scene',
-          icon: 'fas fa-tint-slash',
+          icon: 'fas fa-trash',
+          onClick: () => {
+            const dg = new Dialog({
+              title: 'Wipe Blood Layer',
+              content: 'Are you sure? All blood splats will be deleted.',
+              buttons: {
+                blank: {
+                  icon: '<i class="fas fa-trash"></i>',
+                  label: 'Wipe',
+                  callback: () => canvas.blood.wipe(),
+                },
+                cancel: {
+                  icon: '<i class="fas fa-times"></i>',
+                  label: 'Cancel',
+                },
+              },
+              default: 'reset',
+            });
+            dg.render(true);
+          },
           button: true,
-          onClick: BloodNGuts.wipeAllFlags,
         },
       ],
       activeTool: 'tile',

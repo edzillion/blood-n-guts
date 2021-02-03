@@ -258,6 +258,25 @@ export default class BloodLayer extends TilesLayer {
     return obj;
   }
 
+  /**
+   * Toggles visibility of primary layer
+   */
+  toggle() {
+    const v = this.getSetting('visible');
+    // @ts-expect-error missing def
+    this.visible = !v;
+    this.setSetting(true, 'visible', !v);
+  }
+
+  /**
+   * Wipes all Blood Layer splats
+   */
+  wipe(): void {
+    //@ts-expect-error definition missing
+    this.removeChildren().forEach((c) => c.destroy({ children: true }));
+    this.collection = [];
+  }
+
   /** @override */
   async activate(): Promise<any> {
     this.loadSceneSettings();
