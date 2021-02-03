@@ -70,7 +70,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
           button: true,
         },
       ],
-      activeTool: 'tile',
+      activeTool: 'brush',
     });
   }
 });

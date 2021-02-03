@@ -55,6 +55,16 @@ export default class TileSplat extends Tile {
 
     this.style = new PIXI.TextStyle(this.data.styleData);
     this.font = splatFonts.fonts[this.data.styleData.fontFamily];
+
+    this.drips =
+      this.data.drips ||
+      BloodNGuts.generateDrips(
+        this.style,
+        this.font,
+        this.data.brushSettings.brushDensity,
+        this.data.brushSettings.brushSpread,
+        new PIXI.Point(0),
+      );
   }
 
   /** @override */
@@ -209,17 +219,14 @@ export default class TileSplat extends Tile {
    * @private
    */
   drawBlood() {
-    // Get blood drips
-    const drips = this.data.drips;
-
-    // Begin iteration
-    for (let i = 0; i < drips.length; i++) {
-      const text = new PIXI.Text(drips[i].glyph, this.style);
+    for (let i = 0; i < this.drips.length; i++) {
+      const drip = this.drips[i];
+      const text = new PIXI.Text(drip.glyph, this.style);
       text.name = 'drip ' + this.counter++;
-      text.x = drips[i].x; // + splat.width / 2;
-      text.y = drips[i].y; // + splat.height / 2;
-      text.pivot.set(drips[i].width / 2, drips[i].height / 2);
-      text.angle = drips[i].angle;
+      text.x = drip.x; // + splat.width / 2;
+      text.y = drip.y; // + splat.height / 2;
+      text.pivot.set(drip.width / 2, drip.height / 2);
+      text.angle = drip.angle;
       this.tile.addChild(text);
     }
   }
@@ -305,22 +312,15 @@ export default class TileSplat extends Tile {
     };
     const now = Date.now();
 
-    // If the time since any drawing activity last occurred exceeds the sample rate - upgrade the prior point
-    if (now - this._drawTime >= this.SAMPLE_RATE) {
-      this._sampleTime = now;
-    }
-
-    // Determine whether the new point should be permanent based on the time since last sample
-    const takeSample = now - this._drawTime >= this.SAMPLE_RATE;
-    //this._addPoint(position, !takeSample);
-    if (takeSample) {
+    // If the time since any drawing activity last occurred exceeds the sample rate - then add drips
+    if (now - this._drawTime >= canvas.blood.getTempSetting('brushFlow')) {
       this._addDrips(position);
       this._drawTime = Date.now();
       this.draw();
     }
 
     // Refresh the display
-    this.refresh();
+    //this.refresh();
   }
 
   /**

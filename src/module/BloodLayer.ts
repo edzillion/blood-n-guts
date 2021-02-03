@@ -18,6 +18,8 @@ export default class BloodLayer extends TilesLayer {
   DEFAULTS_TILESPLAT: TileSplatData;
   brushControls: BrushControls;
   brushSettings: BrushSettings;
+  objects: PIXI.Container;
+  preview: PIXI.Container;
   constructor() {
     super();
     //this._registerMouseListeners();
@@ -27,6 +29,7 @@ export default class BloodLayer extends TilesLayer {
       brushAlpha: 0.7,
       brushColor: '#8A0707',
       brushDensity: 1,
+      brushFlow: 75,
       brushFont: 'splatter',
       brushOpacity: 0,
       brushRGBA: 0,
@@ -68,6 +71,19 @@ export default class BloodLayer extends TilesLayer {
 
   initialize(): void {
     this.collection = canvas.scene.getFlag(MODULE_ID, 'sceneSplats') || [];
+
+    // Create objects container which can be sorted
+    const objCont = new PIXI.Container();
+    objCont.name = 'Object Container';
+    //@ts-expect-error definition missing
+    this.objects = this.addChild(objCont);
+    this.objects.sortableChildren = true;
+
+    // Create preview container which is always above objects
+    const prevCont = new PIXI.Container();
+    prevCont.name = 'Preview Container';
+    //@ts-expect-error definition missing
+    this.preview = this.addChild(prevCont);
   }
 
   // static getCanvasContainer() {
@@ -147,7 +163,7 @@ export default class BloodLayer extends TilesLayer {
     const data = this._getNewDrawingData(event.data.origin);
 
     const drawing = new TileSplat(data);
-    //@ts-expect-error definition missing
+    drawing.name = 'Preview Drawing';
     event.data.preview = this.preview.addChild(drawing);
     drawing.draw();
     // const tile = Tile.createPreview(event.data.origin);
@@ -162,7 +178,6 @@ export default class BloodLayer extends TilesLayer {
     if (!preview) return;
     if (preview.parent === null) {
       // In theory this should never happen, but rarely does
-      // @ts-expect-error missing def
       this.preview.addChild(preview);
     }
     if (createState >= 1) {
@@ -177,58 +192,16 @@ export default class BloodLayer extends TilesLayer {
   _onDragLeftDrop(event) {
     const object = event.data.preview;
     if (object) {
-      // const tileSplatData: TileSplatData = {
-      //   // img: string; //not used
-      //   width: 100,
-      //   height: 100,
-      //   scale: 1,
-      //   x: object.data.x,
-      //   y: object.data.y,
-      //   // z: number;
-      //   rotation: 0,
-      //   hidden: false,
-      //   locked: false,
-      //   drips: [],
-      //   styleData: this.splatData.styleData,
-      //   offset: this.splatData.offset,
-      //   maskPolygon: this.splatData.maskPolygon,
-      // };
-
-      // Begin iteration
-      // for (let i = 0; i < object.data.points.length; i++) {
-      //   const dripData: SplatDripData = {
-      //     x: object.data.points[i][0],
-      //     y: object.data.points[i][1],
-      //     angle: 0,
-      //     width: 100,
-      //     height: 100,
-      //     glyph: 'a',
-      //   };
-
-      //   tileSplatData.drips.push(dripData);
-      // }
-
-      //const obj: TileSplat = new TileSplat(tileSplatData, canvas.scene);
       object.zIndex = object.z || 0;
       this.collection.push(object.data);
       this.draw();
-      // this.constructor.placeableClass.create(object.data);
     }
+    this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
   }
 
   /** @override */
   async draw(): Promise<any> {
     //await super.draw();
-
-    // Create objects container which can be sorted
-    //@ts-expect-error definition missing
-    this.objects = this.addChild(new PIXI.Container());
-    //@ts-expect-error definition missing
-    this.objects.sortableChildren = true;
-
-    // Create preview container which is always above objects
-    //@ts-expect-error definition missing
-    this.preview = this.addChild(new PIXI.Container());
 
     // Create and draw objects
     //const dataArray = [this.defaults]; //[canvas.scene.data['flags'][MODULE_ID].sceneSplats] || [];
@@ -252,7 +225,6 @@ export default class BloodLayer extends TilesLayer {
   createObject(data) {
     const obj = new TileSplat(data);
     obj.zIndex = data.z || 0;
-    // @ts-expect-error missing def
     this.objects.addChild(obj);
     log(LogLevel.DEBUG, 'createObject', obj.id, obj.data._id);
     return obj;
@@ -272,8 +244,8 @@ export default class BloodLayer extends TilesLayer {
    * Wipes all Blood Layer splats
    */
   wipe(): void {
-    //@ts-expect-error definition missing
-    this.removeChildren().forEach((c) => c.destroy({ children: true }));
+    this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
+    this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     this.collection = [];
   }
 
@@ -304,7 +276,6 @@ export default class BloodLayer extends TilesLayer {
 
     //super.activate();
     CanvasLayer.prototype.activate.apply(this);
-    //@ts-expect-error definition missing
     this.objects.visible = true;
     //@ts-expect-error missing definition
     this.placeables.forEach((l) => l.refresh());
@@ -316,13 +287,11 @@ export default class BloodLayer extends TilesLayer {
   /** @override */
   deactivate() {
     CanvasLayer.prototype.deactivate.apply(this);
-    //@ts-expect-error definition missing
     if (this.objects) this.objects.visible = true;
     //@ts-expect-error definition missing
     this.releaseAll();
     //@ts-expect-error missing definition
     this.placeables.forEach((l) => l.refresh());
-    //@ts-expect-error missing definition
     if (this.preview) this.preview.removeChildren();
     return this;
   }
@@ -489,8 +458,9 @@ export default class BloodLayer extends TilesLayer {
    * @return {Object}           The new drawing data
    * @private
    */
-  _getNewDrawingData(origin): TileSplatData {
-    const tileData = mergeObject(this.DEFAULTS_TILESPLAT, {
+  _getNewDrawingData(origin: PIXI.Point): TileSplatData {
+    const defaults = duplicate(this.DEFAULTS_TILESPLAT);
+    const tileData = mergeObject(defaults, {
       styleData: this.brushStyle,
       x: origin.x,
       y: origin.y,
@@ -498,7 +468,6 @@ export default class BloodLayer extends TilesLayer {
 
     // Mandatory additions
     tileData.author = game.user._id;
-
     return tileData;
   }
 

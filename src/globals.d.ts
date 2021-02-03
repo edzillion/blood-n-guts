@@ -104,6 +104,7 @@ interface BrushSettings {
   brushAlpha: number;
   brushColor: string;
   brushDensity: number;
+  brushFlow: number;
   brushFont: string;
   brushOpacity: number;
   brushRGBA: number;
