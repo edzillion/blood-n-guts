@@ -41,6 +41,7 @@ export default class BloodLayer extends TilesLayer {
       alpha: 0.7,
       width: 0,
       height: 0,
+      // @ts-expect-error bad def
       scale: 1,
       x: 0,
       y: 0,
@@ -56,6 +57,7 @@ export default class BloodLayer extends TilesLayer {
       },
       offset: new PIXI.Point(0),
       maskPolygon: [],
+      brushSettings: this.brushSettings,
     };
 
     // React to changes to current scene
@@ -414,29 +416,23 @@ export default class BloodLayer extends TilesLayer {
   // }
 
   get brushStyle(): SplatStyle {
-    const brushSettings: Partial<BrushSettings> = {};
-    // Update with User Defaults
-    ['brushFont', 'brushSize', 'brushColor', 'brushAlpha'].forEach((setting) => {
-      brushSettings[setting] = this.findSetting(setting);
-    });
-
     return {
-      fontFamily: brushSettings.brushFont,
-      fontSize: brushSettings.brushSize,
-      fill: hexToRGBAString(parseInt(brushSettings.brushColor.slice(1), 16), brushSettings.brushAlpha),
+      fontFamily: this.brushSettings.brushFont,
+      fontSize: this.brushSettings.brushSize,
+      fill: hexToRGBAString(parseInt(this.brushSettings.brushColor.slice(1), 16), this.brushSettings.brushAlpha),
       align: 'center',
     };
   }
 
-  findSetting(name) {
-    let setting = this.getUserSetting(name);
-    if (setting == null) setting = this.getSetting(name);
-    if (setting == null) {
-      setting = this.DEFAULTS[name];
-      log(LogLevel.INFO, 'findSetting default', name, setting);
-    }
-    return setting;
-  }
+  // findSetting(name) {
+  //   let setting = this.getUserSetting(name);
+  //   if (setting == null) setting = this.getSetting(name);
+  //   if (setting == null) {
+  //     setting = this.DEFAULTS[name];
+  //     log(LogLevel.INFO, 'findSetting default', name, setting);
+  //   }
+  //   return setting;
+  // }
 
   getSetting(name) {
     const setting = canvas.scene.getFlag(MODULE_ID, name);
@@ -474,68 +470,16 @@ export default class BloodLayer extends TilesLayer {
    * @return {Object}           The new drawing data
    * @private
    */
-  _getNewDrawingData(origin): any {
-    const tool = game.activeTool;
-
-    const style = this.brushStyle;
-
+  _getNewDrawingData(origin): TileSplatData {
     const tileData = mergeObject(this.DEFAULTS_TILESPLAT, {
-      styleData: style,
-      drips: BloodNGuts.generateDrips(
-        new PIXI.TextStyle(style),
-        BloodNGuts.allFonts[style.fontFamily],
-        this.findSetting('brushDensity'),
-        this.findSetting('brushSpread'),
-        new PIXI.Point(0),
-      ),
+      styleData: this.brushStyle,
       x: origin.x,
       y: origin.y,
-    } as any);
-
-    // Get User Settings
-    //const saved = game.settings.get('core', this.constructor.DEFAULT_CONFIG_SETTING);
-
-    // Get defaults
-    //const defaults = mergeObject(CONST.DRAWING_DEFAULT_VALUES, saved, { inplace: false });
-
-    const data = {
-      author: '',
-      fontFamily: 'Signika',
-      fontSize: 48,
-      height: 0,
-      hidden: false,
-      locked: false,
-      rotation: 0,
-      text: '',
-      texture: '',
-      width: 0,
-      x: origin.x,
-      y: origin.y,
-      z: 0,
-    };
-
-    // Optional client overrides
-    // const data = mergeObject(
-    //   defaults,
-    //   {
-    //     fillColor: game.user.color,
-    //     strokeColor: game.user.color,
-    //     fontFamily: CONFIG.defaultFontFamily,
-    //   },
-    //   { overwrite: false },
-    // );
+    } as TileSplatData);
 
     // Mandatory additions
     tileData.author = game.user._id;
 
-    // Tool-based settings
-    // switch (tool) {
-    //   case 'brush':
-    //     data.type = CONST.DRAWING_TYPES.FREEHAND;
-    //     data.points = [[0, 0]];
-    //     data.bezierFactor = 0.5;
-    //     break;
-    // }
     return tileData;
   }
 

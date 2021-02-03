@@ -603,7 +603,7 @@ export class BloodNGuts {
 
     tileSplatData.x += tokenCenter.x;
     tileSplatData.y += tokenCenter.y;
-    tileSplatData.id = getUID();
+    tileSplatData._id = getUID();
     this.layer.collection.push(tileSplatData as TileSplatData);
     // BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
   }

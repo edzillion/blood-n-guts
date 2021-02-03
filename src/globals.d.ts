@@ -57,24 +57,12 @@ interface SplatDripData {
   height?: number;
 }
 
-interface TileSplatData {
-  _id?: string;
-  id?: string;
-  alpha?: number;
-  img?: string; //not used
-  width: number;
-  height: number;
-  scale: number;
-  x: number;
-  y: number;
-  z?: number;
-  rotation: number;
-  hidden: boolean;
-  locked: boolean;
+interface TileSplatData extends Tile {
   drips: SplatDripData[];
   styleData: SplatStyle;
   offset: PIXI.Point;
   maskPolygon: number[];
+  brushSettings: BrushSettings;
 }
 
 // interface TileSplatData {
@@ -124,4 +112,12 @@ interface BrushSettings {
   fonts: SplatFont[];
   previewAlpha: number;
   visible: boolean;
+}
+
+interface SubmitEvent extends Event {
+  submitter: any;
+}
+
+interface HTMLFormElement {
+  onsubmit: (this: GlobalEventHandlers, ev: SubmitEvent) => any | null;
 }

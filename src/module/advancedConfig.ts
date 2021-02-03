@@ -57,7 +57,7 @@ export class AdvancedConfig extends FormApplication {
     return super.render(force, context);
   }
 
-  activateListeners(html: JQuery): any {
+  activateListeners(html: JQuery): void {
     super.activateListeners(html);
     const wipeButton = html.find('.advanced-config-wipe-scene-splats');
     if (canvas.scene.active) {

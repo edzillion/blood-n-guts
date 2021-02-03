@@ -2,13 +2,8 @@ import { hexToPercent, percentToHex } from './helpers';
 
 export default class BrushControls extends FormApplication {
   current: { brushSize: number; brushAlpha: number; brushDensity: number; brushSpread: number };
-  // constructor(object: any, options?: FormApplicationOptions) {
-  //   super(object, options);
-  //   // game.settings.sheet.close();
-  //   // game.users.apps.push(this);
-  // }
 
-  static get defaultOptions() {
+  static get defaultOptions(): FormApplicationOptions {
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
       closeOnSubmit: false,
@@ -18,7 +13,7 @@ export default class BrushControls extends FormApplication {
       editable: game.user.isGM,
       template: 'modules/blood-n-guts/templates/brush-controls.html',
       id: 'filter-config',
-      title: "Blood 'n Guts Options",
+      title: "Blood 'n Guts Brush Settings",
     });
   }
 
@@ -28,17 +23,8 @@ export default class BrushControls extends FormApplication {
    * Obtain module metadata and merge it with game settings which track current module visibility
    * @return {Object}   The data provided to the template when rendering the form
    */
-  getData() {
+  getData(): BrushSettings {
     return canvas.blood.brushSettings;
-    // this.current = {
-    //   brushSize: canvas.blood.findSetting('brushSize'),
-    //   brushAlpha: canvas.blood.findSetting('brushAlpha'),
-    //   brushDensity: canvas.blood.findSetting('brushDensity'),
-    //   brushSpread: canvas.blood.findSetting('brushSpread'),
-    // };
-
-    // // Return data to the template
-    // return this.current;
   }
 
   /* -------------------------------------------- */
@@ -46,7 +32,7 @@ export default class BrushControls extends FormApplication {
   /* -------------------------------------------- */
 
   /** @override */
-  activateListeners(html) {
+  activateListeners(html: JQuery): void {
     super.activateListeners(html);
   }
 
@@ -56,7 +42,7 @@ export default class BrushControls extends FormApplication {
    * @param formData {Object}   The object of validated form data with which to update the object
    * @private
    */
-  async _updateObject(event, formData) {
+  async _updateObject(_event: Event, formData: BrushSettings): Promise<void> {
     const updated = diffObject(canvas.blood.brushSettings, formData);
     Object.entries(updated).map(([name, val]) => {
       canvas.blood.setSetting(false, name, val);

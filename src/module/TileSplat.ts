@@ -31,25 +31,6 @@ import BloodLayer from './BloodLayer';
 
 // @ts-expect-error incorrect extends
 export default class TileSplat extends Tile {
-  frame: any;
-  data: any;
-  _drawTime: number;
-  _sampleTime: number;
-  SAMPLE_RATE: number;
-  style: any;
-  font: any;
-  tile: any;
-  texture: any;
-  position: any;
-  hitArea: any;
-  _controlled: any;
-  alpha: number;
-  visible: any;
-  drips: any;
-  _dragHandle: any;
-  x: number;
-  y: number;
-  counter: number;
   constructor(data: TileSplatData, scene = canvas.scene) {
     super(data, scene);
 
@@ -228,22 +209,12 @@ export default class TileSplat extends Tile {
    * @private
    */
   drawBlood() {
-    // Get drawing drips
+    // Get blood drips
     const drips = this.data.drips;
 
-    // const styleData = {
-    //   // @ts-expect-error bad def
-    //   fontFamily: this.layer.getSetting('brushFont'),
-    //   // @ts-expect-error bad def
-    //   fontSize: this.layer.getSetting('brushSize'),
-    //   // @ts-expect-error bad def
-    //   fill: this.layer.getSetting('brushColor'),
-    //   align: 'center',
-    // };
-    const style = new PIXI.TextStyle(this.data.styleData);
     // Begin iteration
     for (let i = 0; i < drips.length; i++) {
-      const text = new PIXI.Text(drips[i].glyph, style);
+      const text = new PIXI.Text(drips[i].glyph, this.style);
       text.name = 'drip ' + this.counter++;
       text.x = drips[i].x; // + splat.width / 2;
       text.y = drips[i].y; // + splat.height / 2;
@@ -257,10 +228,8 @@ export default class TileSplat extends Tile {
     const drips = BloodNGuts.generateDrips(
       this.style,
       this.font,
-      //@ts-expect-error definitions wrong
-      this.layer.findSetting('brushDensity'),
-      //@ts-expect-error definitions wrong
-      this.layer.findSetting('brushSpread'),
+      this.data.brushSettings.brushDensity,
+      this.data.brushSettings.brushSpread,
       position,
     );
     log(LogLevel.INFO, '_addDrips', drips[0].x, drips[0].y);
