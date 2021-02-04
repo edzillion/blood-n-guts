@@ -119,6 +119,10 @@ interface SubmitEvent extends Event {
   submitter: any;
 }
 
+interface InteractionEvent extends PIXI.interaction.InteractionEvent {
+  data: any;
+}
+
 interface HTMLFormElement {
   onsubmit: (this: GlobalEventHandlers, ev: SubmitEvent) => any | null;
 }

@@ -303,7 +303,7 @@ export default class TileSplat extends Tile {
     const now = Date.now();
 
     // If the time since any drawing activity last occurred exceeds the sample rate - then add drips
-    if (now - this._drawTime >= canvas.blood.getTempSetting('brushFlow')) {
+    if (now - this._drawTime >= canvas.blood.getSetting(false, 'brushFlow')) {
       this._addDrips(position);
       this._drawTime = Date.now();
       this.draw();

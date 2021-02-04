@@ -16,6 +16,7 @@ export default class BloodLayer extends TilesLayer {
   brushSettings: BrushSettings;
   objects: PIXI.Container;
   preview: PIXI.Container;
+  visible: boolean;
   constructor() {
     super();
 
@@ -77,7 +78,7 @@ export default class BloodLayer extends TilesLayer {
     const prevCont = new PIXI.Container();
     prevCont.name = 'Preview Container';
     //@ts-expect-error definition missing
-    this.preview = this.addChild(prevCont);
+    this.preview = this.addChild(prevCont) as PIXI.Container;
   }
 
   // static getCanvasContainer() {
@@ -124,21 +125,17 @@ export default class BloodLayer extends TilesLayer {
   // }
 
   /** @override */
-  _onClickLeft(event) {
-    log(LogLevel.INFO, '_onClickLeft createState', event.createState);
-    const p = event.data.getLocalPosition(canvas.app.stage);
+  _onClickLeft(event: InteractionEvent): void {
+    log(LogLevel.INFO, '_onClickLeft createState', event.data.createState);
+    const position = event.data.getLocalPosition(canvas.app.stage);
     // Round positions to nearest pixel
-    p.x = Math.round(p.x);
-    p.y = Math.round(p.y);
+    position.x = Math.round(position.x);
+    position.y = Math.round(position.y);
 
     if (game.activeTool === 'brush') {
-      const data = this._getNewDrawingData(p);
-      //const drawing = new TileSplat(data);
+      const data = this.getNewDrawingData(position);
       this.collection.push(data);
       this.draw();
-      ////@ts-expect-error definition missing
-      // event.data.preview = this.preview.addChild(drawing);
-      // drawing.draw();
     }
 
     // Standard left-click handling
@@ -146,28 +143,25 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /** @override */
-  _onDragLeftStart(event) {
-    // super._onDragLeftStart(event);
-    log(LogLevel.INFO, '_onDragLeftStart createState', event.createState);
-    //@ts-expect-error definition missing
+  _onDragLeftStart(event: InteractionEvent): void {
+    log(LogLevel.INFO, '_onDragLeftStart createState', event.data.createState);
+
+    // @ts-expect-error definition missing
     const grandparentCall = PlaceablesLayer.prototype._onDragLeftStart.bind(this);
     grandparentCall(event);
-    //super.__proto__.__proto__.__proto__._onDragLeftStart(event);
-    //const data = this._getNewDrawingData(event.data.origin);
 
+    // the last TileSplat in the collection should be the one just created by _onClickLeft
     const data = this.collection.pop();
 
-    const drawing = new TileSplat(data);
-    drawing.name = 'Preview Drawing';
-    event.data.preview = this.preview.addChild(drawing);
-    drawing.draw();
-    // const tile = Tile.createPreview(event.data.origin);
-    // event.data.preview = this.preview.addChild(tile);
-    // this.preview._creating = false;
+    // recreate it as our preview
+    const previewSplat = new TileSplat(data);
+    previewSplat.name = 'Preview Splat';
+    event.data.preview = this.preview.addChild(previewSplat);
+    previewSplat.draw();
   }
 
   /** @override */
-  _onDragLeftMove(event) {
+  _onDragLeftMove(event: InteractionEvent): void {
     const { preview, createState } = event.data;
     log(LogLevel.INFO, '_onDragLeftMove createState', createState);
     if (!preview) return;
@@ -184,22 +178,21 @@ export default class BloodLayer extends TilesLayer {
    * Conclude a left-click drag workflow originating from the Canvas stage.
    * @see {Canvas#_onDragLeftDrop}
    */
-  _onDragLeftDrop(event) {
+  _onDragLeftDrop(event: InteractionEvent): void {
     const object = event.data.preview;
     if (object) {
       object.zIndex = object.z || 0;
       this.collection.push(object.data);
       this.draw();
     }
+    // now that we have saved the finished splat we wipe our preview
     this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
   }
 
   /** @override */
-  async draw(): Promise<any> {
-    //await super.draw();
+  async draw(): Promise<BloodLayer> {
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     // Create and draw objects
-    //const dataArray = [this.defaults]; //[canvas.scene.data['flags'][MODULE_ID].sceneSplats] || [];
     if (!this.collection || !this.collection.length) return;
 
     const promises = this.collection.map((data) => {
@@ -208,16 +201,16 @@ export default class BloodLayer extends TilesLayer {
     });
 
     // Wait for all objects to draw
-    //@ts-expect-error missing definition
     this.visible = true;
-    return Promise.all(promises);
+    await Promise.all(promises);
+    return this;
   }
 
   /**
    * Draw a single placeable object
    * @return {PlaceableObject}
    */
-  createObject(data) {
+  createObject(data: TileSplatData): TileSplat {
     const obj = new TileSplat(data);
     obj.zIndex = data.z || 0;
     this.objects.addChild(obj);
@@ -230,7 +223,6 @@ export default class BloodLayer extends TilesLayer {
    */
   toggle() {
     const v = this.getSetting('visible');
-    // @ts-expect-error missing def
     this.visible = !v;
     this.setSetting(true, 'visible', !v);
   }
@@ -245,7 +237,7 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /** @override */
-  async activate(): Promise<any> {
+  async activate(): Promise<BloodLayer> {
     this.loadSceneSettings();
 
     // const promises = [];
@@ -269,34 +261,26 @@ export default class BloodLayer extends TilesLayer {
     //   });
     // }
 
-    //super.activate();
     CanvasLayer.prototype.activate.apply(this);
     this.objects.visible = true;
-    //@ts-expect-error missing definition
-    this.placeables.forEach((l) => l.refresh());
+    this.objects.children.forEach((t: TileSplat) => t.refresh());
     return this;
   }
 
   /* -------------------------------------------- */
 
   /** @override */
-  deactivate() {
+  deactivate(): BloodLayer {
     CanvasLayer.prototype.deactivate.apply(this);
     if (this.objects) this.objects.visible = true;
     //@ts-expect-error definition missing
     this.releaseAll();
-    //@ts-expect-error missing definition
-    this.placeables.forEach((l) => l.refresh());
+    this.objects.children.forEach((t: TileSplat) => t.refresh());
     if (this.preview) this.preview.removeChildren();
     return this;
   }
 
-  async updateMany(data, options = {} as any) {
-    // //@ts-expect-error definition missing
-    this.updateNonEmbeddedEntity(data, options);
-  }
-
-  async deleteMany(data, options = {}) {
+  async deleteMany(data: string[] | string, options = {}): Promise<void> {
     const collection = this.collection;
     const user = game.user;
 
@@ -305,23 +289,24 @@ export default class BloodLayer extends TilesLayer {
     const ids = new Set(data);
 
     this.collection = collection.filter((splat) => !ids.has(splat._id));
-
-    this.objects.children.forEach((splat: TileSplat) => {
-      if (ids.has(splat.id)) this.objects.removeChild(splat);
-    });
-
     this.draw();
-    //if (!deletions.length) return [];
   }
 
-  public updateNonEmbeddedEntity(data, options = {} as any) {
+  async updateMany(data: Partial<TileSplatData>, options = {} as { diff: boolean }): Promise<void> {
+    this.updateNonEmbeddedEntity(data, options);
+  }
+
+  public updateNonEmbeddedEntity(
+    data: Partial<TileSplatData> | Partial<TileSplatData>[],
+    options = {} as { diff: boolean },
+  ): void {
     const user = game.user;
     options = mergeObject({ diff: true }, options);
 
-    //   // Structure the update data
+    // Structure the update data
     const pending = new Map();
-    data = data instanceof Array ? data : [data];
-    for (const d of data) {
+    const updateData = data instanceof Array ? data : [data];
+    for (const d of updateData) {
       if (!d._id) throw new Error('You must provide an id for every Embedded Entity in an update operation');
       pending.set(d._id, d);
     }
@@ -338,20 +323,11 @@ export default class BloodLayer extends TilesLayer {
         update['_id'] = d._id;
       }
 
-      //     // Call pre-update hooks to ensure the update is allowed to proceed
-      // if (!options.noHook) {
-      //   const allowed = Hooks.call(`preUpdate${embeddedName}`, this, d, update, options, user._id);
-      //   if (allowed === false) {
-      //     console.debug(`${vtt} | ${embeddedName} update prevented by preUpdate hook`);
-      //     return arr;
-      //   }
-      // }
-
       // Stage the update
       arr.push(update);
       return arr;
     }, []);
-    if (!updates.length) return [];
+    if (!updates.length) return;
 
     updates.forEach((update) => {
       //@ts-expect-error definition missing
@@ -403,23 +379,17 @@ export default class BloodLayer extends TilesLayer {
     };
   }
 
-  // findSetting(name) {
-  //   let setting = this.getUserSetting(name);
-  //   if (setting == null) setting = this.getSetting(name);
-  //   if (setting == null) {
-  //     setting = this.DEFAULTS[name];
-  //     log(LogLevel.INFO, 'findSetting default', name, setting);
-  //   }
-  //   return setting;
-  // }
-
-  getSetting(name) {
+  getSetting(getFromFlag: boolean, name: string): any {
+    if (!getFromFlag) {
+      log(LogLevel.INFO, 'getSetting', name, this.brushSettings[name]);
+      return this.brushSettings[name];
+    }
     const setting = canvas.scene.getFlag(MODULE_ID, name);
-    if (setting != undefined) log(LogLevel.INFO, 'getSetting', name, setting);
+    log(LogLevel.INFO, 'getSetting getFromFlag', name, setting);
     return setting;
   }
 
-  async setSetting(saveToFlag, name, value) {
+  async setSetting(saveToFlag: boolean, name: string, value: any): Promise<Scene> {
     this.brushSettings[name] = value;
     log(LogLevel.INFO, 'setSetting brushSettings', name, value);
     if (!saveToFlag) return;
@@ -427,18 +397,9 @@ export default class BloodLayer extends TilesLayer {
     return await canvas.scene.setFlag(MODULE_ID, name, value);
   }
 
-  getTempSetting(name) {
-    return this.brushSettings[name];
-  }
-
-  setTempSetting(name, value) {
-    this.brushSettings[name] = value;
-  }
-
-  loadSceneSettings() {
-    //this.brushSettings = {
+  loadSceneSettings(): void {
     Object.keys(this.DEFAULTS).forEach((name) => {
-      if (this.getSetting(name) !== undefined) this.brushSettings[name] = this.getSetting(name);
+      if (this.getSetting(true, name) !== undefined) this.brushSettings[name] = this.getSetting(true, name);
     });
   }
 
@@ -449,12 +410,13 @@ export default class BloodLayer extends TilesLayer {
    * @return {Object}           The new drawing data
    * @private
    */
-  _getNewDrawingData(origin: PIXI.Point): TileSplatData {
+  getNewDrawingData(origin: PIXI.Point): TileSplatData {
     const textStyle = new PIXI.TextStyle(this.brushStyle);
     const font = splatFonts.fonts[this.brushStyle.fontFamily];
-
     const defaults = duplicate(this.DEFAULTS_TILESPLAT);
+
     const tileData = mergeObject(defaults, {
+      // each splat has at least one drip
       drips: BloodNGuts.generateDrips(
         textStyle,
         font,
@@ -472,7 +434,7 @@ export default class BloodLayer extends TilesLayer {
     return tileData;
   }
 
-  createBrushControls() {
+  createBrushControls(): void {
     // @ts-expect-error bad def
     this.brushControls = new BrushControls().render(true);
   }
