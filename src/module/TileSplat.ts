@@ -48,10 +48,6 @@ export default class TileSplat extends Tile {
      * @private
      */
     this._drawTime = 0;
-    this._sampleTime = 0;
-    this.SAMPLE_RATE = 75;
-
-    this.counter = 0;
 
     this.style = new PIXI.TextStyle(this.data.styleData);
     this.font = splatFonts.fonts[this.data.styleData.fontFamily];
@@ -69,15 +65,9 @@ export default class TileSplat extends Tile {
 
     // Create the tile container and it's child elements
     this.tile = this.addChild(new PIXI.Container());
-    // if (this.data.img) {
-    //   this.texture = await loadTexture(this.data.img, { fallback: 'icons/svg/hazard.svg' });
-    //   this.tile.img = this.tile.addChild(this._drawPrimarySprite(this.texture));
-    //   this.tile.bg = null;
-    // } else {
+
     this.texture = null;
     this.tile.img = null;
-    //this.tile.bg = this.addChild(new PIXI.Graphics());
-    // }
 
     this.drawBlood();
 
@@ -129,48 +119,26 @@ export default class TileSplat extends Tile {
   }
 
   /** @override */
-  refresh(): any {
-    //this.drawBlood();
-
+  refresh(): TileSplat {
     // Determine shape bounds and update the frame
     const bounds = this.tile.getLocalBounds();
-    if (this.id && this._controlled) this._refreshFrame(bounds);
+    if (this.id && this._controlled) this.refreshFrame(bounds);
     else this.frame.visible = false;
 
-    // Toggle visibility
+    // Set Tile position & Toggle visibility
     this.position.set(this.data.x, this.data.y);
     this.hitArea = bounds;
     this.alpha = this.data.hidden ? 0.5 : 1.0;
     this.visible = !this.data.hidden || game.user.isGM;
 
-    // Set Tile position
-    //this.position.set(this.data.x, this.data.y);
-
-    // // Draw the sprite image
-    // //const bounds = new NormalizedRectangle(0, 0, this.data.width, this.data.height);
-    // const bounds = this.tile.getLocalBounds();
-
-    // if (this.id && this._controlled) this._refreshFrame(bounds);
-    // else this.frame.visible = false;
-
-    // // Allow some extra padding to detect handle hover interactions
-    // this.hitArea = bounds; //this._controlled ? bounds.clone().pad(20) : bounds;
-
-    // // Update border frame
-    // this._refreshBorder(bounds);
-    // this._refreshHandle(bounds);
-
-    // // Set visibility
-    // this.alpha = 1;
-    // this.visible = !this.data.hidden || game.user.isGM;
-    // return this;
+    return this;
   }
 
   /**
    * Refresh the boundary frame which outlines the Drawing shape
    * @private
    */
-  _refreshFrame({ x, y, width, height }) {
+  private refreshFrame({ x, y, width, height }) {
     // Determine the border color
     const colors = CONFIG.Canvas.dispositionColors;
     let bc = colors.INACTIVE;
@@ -208,11 +176,10 @@ export default class TileSplat extends Tile {
    * Draw freehand shapes with bezier spline smoothing
    * @private
    */
-  drawBlood() {
+  drawBlood(): void {
     for (let i = 0; i < this.data.drips.length; i++) {
       const drip = this.data.drips[i];
       const text = new PIXI.Text(drip.glyph, this.style);
-      text.name = 'drip ' + this.counter++;
       text.x = drip.x; // + splat.width / 2;
       text.y = drip.y; // + splat.height / 2;
       text.pivot.set(drip.width / 2, drip.height / 2);
@@ -221,7 +188,7 @@ export default class TileSplat extends Tile {
     }
   }
 
-  _addDrips(position) {
+  private addDrips(position: PIXI.Point): void {
     const drips = BloodNGuts.generateDrips(
       this.style,
       this.font,
@@ -229,14 +196,14 @@ export default class TileSplat extends Tile {
       this.data.brushSettings.brushSpread,
       position,
     );
-    log(LogLevel.INFO, '_addDrips', drips[0].x, drips[0].y);
+    log(LogLevel.INFO, 'addDrips', drips[0].x, drips[0].y);
     drips.forEach((drip) => this.data.drips.push(drip));
   }
 
   /* -------------------------------------------- */
 
   /** @override */
-  static get embeddedName() {
+  static get embeddedName(): string {
     return 'TileSplat';
   }
 
@@ -249,7 +216,7 @@ export default class TileSplat extends Tile {
   }
 
   /** @override */
-  async update(data, options = {}): Promise<any> {
+  async update(data: TileSplatData, options = {}): Promise<TileSplat> {
     data['_id'] = this.id;
     //@ts-expect-error todo: why does it not recognise that layer is returning a BloodLayer?
     await this.layer.updateNonEmbeddedEntity(data, options);
@@ -258,9 +225,15 @@ export default class TileSplat extends Tile {
 
   /* interaction */
 
-  _onDragLeftDrop(event): any {
+  /** @override */
+  _onClickLeft(event: InteractionEvent): boolean {
+    if (game.activeTool === 'brush') return false;
+    return super._onClickLeft(event);
+  }
+
+  _onDragLeftDrop(event: InteractionEvent): any {
     if (this._dragHandle) return this._onHandleDragDrop(event);
-    return this._onDragLeftDrop2(event);
+    return this._onSplatDragDrop(event);
   }
 
   /**
@@ -268,7 +241,7 @@ export default class TileSplat extends Tile {
    * @param {PIXI.interaction.InteractionEvent} event
    * @private
    */
-  _onDragLeftDrop2(event) {
+  _onSplatDragDrop(event: InteractionEvent): boolean {
     const clones = event.data.clones || [];
 
     // Ensure the destination is within bounds
@@ -285,6 +258,7 @@ export default class TileSplat extends Tile {
     });
     this.update(updates);
     // this.refresh();
+    return true;
   }
 
   /**
@@ -292,19 +266,19 @@ export default class TileSplat extends Tile {
    * @param {PIXI.interaction.InteractionEvent} event
    * @private
    */
-  _onMouseDraw(event) {
+  _onMouseDraw(event: InteractionEvent): void {
     const { destination, originalEvent } = event.data;
 
     // Determine position
-    const position = {
-      x: Math.round(parseInt(destination.x) - this.x),
-      y: Math.round(parseInt(destination.y) - this.y),
-    };
+    const position = new PIXI.Point(
+      Math.round(parseInt(destination.x) - this.x),
+      Math.round(parseInt(destination.y) - this.y),
+    );
     const now = Date.now();
 
     // If the time since any drawing activity last occurred exceeds the sample rate - then add drips
     if (now - this._drawTime >= canvas.blood.getSetting(false, 'brushFlow')) {
-      this._addDrips(position);
+      this.addDrips(position);
       this._drawTime = Date.now();
       this.draw();
     }
@@ -317,10 +291,10 @@ export default class TileSplat extends Tile {
    * Define additional steps taken when an existing placeable object of this type is deleted
    * @private
    */
-  _onDelete() {
+  _onDelete(): void {
     this.release({ trigger: false });
     const layer = this.layer;
-    // @ts-expect-error hover property?
+    // @ts-expect-error must be due to this.layer being static?
     if (layer._hover === this) layer._hover = null;
   }
 }

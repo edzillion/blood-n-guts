@@ -221,7 +221,7 @@ export default class BloodLayer extends TilesLayer {
   /**
    * Toggles visibility of primary layer
    */
-  toggle() {
+  toggle(): void {
     const v = this.getSetting(false, 'visible');
     this.visible = !v;
     this.setSetting(true, 'visible', !v);
@@ -410,7 +410,7 @@ export default class BloodLayer extends TilesLayer {
    * @return {Object}           The new drawing data
    * @private
    */
-  getNewDrawingData(origin: PIXI.Point): TileSplatData {
+  private getNewDrawingData(origin: PIXI.Point): TileSplatData {
     const textStyle = new PIXI.TextStyle(this.brushStyle);
     const font = splatFonts.fonts[this.brushStyle.fontFamily];
     const defaults = duplicate(this.DEFAULTS_TILESPLAT);

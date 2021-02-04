@@ -1,5 +1,3 @@
-import { hexToPercent, percentToHex } from './helpers';
-
 export default class BrushControls extends FormApplication {
   current: { brushSize: number; brushAlpha: number; brushDensity: number; brushSpread: number };
 
