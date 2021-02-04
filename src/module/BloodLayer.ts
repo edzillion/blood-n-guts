@@ -222,7 +222,7 @@ export default class BloodLayer extends TilesLayer {
    * Toggles visibility of primary layer
    */
   toggle() {
-    const v = this.getSetting('visible');
+    const v = this.getSetting(false, 'visible');
     this.visible = !v;
     this.setSetting(true, 'visible', !v);
   }
