@@ -4,7 +4,6 @@ import TileSplat from './TileSplat';
 import { getRGBA } from './helpers';
 import { log, LogLevel } from './logging';
 
-import * as splatFonts from '../data/splatFonts';
 import BrushControls from './BrushControls';
 
 //@ts-expect-error missing definition
@@ -202,7 +201,7 @@ export default class BloodLayer extends TilesLayer {
   /** @override */
   async draw(): Promise<any> {
     //await super.draw();
-
+    this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     // Create and draw objects
     //const dataArray = [this.defaults]; //[canvas.scene.data['flags'][MODULE_ID].sceneSplats] || [];
     if (!this.collection || !this.collection.length) return;
@@ -311,14 +310,10 @@ export default class BloodLayer extends TilesLayer {
 
     this.collection = collection.filter((splat) => !ids.has(splat._id));
 
-    // // Iterate over elements of the collection
-    // const deletions = collection.reduce((arr, d) => {
-    //   if (!ids.has(d._id)) return arr;
+    this.objects.children.forEach((splat: TileSplat) => {
+      if (ids.has(splat.id)) this.objects.removeChild(splat);
+    });
 
-    //   // Add the id to the pending array
-    //   arr.push(d._id);
-    //   return arr;
-    // }, []);
     this.draw();
     //if (!deletions.length) return [];
   }
