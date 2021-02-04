@@ -79,6 +79,7 @@ export default class BloodLayer extends TilesLayer {
     prevCont.name = 'Preview Container';
     //@ts-expect-error definition missing
     this.preview = this.addChild(prevCont) as PIXI.Container;
+    this.preview.alpha = this.DEFAULTS.previewAlpha;
   }
 
   // static getCanvasContainer() {
@@ -152,6 +153,10 @@ export default class BloodLayer extends TilesLayer {
 
     // the last TileSplat in the collection should be the one just created by _onClickLeft
     const data = this.collection.pop();
+
+    this.objects.children.forEach((splat: TileSplat) => {
+      if (data._id === splat.id) this.objects.removeChild(splat);
+    });
 
     // recreate it as our preview
     const previewSplat = new TileSplat(data);
