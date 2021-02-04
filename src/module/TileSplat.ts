@@ -55,16 +55,6 @@ export default class TileSplat extends Tile {
 
     this.style = new PIXI.TextStyle(this.data.styleData);
     this.font = splatFonts.fonts[this.data.styleData.fontFamily];
-
-    this.drips =
-      this.data.drips ||
-      BloodNGuts.generateDrips(
-        this.style,
-        this.font,
-        this.data.brushSettings.brushDensity,
-        this.data.brushSettings.brushSpread,
-        new PIXI.Point(0),
-      );
   }
 
   /** @override */
@@ -219,8 +209,8 @@ export default class TileSplat extends Tile {
    * @private
    */
   drawBlood() {
-    for (let i = 0; i < this.drips.length; i++) {
-      const drip = this.drips[i];
+    for (let i = 0; i < this.data.drips.length; i++) {
+      const drip = this.data.drips[i];
       const text = new PIXI.Text(drip.glyph, this.style);
       text.name = 'drip ' + this.counter++;
       text.x = drip.x; // + splat.width / 2;

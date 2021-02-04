@@ -3,16 +3,13 @@ import { MODULE_ID } from '../constants';
 import TileSplat from './TileSplat';
 import { getRGBA } from './helpers';
 import { log, LogLevel } from './logging';
-
+import * as splatFonts from '../data/splatFonts';
 import BrushControls from './BrushControls';
 
 //@ts-expect-error missing definition
 export default class BloodLayer extends TilesLayer {
-  dataArray: any;
-  defaults: any;
   layer: PIXI.Container;
   collection: TileSplatData[];
-  splatData: any;
   DEFAULTS: BrushSettings;
   DEFAULTS_TILESPLAT: TileSplatData;
   brushControls: BrushControls;
@@ -21,8 +18,6 @@ export default class BloodLayer extends TilesLayer {
   preview: PIXI.Container;
   constructor() {
     super();
-    //this._registerMouseListeners();
-    //this.dataArray = 'flags["blood-n-guts"].sceneSplats';
 
     this.brushSettings = this.DEFAULTS = {
       brushAlpha: 0.7,
@@ -97,9 +92,8 @@ export default class BloodLayer extends TilesLayer {
   // }
 
   /** @override */
-  static get layerOptions() {
+  static get layerOptions(): LayerOptions {
     return mergeObject(super.layerOptions, {
-      // //@ts-expect-error definition missing
       zIndex: 11,
       canDragCreate: true,
       objectClass: TileSplat,
@@ -137,15 +131,15 @@ export default class BloodLayer extends TilesLayer {
     p.x = Math.round(p.x);
     p.y = Math.round(p.y);
 
-    // if (game.activeTool === 'brush') {
-    //   const data = this._getNewDrawingData(event.data.origin);
-    //   //const drawing = new TileSplat(data);
-    //   this.collection.push(data);
-    //   this.draw();
-    //   ////@ts-expect-error definition missing
-    //   // event.data.preview = this.preview.addChild(drawing);
-    //   // drawing.draw();
-    // }
+    if (game.activeTool === 'brush') {
+      const data = this._getNewDrawingData(p);
+      //const drawing = new TileSplat(data);
+      this.collection.push(data);
+      this.draw();
+      ////@ts-expect-error definition missing
+      // event.data.preview = this.preview.addChild(drawing);
+      // drawing.draw();
+    }
 
     // Standard left-click handling
     super._onClickLeft(event);
@@ -159,7 +153,9 @@ export default class BloodLayer extends TilesLayer {
     const grandparentCall = PlaceablesLayer.prototype._onDragLeftStart.bind(this);
     grandparentCall(event);
     //super.__proto__.__proto__.__proto__._onDragLeftStart(event);
-    const data = this._getNewDrawingData(event.data.origin);
+    //const data = this._getNewDrawingData(event.data.origin);
+
+    const data = this.collection.pop();
 
     const drawing = new TileSplat(data);
     drawing.name = 'Preview Drawing';
@@ -454,8 +450,18 @@ export default class BloodLayer extends TilesLayer {
    * @private
    */
   _getNewDrawingData(origin: PIXI.Point): TileSplatData {
+    const textStyle = new PIXI.TextStyle(this.brushStyle);
+    const font = splatFonts.fonts[this.brushStyle.fontFamily];
+
     const defaults = duplicate(this.DEFAULTS_TILESPLAT);
     const tileData = mergeObject(defaults, {
+      drips: BloodNGuts.generateDrips(
+        textStyle,
+        font,
+        this.brushSettings.brushDensity,
+        this.brushSettings.brushSpread,
+        new PIXI.Point(0),
+      ),
       styleData: this.brushStyle,
       x: origin.x,
       y: origin.y,
