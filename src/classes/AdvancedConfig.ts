@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { log, LogLevel } from './logging';
+import { log, LogLevel } from '../module/logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
-import { getRGBA } from './helpers';
-import { getMergedViolenceLevels } from './settings';
+import { getRGBA } from '../module/helpers';
+import { getMergedViolenceLevels } from '../module/settings';
 
 /**
  * FormApplication window for advanced configuration options.

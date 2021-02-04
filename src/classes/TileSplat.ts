@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { BloodNGuts } from '../blood-n-guts';
-import { getUID } from './helpers';
-import { log, LogLevel } from './logging';
+import { getUID } from '../module/helpers';
+import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BloodLayer from './BloodLayer';
 

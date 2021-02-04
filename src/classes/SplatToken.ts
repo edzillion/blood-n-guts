@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { log, LogLevel } from './logging';
+import { log, LogLevel } from '../module/logging';
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import {
@@ -10,8 +10,8 @@ import {
   getUID,
   distanceBetween,
   lookupTokenBloodColor,
-} from './helpers';
-import { getBaseTokenSettings, getMergedViolenceLevels } from './settings';
+} from '../module/helpers';
+import { getBaseTokenSettings, getMergedViolenceLevels } from '../module/settings';
 
 /**
  * Extends `Token` and adds a layer to display token splats.

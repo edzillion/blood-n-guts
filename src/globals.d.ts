@@ -65,26 +65,6 @@ interface TileSplatData extends Tile {
   brushSettings: BrushSettings;
 }
 
-// interface TileSplatData {
-//   _id?: string;
-//   id?: string;
-//   alpha?: number;
-//   img?: string; //not used
-//   width: number;
-//   height: number;
-//   scale: number;
-//   x: number;
-//   y: number;
-//   z?: number;
-//   rotation: number;
-//   hidden: boolean;
-//   locked: boolean;
-//   drips: SplatDripData[];
-//   styleData: SplatStyle;
-//   offset: PIXI.Point;
-//   maskPolygon: number[];
-// }
-
 interface TokenSplatData {
   _id?: string;
   id?: string;

@@ -1,8 +1,8 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import TileSplat from './TileSplat';
-import { getRGBA } from './helpers';
-import { log, LogLevel } from './logging';
+import { getRGBA } from '../module/helpers';
+import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BrushControls from './BrushControls';
 
@@ -153,7 +153,6 @@ export default class BloodLayer extends TilesLayer {
 
     // the last TileSplat in the collection should be the one just created by _onClickLeft
     const data = this.collection.pop();
-
     this.objects.children.forEach((splat: TileSplat) => {
       if (data._id === splat.id) this.objects.removeChild(splat);
     });

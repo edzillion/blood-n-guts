@@ -1,4 +1,4 @@
-import { AdvancedConfig } from './advancedConfig.js';
+import { AdvancedConfig } from '../classes/AdvancedConfig.js';
 import { MODULE_ID } from '../constants';
 import { log, LogLevel } from './logging';
 import { BloodNGuts } from '../blood-n-guts.js';

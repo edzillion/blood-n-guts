@@ -1,7 +1,5 @@
-import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_TITLE } from '../constants';
-import BloodConfig from './BloodConfig';
-import BrushControls from './BrushControls';
+import BloodConfig from '../classes/BloodConfig';
 
 /**
  * Add control buttons

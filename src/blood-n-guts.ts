@@ -30,8 +30,8 @@ import {
   alignDripsGetOffsetAndDimensions,
 } from './module/helpers';
 import { MODULE_ID, MODULE_TITLE } from './constants';
-import SplatToken from './module/SplatToken';
-import BloodLayer from './module/BloodLayer';
+import SplatToken from './classes/SplatToken';
+import BloodLayer from './classes/BloodLayer';
 import * as splatFonts from './data/splatFonts';
 // import { SplatData, TokenSplatData } from './globals';
 
