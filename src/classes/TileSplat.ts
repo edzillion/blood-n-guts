@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { BloodNGuts } from '../blood-n-guts';
-import { drawDebugRect, drawDebugRect2, getUID } from '../module/helpers';
+import { computeSightFromPoint, drawDebugRect, drawDebugRect2, getUID } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BloodLayer from './BloodLayer';
@@ -71,42 +71,25 @@ export default class TileSplat extends Tile {
     this.drawBlood();
     // const container = new PIXI.Container();
 
+    const bounds = this.tile.getLocalBounds();
+
+    const maxDistance = Math.max(bounds.width, bounds.height);
+    const center = new PIXI.Point(this.data.x, this.data.y);
+    const sight = computeSightFromPoint(center, maxDistance);
+    this.data.maskPolygon = sight;
     // const style = new PIXI.TextStyle(this.data.styleData);
     // // all scene drips have a .maskPolgyon.
-    // if (this.data.maskPolygon) {
-    //   this.data.drips.forEach((drip) => {
-    //     const text = new PIXI.Text(drip.glyph, style);
-    //     text.x = drip.x + drip.width / 2;
-    //     text.y = drip.y + drip.height / 2;
-    //     text.pivot.set(drip.width / 2, drip.height / 2);
-    //     text.angle = drip.angle;
-    //     container.addChild(text);
-    //     return text;
-    //   });
-
-    //   // log(LogLevel.DEBUG, 'drawSceneSplats: data.maskPolygon');
-    //   // const sightMask = new PIXI.Graphics();
-    //   // sightMask.beginFill(1, 1);
-    //   // sightMask.drawPolygon(this.data.maskPolygon);
-    //   // sightMask.endFill();
-    //   // container.addChild(sightMask);
-    //   // container.mask = sightMask;
-
-    //   // this.container.x = this.data.x;
-    //   // this.container.y = this.data.y;
-    //   // this.container.alpha = this.data.alpha || 1;
-    //   // we don't want to save alpha to flags
-    //   //delete this.data.alpha;
-    //   this.tile = this.addChild(container);
-
-    //   //if it's in the pool already update it otherwise add new entry
-    //   if (existingIds.includes(data.id))
-    //     BloodNGuts.scenePool.find((p) => p.data.id === data.id).container = container;
-    //   else BloodNGuts.scenePool.push({ data: data, container: container });
-    // } else {
-    //   log(LogLevel.ERROR, 'drawSceneSplats: dataObject has no .maskPolygon!');
-    // }
-    //}
+    if (this.data.maskPolygon) {
+      log(LogLevel.DEBUG, 'draw: data.maskPolygon');
+      const sightMask = new PIXI.Graphics();
+      sightMask.beginFill(1, 1);
+      sightMask.drawPolygon(this.data.maskPolygon);
+      sightMask.endFill();
+      this.tile.addChild(sightMask);
+      this.tile.mask = sightMask;
+    } else {
+      log(LogLevel.ERROR, 'drawSceneSplats: dataObject has no .maskPolygon!');
+    }
 
     // Refresh the current display
     this.refresh();
