@@ -332,6 +332,20 @@ export const drawDebugRect = (container: PIXI.Container, width = 2, color = 0xff
 };
 
 /**
+ * Debug helper to draw a rectangle border around a container.
+ * @category helpers
+ * @function
+ * @param {PIXI.Container} container - the actor to lookup color for.
+ * @param {number} [width=2] - optional border width.
+ * @param {number} [color=0xff00ff] - optional border color.
+ */
+export const drawDebugRect2 = (x, y, w, h, width = 2, color = 0xff0000): void => {
+  const rect = new PIXI.Graphics();
+  rect.lineStyle(width, color).drawRect(x, y, w, h);
+  canvas.drawings.addChild(rect);
+};
+
+/**
  * Gets the direction between two points, normalised from (-1,-1) to (1,1)
  * @function
  * @category helpers

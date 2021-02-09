@@ -43,6 +43,7 @@ export default class BloodLayer extends TilesLayer {
       scale: 1,
       x: 0,
       y: 0,
+      z: 0,
       rotation: 0,
       hidden: false,
       locked: false,
@@ -293,6 +294,10 @@ export default class BloodLayer extends TilesLayer {
     const ids = new Set(data);
 
     this.collection = collection.filter((splat) => !ids.has(splat._id));
+    // @ts-expect-error todo this
+    if (this.hud) this.hud.clear();
+    // @ts-expect-error todo this
+    this.releaseAll();
     this.draw();
   }
 
@@ -337,7 +342,7 @@ export default class BloodLayer extends TilesLayer {
       //@ts-expect-error definition missing
       const s = this.get(update._id);
       s.data = mergeObject(s.data, update);
-      s.refresh();
+      s._onUpdate(update);
     });
   }
 
@@ -431,6 +436,7 @@ export default class BloodLayer extends TilesLayer {
       styleData: this.brushStyle,
       x: origin.x,
       y: origin.y,
+      z: this.collection.length,
     } as TileSplatData);
 
     // Mandatory additions

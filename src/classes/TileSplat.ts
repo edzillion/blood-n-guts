@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { BloodNGuts } from '../blood-n-guts';
-import { getUID } from '../module/helpers';
+import { drawDebugRect, drawDebugRect2, getUID } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BloodLayer from './BloodLayer';
@@ -56,7 +56,6 @@ export default class TileSplat extends Tile {
   /** @override */
   async draw(): Promise<any> {
     this.clear();
-
     // Create the outer frame for the border and interaction handles
     this.frame = this.addChild(new PIXI.Container());
     this.frame.border = this.frame.addChild(new PIXI.Graphics());
@@ -70,7 +69,6 @@ export default class TileSplat extends Tile {
     this.tile.img = null;
 
     this.drawBlood();
-
     // const container = new PIXI.Container();
 
     // const style = new PIXI.TextStyle(this.data.styleData);
@@ -130,7 +128,7 @@ export default class TileSplat extends Tile {
     this.hitArea = bounds;
     this.alpha = this.data.hidden ? 0.5 : 1.0;
     this.visible = !this.data.hidden || game.user.isGM;
-
+    // drawDebugRect2(this.x + bounds.x, this.y + bounds.y, bounds.width, bounds.height);
     return this;
   }
 
@@ -221,6 +219,24 @@ export default class TileSplat extends Tile {
     //@ts-expect-error todo: why does it not recognise that layer is returning a BloodLayer?
     await this.layer.updateNonEmbeddedEntity(data, options);
     return this;
+  }
+
+  /** @override */
+  _onUpdate(data) {
+    const changed = new Set(Object.keys(data));
+    if (changed.has('z')) {
+      this.zIndex = parseInt(data.z) || 0;
+    }
+
+    // Release control if the Tile was locked
+    if (data.locked) this.release();
+
+    // Full re-draw or partial refresh
+    if (changed.has('img')) return this.draw();
+    this.refresh();
+
+    // Update the sheet, if it's visible
+    if (this._sheet && this._sheet.rendered) this.sheet.render();
   }
 
   /* interaction */

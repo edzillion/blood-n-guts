@@ -63,6 +63,7 @@ interface TileSplatData extends Tile {
   offset: PIXI.Point;
   maskPolygon: number[];
   brushSettings: BrushSettings;
+  z: number;
 }
 
 interface TokenSplatData {
