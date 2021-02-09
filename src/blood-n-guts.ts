@@ -43,7 +43,7 @@ CONFIG[MODULE_ID] = { logLevel: 2 };
  * @class
  */
 export class BloodNGuts {
-  public static allFontsReady: Promise<any>;
+  public static allFontsReady: Promise<boolean>;
   public static allFonts: SplatFont[];
   public static splatTokens: Record<string, SplatToken>;
   public static scenePool: Array<SplatPoolObject>;

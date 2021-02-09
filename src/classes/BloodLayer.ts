@@ -135,9 +135,11 @@ export default class BloodLayer extends TilesLayer {
     position.y = Math.round(position.y);
 
     if (game.activeTool === 'brush') {
+      //BloodNGuts.allFontsReady.then(() => {
       const data = this.getNewDrawingData(position);
       this.collection.push(data);
       this.draw();
+      //});
     }
 
     // Standard left-click handling
@@ -436,7 +438,7 @@ export default class BloodLayer extends TilesLayer {
       styleData: this.brushStyle,
       x: origin.x,
       y: origin.y,
-      z: this.collection.length,
+      z: 100 + this.collection.length,
     } as TileSplatData);
 
     // Mandatory additions
