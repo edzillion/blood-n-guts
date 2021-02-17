@@ -1,10 +1,19 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import TileSplat from './TileSplat';
-import { computeSightFromPoint, getRandomBoxMuller, getRandomGlyph, getRGBA, getUID } from '../module/helpers';
+import {
+  alignDripsGetOffsetAndDimensions,
+  computeSightFromPoint,
+  getPointOnCurve,
+  getRandomBoxMuller,
+  getRandomGlyph,
+  getRGBA,
+  getUID,
+} from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BrushControls from './BrushControls';
+import SplatToken from './SplatToken';
 
 //@ts-expect-error missing definition
 export default class BloodLayer extends TilesLayer {
@@ -530,5 +539,137 @@ export default class BloodLayer extends TilesLayer {
     this.collection.push(tileSplatData);
     this.draw();
     //BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
+  }
+
+  /**
+   * Generate splats in a trail on the floor behind a moving token.
+   * @category GMOnly
+   * @function
+   * @param {Token} token - the token to generate splats for.
+   * @param {SplatFont} font - the font to use for splats.
+   * @param {number} size - the size of splats.
+   * @param {number[]} distances - distances along the trail from 0 to 1.
+   * @param {number} spread - the distance from centre point to spread the splats.
+   */
+  public generateTrailSplats(
+    splatToken: SplatToken,
+    font: SplatFont,
+    size: number,
+    amount: number,
+    spread: number,
+    distanceTravelled: number,
+  ): void {
+    if (amount < 1) return;
+    log(LogLevel.DEBUG, 'generateTrailSplats');
+    // log(LogLevel.DEBUG, 'generateTrailSplats severity', splatToken.bleedingSeverity);
+
+    const tileSplatData: Partial<TileSplatData> = {};
+    tileSplatData.drips = [];
+    tileSplatData.styleData = {
+      fontFamily: font.name,
+      fontSize: size,
+      fill: splatToken.tokenSettings.bloodColor,
+      align: 'center',
+    };
+    const style = new PIXI.TextStyle(tileSplatData.styleData);
+
+    const distances: number[] = [];
+    for (let i = 1 / amount; i <= 1; i += 1 / amount) {
+      distances.push(i);
+    }
+
+    const rand = getRandomBoxMuller() * spread - spread / 2;
+    log(LogLevel.DEBUG, 'generateTrailSplats rand', rand);
+    // first get the hafway point between the start and end
+    const controlPt = new PIXI.Point(
+      (splatToken.lastPos.x + splatToken.currPos.x) / 2,
+      (splatToken.lastPos.y + splatToken.currPos.y) / 2,
+    );
+
+    const startPt2 = new PIXI.Point(-splatToken.movePos.x / 2, -splatToken.movePos.y / 2);
+    const controlPt2 = new PIXI.Point(0);
+    const endPt2 = new PIXI.Point(splatToken.movePos.x / 2, splatToken.movePos.y / 2);
+
+    // then swap direction y,x to give us a position to the side
+    controlPt.x += splatToken.direction.y * rand;
+    controlPt.y += splatToken.direction.x * rand;
+
+    // randomise endPt of curve
+    const forwardOffset = Math.abs(getRandomBoxMuller() * canvas.grid.size - canvas.grid.size / 2);
+    const lateralOffset = getRandomBoxMuller() * forwardOffset - forwardOffset / 2;
+
+    const endPt = new PIXI.Point(
+      splatToken.currPos.x - splatToken.direction.x * forwardOffset,
+      splatToken.currPos.y - splatToken.direction.y * forwardOffset,
+    );
+
+    if (splatToken.direction.x === 0 || splatToken.direction.y == 0) {
+      endPt.x += lateralOffset * splatToken.direction.y;
+      endPt.y += lateralOffset * splatToken.direction.x;
+    } else {
+      endPt.x += lateralOffset * splatToken.direction.x;
+      endPt.y += lateralOffset * -splatToken.direction.y;
+    }
+    endPt.x = Math.round(endPt.x);
+    endPt.y = Math.round(endPt.y);
+
+    log(LogLevel.DEBUG, 'generateTrailSplats', splatToken.lastPos, controlPt, endPt, rand);
+
+    const lastP = log(LogLevel.DEBUG, 'generateTrailSplats2', splatToken.lastPos, controlPt, endPt, rand);
+
+    // get random glyphs and the interval between each splat
+    // amount is based on density and severity
+    const glyphArray: Array<string> = Array.from({ length: distances.length }, () => getRandomGlyph(font));
+
+    // create our drips for later drawing.
+    for (let i = 0; i < glyphArray.length; i++) {
+      const glyph = glyphArray[i];
+      const tm = PIXI.TextMetrics.measureText(glyph, style);
+      const pt = getPointOnCurve(startPt2, controlPt2, endPt2, distances[i]);
+      tileSplatData.drips.push({
+        x: Math.round(pt.x),
+        y: Math.round(pt.y),
+        angle: Math.round(Math.random() * 360),
+        width: tm.width,
+        height: tm.height,
+        glyph: glyph,
+      });
+    }
+    log(LogLevel.DEBUG, 'generateTrailSplats tileSplatData.drips', tileSplatData.drips);
+
+    //const { dripsOffset, dripsWidth, dripsHeight } = alignDripsGetOffsetAndDimensions(tileSplatData.drips);
+    const tokenCenter = splatToken.getCenter();
+    tileSplatData.offset = new PIXI.Point(0);
+    tileSplatData.x = tokenCenter.x - splatToken.movePos.x / 2;
+    tileSplatData.y = tokenCenter.y - splatToken.movePos.y / 2;
+    tileSplatData.height = 100;
+    tileSplatData.width = 100;
+
+    // account for 45deg rotated drips
+    const maxDistance = Math.max(tileSplatData.width * 1.414, tileSplatData.height * 1.414);
+
+    // const sight = computeSightFromPoint(tokenCenter, 1000);
+    // tileSplatData.maskPolygon = sight;
+
+    // const trailCenter = getPointOnCurve(splatToken.lastPos, controlPt, splatToken.currPos, 0.5);
+    // const moveTo = new PIXI.Point(trailCenter.x - splatToken.currPos.x, trailCenter.y - splatToken.currPos.y);
+    // const sightDist = distanceBetween(splatToken.lastPos, splatToken.currPos) / 2 + fontSize;
+    // const sight = computeSightFromPoint(trailCenter, sightDist);
+    // offset.x -= moveTo.x - 50;
+    // offset.y -= moveTo.y - 50;
+
+    // since we don't want to add the mask to the container yet (as that will
+    // screw up our alignment) we need to move it by editing the x,y points directly
+    // for (let i = 0; i < sight.length; i += 2) {
+    //   sight[i] -= tileSplatData.offset.x;
+    //   sight[i + 1] -= tileSplatData.offset.y;
+    // }
+
+    // tileSplatData.x += tokenCenter.x;
+    //tileSplatData.y += tokenCenter.y;
+    tileSplatData.id = getUID();
+    this.collection.push(tileSplatData as TileSplatData);
+    this.draw();
+    // BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
   }
 }

@@ -115,7 +115,7 @@ export const computeSightFromPoint = (fromPoint: PIXI.Point, range: number): [nu
     density,
     walls,
   );
-  sight.fov.points;
+
   let lowestX = canvas.dimensions.sceneWidth;
   let lowestY = canvas.dimensions.sceneHeight;
 

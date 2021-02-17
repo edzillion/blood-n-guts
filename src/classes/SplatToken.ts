@@ -324,16 +324,28 @@ export default class SplatToken {
 
     if (numSplats < 1) return;
 
-    const distances: number[] = [];
-    for (let i = 1 / numSplats; i <= 1; i += 1 / numSplats) {
-      distances.push(i);
-    }
-    BloodNGuts.generateTrailSplats(
+    // scale the drips based on token size and severity
+    const fontSize = Math.round(
+      this.tokenSettings.trailSplatSize *
+        ((this.spriteWidth + this.spriteHeight) / canvas.grid.size / 2) *
+        this.bleedingSeverity,
+    );
+
+    log(LogLevel.DEBUG, 'generateTrailSplats fontSize', fontSize);
+
+    //todo: improve this
+    //horiz or vert movement
+    const pixelSpread = this.direction.x
+      ? this.spriteWidth * this.tokenSettings.splatSpread * 2
+      : this.spriteHeight * this.tokenSettings.splatSpread * 2;
+
+    canvas.blood.generateTrailSplats(
       this,
       BloodNGuts.allFonts[this.tokenSettings.trailSplatFont],
-      this.tokenSettings.trailSplatSize,
-      distances,
-      this.tokenSettings.splatSpread,
+      fontSize,
+      numSplats,
+      0,
+      distanceBetween(new PIXI.Point(), this.movePos),
     );
     return true;
   }
