@@ -344,7 +344,7 @@ export default class SplatToken {
       BloodNGuts.allFonts[this.tokenSettings.trailSplatFont],
       fontSize,
       numSplats,
-      0,
+      pixelSpread,
       distanceBetween(new PIXI.Point(), this.movePos),
     );
     return true;

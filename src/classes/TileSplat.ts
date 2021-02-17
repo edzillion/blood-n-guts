@@ -75,7 +75,7 @@ export default class TileSplat extends Tile {
 
     const maxDistance = Math.max(bounds.width, bounds.height);
     const center = new PIXI.Point(this.data.x, this.data.y);
-    const sight = computeSightFromPoint(center, 10);
+    const sight = computeSightFromPoint(center, maxDistance);
     this.data.maskPolygon = sight;
     // const style = new PIXI.TextStyle(this.data.styleData);
     // // all scene drips have a .maskPolgyon.
@@ -86,7 +86,7 @@ export default class TileSplat extends Tile {
       sightMask.drawPolygon(this.data.maskPolygon);
       sightMask.endFill();
       this.tile.addChild(sightMask);
-      //this.tile.mask = sightMask;
+      this.tile.mask = sightMask;
     } else {
       log(LogLevel.ERROR, 'drawSceneSplats: dataObject has no .maskPolygon!');
     }
