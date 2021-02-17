@@ -26,8 +26,17 @@ export default class BloodLayer extends TilesLayer {
   objects: PIXI.Container;
   preview: PIXI.Container;
   visible: boolean;
+  pointer: number;
+  historyBuffer: Array<TileSplatData>;
+  lock: any;
+  commitTimer: NodeJS.Timeout;
   constructor() {
     super();
+
+    this._registerKeyboardListeners();
+
+    this.pointer = 0;
+    this.historyBuffer = [];
 
     this.brushSettings = this.DEFAULTS = {
       brushAlpha: 0.7,
@@ -90,6 +99,8 @@ export default class BloodLayer extends TilesLayer {
     //@ts-expect-error definition missing
     this.preview = this.addChild(prevCont) as PIXI.Container;
     this.preview.alpha = this.DEFAULTS.previewAlpha;
+
+    this.renderHistory();
   }
 
   // static getCanvasContainer() {
@@ -138,6 +149,9 @@ export default class BloodLayer extends TilesLayer {
   /** @override */
   _onClickLeft(event: InteractionEvent): void {
     log(LogLevel.INFO, '_onClickLeft createState', event.data.createState);
+    // Don't allow new action if history push still in progress
+    if (this.historyBuffer.length > 0) return;
+
     const position = event.data.getLocalPosition(canvas.app.stage);
     // Round positions to nearest pixel
     position.x = Math.round(position.x);
@@ -150,9 +164,11 @@ export default class BloodLayer extends TilesLayer {
       const font = splatFonts.fonts[this.brushStyle.fontFamily];
 
       const data = this.getNewSplatData(amount, font, position, spread, this.brushStyle);
-      this.collection.push(data);
+      this.renderBrush(data);
       this.draw();
-      //});
+      this.commitTimer = setTimeout(() => {
+        this.commitHistory();
+      }, 300);
     }
 
     // Standard left-click handling
@@ -163,12 +179,14 @@ export default class BloodLayer extends TilesLayer {
   _onDragLeftStart(event: InteractionEvent): void {
     log(LogLevel.INFO, '_onDragLeftStart createState', event.data.createState);
 
+    clearTimeout(this.commitTimer);
+
     // @ts-expect-error definition missing
     const grandparentCall = PlaceablesLayer.prototype._onDragLeftStart.bind(this);
     grandparentCall(event);
 
     // the last TileSplat in the collection should be the one just created by _onClickLeft
-    const data = this.collection.pop();
+    const data = this.historyBuffer[0]; //this.collection.pop();
     this.objects.children.forEach((splat: TileSplat) => {
       if (data._id === splat.id) this.objects.removeChild(splat);
     });
@@ -202,8 +220,8 @@ export default class BloodLayer extends TilesLayer {
     const object = event.data.preview;
     if (object) {
       object.zIndex = object.z || 0;
-      this.collection.push(object.data);
-      this.draw();
+      this.renderBrush(object.data);
+      this.commitHistory().then(() => this.draw());
     }
     // now that we have saved the finished splat we wipe our preview
     this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
@@ -250,10 +268,14 @@ export default class BloodLayer extends TilesLayer {
   /**
    * Wipes all Blood Layer splats
    */
-  wipe(): void {
+  async wipe(): Promise<void> {
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     this.collection = [];
+    await canvas.scene.unsetFlag(MODULE_ID, 'history');
+    await canvas.scene.setFlag(MODULE_ID, 'history', { events: [], pointer: 0 });
+    this.pointer = 0;
+    this.commitHistory();
   }
 
   /** @override */
@@ -536,7 +558,7 @@ export default class BloodLayer extends TilesLayer {
     // splatDataObj.x += tokenCenter.x;
     // splatDataObj.y += tokenCenter.y;
     tileSplatData.maskPolygon = sight;
-    this.collection.push(tileSplatData);
+    this.renderBrush(tileSplatData);
     this.draw();
     //BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
   }
@@ -622,7 +644,145 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.width = 100;
     tileSplatData.id = getUID();
 
-    this.collection.push(tileSplatData as TileSplatData);
+    this.renderBrush(tileSplatData);
     this.draw();
+  }
+
+  /**
+   * Gets a brush using the given parameters, renders it to mask and saves the event to history
+   * @param data {Object}       A collection of brush parameters
+   * @param save {Boolean}      If true, will add the operation to the history buffer
+   */
+  renderBrush(data, save = true) {
+    this.collection.push(data);
+    if (save) this.historyBuffer.push(data);
+  }
+
+  /**
+   * Renders the history stack to the layer
+   * @param history {Array}       A collection of history events
+   * @param start {Number}        The position in the history stack to begin rendering from
+   * @param start {Number}        The position in the history stack to stop rendering
+   */
+  renderHistory(
+    history = canvas.scene.getFlag(MODULE_ID, 'history'),
+    start = this.pointer,
+    stop = canvas.scene.getFlag(MODULE_ID, 'history.pointer'),
+  ): void {
+    // If history is blank, do nothing
+    if (history === undefined) return;
+    // If history is zero, reset scene fog
+    if (history.events.length === 0) this.resetLayer(false);
+    if (start === undefined) start = 0;
+    if (stop === undefined) stop = history.events.length;
+    // If pointer preceeds the stop, reset and start from 0
+    if (stop <= this.pointer) {
+      this.resetLayer(false);
+      start = 0;
+    }
+
+    log(LogLevel.INFO, `Rendering from: ${start} to ${stop}`);
+    // Render all ops starting from pointer
+    for (let i = start; i < stop; i += 1) {
+      for (let j = 0; j < history.events[i].length; j += 1) {
+        this.renderBrush(history.events[i][j], false);
+      }
+    }
+    // Update local pointer
+    this.pointer = stop;
+    this.draw();
+  }
+
+  /**
+   * Add buffered history stack to scene flag and clear buffer
+   */
+  async commitHistory() {
+    // Do nothing if no history to be committed, otherwise get history
+    if (this.historyBuffer.length === 0) return;
+    if (this.lock) return;
+    this.lock = true;
+    let history = canvas.scene.getFlag(MODULE_ID, 'history');
+    // If history storage doesnt exist, create it
+    if (!history) {
+      history = {
+        events: [],
+        pointer: 0,
+      };
+    }
+    // If pointer is less than history length (f.x. user undo), truncate history
+    history.events = history.events.slice(0, history.pointer);
+    // Push the new history buffer to the scene
+    history.events.push(this.historyBuffer);
+    history.pointer = history.events.length;
+    await canvas.scene.unsetFlag(MODULE_ID, 'history');
+    await canvas.scene.setFlag(MODULE_ID, 'history', history);
+    log(LogLevel.INFO, `Pushed ${this.historyBuffer.length} updates.`);
+    // Clear the history buffer
+    this.historyBuffer = [];
+    this.lock = false;
+  }
+
+  /**
+   * Resets the mask of the layer
+   * @param save {Boolean} If true, also resets the layer history
+   */
+  async resetLayer(save) {
+    await this.wipe();
+    if (save) {
+      await canvas.scene.unsetFlag(MODULE_ID, 'history');
+      await canvas.scene.setFlag(MODULE_ID, 'history', { events: [], pointer: 0 });
+    }
+    this.pointer = 0;
+    this.commitHistory();
+  }
+
+  /**
+   * Steps the history buffer back X steps and redraws
+   * @param steps {Integer} Number of steps to undo, default 1
+   */
+  async undo(steps = 1) {
+    log(LogLevel.INFO, `Undoing ${steps} steps.`);
+    // Grab existing history
+    // Todo: this could probably just grab and set the pointer for a slight performance improvement
+    let history = canvas.scene.getFlag(MODULE_ID, 'history');
+    if (!history) {
+      history = {
+        events: [],
+        pointer: 0,
+      };
+    }
+    let newpointer = this.pointer - steps;
+    if (newpointer < 0) newpointer = 0;
+    // Set new pointer & update history
+    history.pointer = newpointer;
+    await canvas.scene.unsetFlag(MODULE_ID, 'history');
+    await canvas.scene.setFlag(MODULE_ID, 'history', history);
+  }
+
+  /**
+   * Adds the keyboard listeners to the layer
+   */
+  _registerKeyboardListeners() {
+    $(document).keydown((event: any) => {
+      // Only react if simplefog layer is active
+      // @ts-expect-error missing def
+      if (ui.controls.activeControl !== 'blood') return;
+      // Don't react if game body isn't target
+      if (event.target.tagName !== 'BODY') return;
+      // if (event.which === 219 && game.activeTool === 'brush') {
+      //   const s = this.getUserSetting('brushSize');
+      //   this.setBrushSize(s * 0.8);
+      // }
+      // if (event.which === 221 && this.activeTool === 'brush') {
+      //   const s = this.getUserSetting('brushSize');
+      //   this.setBrushSize(s * 1.25);
+      // }
+      // React to ctrl+z
+      if (event.which === 90 && event.ctrlKey) {
+        event.stopPropagation();
+        this.undo();
+        this.draw();
+      }
+    });
   }
 }

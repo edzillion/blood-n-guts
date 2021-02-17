@@ -174,7 +174,7 @@ export default class TileSplat extends Tile {
       this.style,
       this.font,
       this.data.brushSettings.brushDensity,
-      this.data.brushSettings.brushSpread,
+      new PIXI.Point(this.data.brushSettings.brushSpread * canvas.grid.size),
       position,
     );
     log(LogLevel.INFO, 'addDrips', drips[0].x, drips[0].y);
