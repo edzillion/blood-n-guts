@@ -58,6 +58,7 @@ interface SplatDripData {
 }
 
 interface TileSplatData extends Tile {
+  id: string;
   drips: SplatDripData[];
   styleData: SplatStyle;
   offset: PIXI.Point;
@@ -82,6 +83,21 @@ interface SplatStyle {
 }
 
 interface BrushSettings {
+  brushAlpha: number;
+  brushColor: string;
+  brushDensity: number;
+  brushFlow: number;
+  brushFont: string;
+  brushOpacity: number;
+  brushRGBA: number;
+  brushSize: number;
+  brushSpread: number;
+  fonts: SplatFont[];
+  previewAlpha: number;
+  visible: boolean;
+}
+
+interface DrawingSettings {
   brushAlpha: number;
   brushColor: string;
   brushDensity: number;

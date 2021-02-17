@@ -437,37 +437,28 @@ export class BloodNGuts {
   public static generateDrips(
     style: PIXI.TextStyle,
     font: SplatFont,
-    density: number,
-    spread: number,
+    amount: number,
+    spread: PIXI.Point,
     origin: PIXI.Point,
   ): SplatDripData[] {
-    if (!density) return;
+    if (amount < 1) return;
     log(LogLevel.DEBUG, 'generateDrips');
-
-    //const tileSplatData: Partial<TileSplatData> = {};
 
     const drips: SplatDripData[] = [];
 
-    // todo: move this into token
-    // const fontSize = Math.round(
-    //   size * ((splatToken.spriteWidth + splatToken.spriteWidth) / canvas.grid.size / 2) * splatToken.hitSeverity,
-    // );
-
     // get a random glyph and then get a random (x,y) spread away from the token.
-    const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
-    const pixelSpreadX = canvas.grid.size * spread;
-    const pixelSpreadY = canvas.grid.size * spread;
-    log(LogLevel.DEBUG, 'generateDrips density', density);
-    log(LogLevel.DEBUG, 'generateDrips pixelSpread', pixelSpreadX, pixelSpreadY);
+    const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
+    log(LogLevel.DEBUG, 'generateDrips density', amount);
+    log(LogLevel.DEBUG, 'generateDrips pixelSpread', spread.x, spread.y);
 
     // create our splats for later drawing.
     glyphArray.forEach((glyph) => {
       const tm = PIXI.TextMetrics.measureText(glyph, style);
-      // const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
-      //const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
+      const randX = (getRandomBoxMuller() * 2 - 1) * spread.x;
+      const randY = (getRandomBoxMuller() * 2 - 1) * spread.y;
       const dripData: SplatDripData = {
-        x: origin.x, //Math.round(randX - origin.x / 2),
-        y: origin.y, //Math.round(randY - origin.y / 2),
+        x: Math.round(origin.x + randX),
+        y: Math.round(origin.y + randY),
         angle: Math.round(Math.random() * 360),
         width: Math.round(tm.width),
         height: Math.round(tm.height),

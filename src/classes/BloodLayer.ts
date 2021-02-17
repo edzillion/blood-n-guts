@@ -1,7 +1,7 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import TileSplat from './TileSplat';
-import { getRGBA } from '../module/helpers';
+import { computeSightFromPoint, getRandomBoxMuller, getRandomGlyph, getRGBA, getUID } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BrushControls from './BrushControls';
@@ -136,7 +136,11 @@ export default class BloodLayer extends TilesLayer {
 
     if (game.activeTool === 'brush') {
       //BloodNGuts.allFontsReady.then(() => {
-      const data = this.getNewDrawingData(position);
+      const spread = new PIXI.Point(canvas.grid.size * this.brushSettings.brushSpread);
+      const amount = this.brushSettings.brushDensity;
+      const font = splatFonts.fonts[this.brushStyle.fontFamily];
+
+      const data = this.getNewSplatData(amount, font, position, spread, this.brushStyle);
       this.collection.push(data);
       this.draw();
       //});
@@ -414,6 +418,38 @@ export default class BloodLayer extends TilesLayer {
     });
   }
 
+  // /**
+  //  * Get initial data for a new drawing.
+  //  * Start with some global defaults, apply user default config, then apply mandatory overrides per tool.
+  //  * @param {Object} origin     The initial coordinate
+  //  * @return {Object}           The new drawing data
+  //  * @private
+  //  */
+  // private getNewDrawingData(origin: PIXI.Point): TileSplatData {
+  //   const textStyle = new PIXI.TextStyle(this.brushStyle);
+  //   const font = splatFonts.fonts[this.brushStyle.fontFamily];
+  //   const defaults = duplicate(this.DEFAULTS_TILESPLAT);
+
+  //   const tileData = mergeObject(defaults, {
+  //     // each splat has at least one drip
+  //     drips: BloodNGuts.generateDrips(
+  //       textStyle,
+  //       font,
+  //       this.brushSettings.brushDensity,
+  //       this.brushSettings.brushSpread,
+  //       new PIXI.Point(0),
+  //     ),
+  //     styleData: this.brushStyle,
+  //     x: origin.x,
+  //     y: origin.y,
+  //     z: 100 + this.collection.length,
+  //   } as TileSplatData);
+
+  //   // Mandatory additions
+  //   tileData.author = game.user._id;
+  //   return tileData;
+  // }
+
   /**
    * Get initial data for a new drawing.
    * Start with some global defaults, apply user default config, then apply mandatory overrides per tool.
@@ -421,24 +457,23 @@ export default class BloodLayer extends TilesLayer {
    * @return {Object}           The new drawing data
    * @private
    */
-  private getNewDrawingData(origin: PIXI.Point): TileSplatData {
-    const textStyle = new PIXI.TextStyle(this.brushStyle);
-    const font = splatFonts.fonts[this.brushStyle.fontFamily];
+  private getNewSplatData(
+    amount: number,
+    font: SplatFont,
+    origin: PIXI.Point,
+    spread: PIXI.Point,
+    style: SplatStyle,
+  ): TileSplatData {
     const defaults = duplicate(this.DEFAULTS_TILESPLAT);
 
     const tileData = mergeObject(defaults, {
       // each splat has at least one drip
-      drips: BloodNGuts.generateDrips(
-        textStyle,
-        font,
-        this.brushSettings.brushDensity,
-        this.brushSettings.brushSpread,
-        new PIXI.Point(0),
-      ),
-      styleData: this.brushStyle,
+      drips: BloodNGuts.generateDrips(new PIXI.TextStyle(style), font, amount, spread, new PIXI.Point(0)),
+      styleData: style,
       x: origin.x,
       y: origin.y,
       z: 100 + this.collection.length,
+      id: getUID(),
     } as TileSplatData);
 
     // Mandatory additions
@@ -449,5 +484,51 @@ export default class BloodLayer extends TilesLayer {
   createBrushControls(): void {
     // @ts-expect-error bad def
     this.brushControls = new BrushControls().render(true);
+  }
+
+  /**
+   * Generate splats on the floor beneath a token.
+   * @category GMOnly
+   * @function
+   * @param {Token} token - the token to generate splats for.
+   * @param {SplatFont} font - the font to use for splats.
+   * @param {number} size - the size of splats.
+   * @param {number} density - the amount of splats.
+   * @param {number} spread - the distance from centre point to spread the splats.
+   */
+  public generateFloorSplats(
+    color: string,
+    font: SplatFont,
+    size: number,
+    amount: number,
+    spread: PIXI.Point,
+    origin: PIXI.Point,
+  ): TileSplatData {
+    if (amount < 1) return;
+    log(LogLevel.DEBUG, 'generateFloorSplats fontSize', size);
+    const styleData = {
+      fontFamily: font.name,
+      fontSize: size,
+      fill: color,
+      align: 'center',
+    };
+    const tileSplatData: TileSplatData = this.getNewSplatData(amount, font, origin, spread, styleData);
+
+    const maxDistance = Math.max(250, 250);
+    const sight = computeSightFromPoint(origin, maxDistance);
+
+    // // since we don't want to add the mask to the container yet (as that will
+    // // screw up our alignment) we need to move it by editing the x,y points directly
+    // for (let i = 0; i < sight.length; i += 2) {
+    //   sight[i] -= splatDataObj.offset.x;
+    //   sight[i + 1] -= splatDataObj.offset.y;
+    // }
+
+    // splatDataObj.x += tokenCenter.x;
+    // splatDataObj.y += tokenCenter.y;
+    tileSplatData.maskPolygon = sight;
+    this.collection.push(tileSplatData);
+    this.draw();
+    //BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
   }
 }

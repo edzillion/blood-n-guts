@@ -278,15 +278,30 @@ export default class SplatToken {
    * @function
    */
   private bleedFloor(): void {
-    const density = this.tokenSettings.floorSplatDensity;
-    if (!density) return;
+    if (!this.tokenSettings.floorSplatDensity) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler damageScale > 0:' + this.id + ' - bleeding:true');
-    BloodNGuts.generateFloorSplats(
-      this,
+
+    // scale the splats based on token size and severity
+    const fontSize = Math.round(
+      this.tokenSettings.floorSplatSize *
+        ((this.spriteWidth + this.spriteHeight) / canvas.grid.size / 2) *
+        this.hitSeverity,
+    );
+
+    const spreadPt = new PIXI.Point(
+      Math.round((this.spriteWidth * this.tokenSettings.splatSpread) / 2),
+      Math.round((this.spriteHeight * this.tokenSettings.splatSpread) / 2),
+    );
+
+    const amountOfDrips = Math.round(this.tokenSettings.floorSplatDensity * this.hitSeverity);
+
+    canvas.blood.generateFloorSplats(
+      this.tokenSettings.bloodColor,
       BloodNGuts.allFonts[this.tokenSettings.floorSplatFont],
-      this.tokenSettings.floorSplatSize,
-      Math.round(density),
-      this.tokenSettings.splatSpread,
+      fontSize,
+      amountOfDrips,
+      spreadPt,
+      this.getCenter(),
     );
   }
 
