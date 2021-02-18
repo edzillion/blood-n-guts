@@ -101,7 +101,7 @@ export default class BloodLayer extends TilesLayer {
     this.preview.alpha = this.DEFAULTS.previewAlpha;
 
     this.resetLayer(true);
-    this.renderHistory();
+    //this.renderHistory();
   }
 
   // static getCanvasContainer() {
@@ -325,6 +325,7 @@ export default class BloodLayer extends TilesLayer {
 
     // Structure the input data
     data = data instanceof Array ? data : [data];
+    if (data.length < 1) return;
     const ids = new Set(data);
 
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
@@ -710,10 +711,7 @@ export default class BloodLayer extends TilesLayer {
    * @param save {Boolean}      If true, will add the operation to the history buffer
    */
   renderBrush(data, save = true) {
-    //this.collection.push(data);
-    const obj = this.createObject(data);
-    obj.draw();
-
+    this.createObject(data).draw();
     if (save) this.historyBuffer.push(data);
   }
 
@@ -744,6 +742,8 @@ export default class BloodLayer extends TilesLayer {
     // Render all ops starting from pointer
     for (let i = start; i < stop; i += 1) {
       for (let j = 0; j < history.events[i].length; j += 1) {
+        // skip TokenSplats
+        if (history.events[i][j].tokenId) continue;
         this.renderBrush(history.events[i][j], false);
       }
     }
@@ -767,8 +767,7 @@ export default class BloodLayer extends TilesLayer {
         pointer: 0,
       };
     }
-    // If pointer is less than history length (f.x. user undo), truncate history
-    history.events = history.events.slice(0, history.pointer);
+
     // Push the new history buffer to the scene
     history.events.push(this.historyBuffer);
     history.pointer = history.events.length;
@@ -810,8 +809,32 @@ export default class BloodLayer extends TilesLayer {
     }
     let newpointer = this.pointer - steps;
     if (newpointer < 0) newpointer = 0;
+
     // Set new pointer & update history
     history.pointer = newpointer;
+
+    // If pointer is less than history length (f.x. user undo), truncate history
+    if (history.events.length > history.pointer) {
+      // if any are TokenSplats then remove from SplatToken
+      const tokenSplats = [];
+      for (let i = history.pointer; i < history.events.length; i++) {
+        tokenSplats.push(...history.events[i].filter((s) => s.tokenId));
+      }
+      const tokenSplatsToRemove = {};
+      tokenSplats.forEach((s) => {
+        if (!tokenSplatsToRemove[s.tokenId]) tokenSplatsToRemove[s.tokenId] = [s.id];
+        else tokenSplatsToRemove[s.tokenId].push(s.id);
+      });
+
+      for (const tokenId in tokenSplatsToRemove) {
+        const splatToken = BloodNGuts.splatTokens[tokenId];
+        if (!splatToken) log(LogLevel.ERROR, 'undo() token not found!');
+        const splats = splatToken.tokenSplats.filter((s) => !tokenSplatsToRemove[tokenId].includes(s.id));
+        splatToken.token.update({ flags: { [MODULE_ID]: { splats: splats } } }, { diff: false });
+      }
+      history.events = history.events.slice(0, history.pointer);
+    }
+
     await canvas.scene.unsetFlag(MODULE_ID, 'history');
     await canvas.scene.setFlag(MODULE_ID, 'history', history);
   }

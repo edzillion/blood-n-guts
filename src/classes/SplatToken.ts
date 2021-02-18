@@ -36,7 +36,7 @@ export default class SplatToken {
   public container: PIXI.Container;
 
   public token: Token;
-  private tokenSplats: Array<SplatDataObject>;
+  public tokenSplats: Array<SplatDataObject>;
   private bleedingDistance: number;
 
   public tokenSettings: any;
@@ -351,7 +351,7 @@ export default class SplatToken {
   }
 
   /**
-   * Generates a blood trail on this token and returns the `SplatDataObject`s
+   * Generates a blood splat on this token and returns the `SplatDataObject`s
    * @category GMOnly
    * @function
    * @returns {SplatDataObject[]} - the array of updated `SplatDataObject`s
@@ -591,16 +591,31 @@ export default class SplatToken {
    * @category GMandPC
    * @function
    */
-  public draw(): void {
+  public draw(): Promise<void> {
     log(LogLevel.DEBUG, 'tokenSplat: draw');
     this.wipeSplats();
+
+    const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    const extantHistoryIds =
+      history.events?.length < 1
+        ? []
+        : history.events
+            .flat()
+            .filter((s) => s.tokenId === this.id)
+            .map((s) => s.id);
+    const extantTokenIds = this.tokenSplats?.length < 1 ? [] : this.tokenSplats.map((ts) => ts.id);
+
+    extantTokenIds
+      .filter((id) => !extantHistoryIds.includes(id))
+      .forEach((id) => {
+        canvas.blood.historyBuffer.push({ id: id, tokenId: this.id });
+      });
+    const removeIds = extantHistoryIds.filter((id) => !extantTokenIds.includes(id));
+    canvas.blood.commitHistory().then(canvas.blood.deleteMany(removeIds));
+
     // @ts-ignore
     if (!this.tokenSplats || !this.tokenSplats.length) return;
-    const extantTokenSplatIds = this.tokenSplats.map((ts) => ts.id);
-    BloodNGuts.scenePool = BloodNGuts.scenePool.filter(
-      (p) => p.data.tokenId !== this.id || (p.data.tokenId === this.id && extantTokenSplatIds.includes(p.data.id)),
-    );
-    const extantScenePoolSplatIds = BloodNGuts.scenePool.map((p) => p.data.id);
+
     BloodNGuts.allFontsReady.then(() => {
       this.tokenSplats.forEach((splatData) => {
         splatData.splats.forEach((splat) => {
@@ -611,8 +626,6 @@ export default class SplatToken {
           text.angle = splat.angle;
           this.container.addChild(text);
         });
-        if (!extantScenePoolSplatIds.includes(splatData.id))
-          BloodNGuts.scenePool.push({ data: splatData, container: this.container });
       });
     });
   }
