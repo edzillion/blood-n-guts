@@ -507,7 +507,7 @@ export default class BloodLayer extends TilesLayer {
 
     const tileData = mergeObject(defaults, {
       // each splat has at least one drip
-      drips: BloodNGuts.generateDrips(new PIXI.TextStyle(style), font, amount, spread, new PIXI.Point(0)),
+      drips: this.generateDrips(new PIXI.TextStyle(style), font, amount, spread, new PIXI.Point(0)),
       styleData: style,
       x: origin.x,
       y: origin.y,
@@ -656,6 +656,52 @@ export default class BloodLayer extends TilesLayer {
     this.historyBuffer.push(tileSplatData as TileSplatData);
     this.commitHistory();
     //this.draw();
+  }
+
+  /**
+   * Generate splats on the floor beneath a token.
+   * @category GMOnly
+   * @function
+   * @param {Token} token - the token to generate splats for.
+   * @param {SplatFont} font - the font to use for splats.
+   * @param {number} size - the size of splats.
+   * @param {number} density - the amount of splats.
+   * @param {number} spread - the distance from centre point to spread the splats.
+   */
+  public generateDrips(
+    style: PIXI.TextStyle,
+    font: SplatFont,
+    amount: number,
+    spread: PIXI.Point,
+    origin: PIXI.Point,
+  ): SplatDripData[] {
+    if (amount < 1) return;
+    log(LogLevel.DEBUG, 'generateDrips');
+
+    const drips: SplatDripData[] = [];
+
+    // get a random glyph and then get a random (x,y) spread away from the token.
+    const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
+    log(LogLevel.DEBUG, 'generateDrips density', amount);
+    log(LogLevel.DEBUG, 'generateDrips pixelSpread', spread.x, spread.y);
+
+    // create our splats for later drawing.
+    glyphArray.forEach((glyph) => {
+      const tm = PIXI.TextMetrics.measureText(glyph, style);
+      const randX = (getRandomBoxMuller() * 2 - 1) * spread.x;
+      const randY = (getRandomBoxMuller() * 2 - 1) * spread.y;
+      const dripData: SplatDripData = {
+        x: Math.round(origin.x + randX),
+        y: Math.round(origin.y + randY),
+        angle: Math.round(Math.random() * 360),
+        width: Math.round(tm.width),
+        height: Math.round(tm.height),
+        glyph: glyph,
+      };
+      drips.push(dripData);
+    });
+
+    return drips;
   }
 
   /**

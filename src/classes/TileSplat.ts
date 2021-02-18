@@ -170,7 +170,7 @@ export default class TileSplat extends Tile {
   }
 
   private addDrips(position: PIXI.Point): void {
-    const drips = BloodNGuts.generateDrips(
+    const drips = canvas.blood.generateDrips(
       this.style,
       this.font,
       this.data.brushSettings.brushDensity,
