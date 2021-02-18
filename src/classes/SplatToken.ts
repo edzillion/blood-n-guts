@@ -597,12 +597,12 @@ export default class SplatToken {
 
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
     const extantHistoryIds =
-      history.events?.length < 1
-        ? []
-        : history.events
+      history && history.events?.length > 0
+        ? history.events
             .flat()
             .filter((s) => s.tokenId === this.id)
-            .map((s) => s.id);
+            .map((s) => s.id)
+        : [];
     const extantTokenIds = this.tokenSplats?.length < 1 ? [] : this.tokenSplats.map((ts) => ts.id);
 
     extantTokenIds

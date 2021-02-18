@@ -329,9 +329,7 @@ export default class BloodLayer extends TilesLayer {
     const ids = new Set(data);
 
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    history.events = history.events
-      .map((e) => e.filter((splat) => !ids.has(splat._id)))
-      .filter((arr) => arr.length > 0);
+    history.events = history.events.filter((splat) => !ids.has(splat._id));
     history.pointer = history.events.length;
 
     await canvas.scene.unsetFlag(MODULE_ID, 'history');
@@ -366,8 +364,7 @@ export default class BloodLayer extends TilesLayer {
 
     // Difference each update against existing data
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    const collection = history.events.flat();
-    const updates = collection.reduce((arr, d) => {
+    const updates = history.events.reduce((arr, d) => {
       if (!pending.has(d._id)) return arr;
       let update = pending.get(d._id);
 
@@ -567,7 +564,10 @@ export default class BloodLayer extends TilesLayer {
     // splatDataObj.x += tokenCenter.x;
     // splatDataObj.y += tokenCenter.y;
     tileSplatData.maskPolygon = sight;
-    this.historyBuffer.push(tileSplatData);
+    const tileSplat = new TileSplat(tileSplatData);
+    tileSplat.name = 'Floor Splat';
+
+    this.historyBuffer.push(tileSplat.data);
     this.commitHistory();
     //this.draw();
     //BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
@@ -654,7 +654,10 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.width = 100;
     tileSplatData.id = getUID();
 
-    this.historyBuffer.push(tileSplatData as TileSplatData);
+    const tileSplat = new TileSplat(tileSplatData as TileSplatData);
+    tileSplat.name = 'Trail Splat';
+
+    this.historyBuffer.push(tileSplat.data);
     this.commitHistory();
     //this.draw();
   }
@@ -733,7 +736,7 @@ export default class BloodLayer extends TilesLayer {
     if (start === undefined) start = 0;
     if (stop === undefined) stop = history.events.length;
     // If pointer preceeds the stop, reset and start from 0
-    if (stop <= this.pointer) {
+    if (stop <= start) {
       this.resetLayer(false);
       start = 0;
     }
@@ -741,11 +744,9 @@ export default class BloodLayer extends TilesLayer {
     log(LogLevel.INFO, `Rendering from: ${start} to ${stop}`);
     // Render all ops starting from pointer
     for (let i = start; i < stop; i += 1) {
-      for (let j = 0; j < history.events[i].length; j += 1) {
-        // skip TokenSplats
-        if (history.events[i][j].tokenId) continue;
-        this.renderBrush(history.events[i][j], false);
-      }
+      // skip TokenSplats
+      if (history.events[i].tokenId) continue;
+      this.renderBrush(history.events[i], false);
     }
     // Update local pointer
     this.pointer = stop;
@@ -760,6 +761,7 @@ export default class BloodLayer extends TilesLayer {
     if (this.lock) return;
     this.lock = true;
     let history = canvas.scene.getFlag(MODULE_ID, 'history');
+    const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
     // If history storage doesnt exist, create it
     if (!history) {
       history = {
@@ -767,10 +769,30 @@ export default class BloodLayer extends TilesLayer {
         pointer: 0,
       };
     }
-
     // Push the new history buffer to the scene
-    history.events.push(this.historyBuffer);
+    history.events.push(...this.historyBuffer);
     history.pointer = history.events.length;
+
+    if (history.events.length > maxPoolSize) {
+      // remove the oldest splats
+      const numToRemove = history.events.length - maxPoolSize;
+      log(LogLevel.INFO, 'renderHistory truncating history ', numToRemove);
+      history.events.splice(0, numToRemove);
+      history.pointer = history.events.length;
+    }
+
+    const fadedPoolSize = history.events.length - Math.round(maxPoolSize * 0.85);
+    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
+    log(LogLevel.INFO, 'getTrimmedSceneSplats sizes curr, max', history.events.length, maxPoolSize);
+
+    // 15% of splats will be set to fade. 1/3rd of those will be very faded
+    if (fadedPoolSize > 0) {
+      for (let i = 0; i < fadedPoolSize; i++) {
+        const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
+        history.events[i].alpha = alpha;
+      }
+    }
+
     await canvas.scene.unsetFlag(MODULE_ID, 'history');
     await canvas.scene.setFlag(MODULE_ID, 'history', history);
     log(LogLevel.INFO, `Pushed ${this.historyBuffer.length} updates.`);
@@ -816,12 +838,8 @@ export default class BloodLayer extends TilesLayer {
     // If pointer is less than history length (f.x. user undo), truncate history
     if (history.events.length > history.pointer) {
       // if any are TokenSplats then remove from SplatToken
-      const tokenSplats = [];
-      for (let i = history.pointer; i < history.events.length; i++) {
-        tokenSplats.push(...history.events[i].filter((s) => s.tokenId));
-      }
       const tokenSplatsToRemove = {};
-      tokenSplats.forEach((s) => {
+      history.events.slice(history.pointer).forEach((s) => {
         if (!tokenSplatsToRemove[s.tokenId]) tokenSplatsToRemove[s.tokenId] = [s.id];
         else tokenSplatsToRemove[s.tokenId].push(s.id);
       });
