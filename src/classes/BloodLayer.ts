@@ -78,7 +78,7 @@ export default class BloodLayer extends TilesLayer {
     };
 
     // React to changes to current scene
-    // Hooks.on('updateScene', (scene, data) => this.updateSceneHandler(scene, data));
+    Hooks.on('updateScene', (scene, data) => this.updateSceneHandler(scene, data));
     // this.layer = BloodLayer.getCanvasContainer();
     // this.addChild(this.layer);
   }
@@ -100,6 +100,7 @@ export default class BloodLayer extends TilesLayer {
     this.preview = this.addChild(prevCont) as PIXI.Container;
     this.preview.alpha = this.DEFAULTS.previewAlpha;
 
+    this.resetLayer(true);
     this.renderHistory();
   }
 
@@ -164,8 +165,8 @@ export default class BloodLayer extends TilesLayer {
       const font = splatFonts.fonts[this.brushStyle.fontFamily];
 
       const data = this.getNewSplatData(amount, font, position, spread, this.brushStyle);
-      this.renderBrush(data);
-      this.draw();
+      //this.renderBrush(data);
+      this.historyBuffer.push(data);
       this.commitTimer = setTimeout(() => {
         this.commitHistory();
       }, 300);
@@ -220,8 +221,9 @@ export default class BloodLayer extends TilesLayer {
     const object = event.data.preview;
     if (object) {
       object.zIndex = object.z || 0;
-      this.renderBrush(object.data);
-      this.commitHistory().then(() => this.draw());
+      //this.renderBrush(object.data);
+      this.historyBuffer.push(object.data);
+      this.commitHistory();
     }
     // now that we have saved the finished splat we wipe our preview
     this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
@@ -272,10 +274,6 @@ export default class BloodLayer extends TilesLayer {
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     this.collection = [];
-    await canvas.scene.unsetFlag(MODULE_ID, 'history');
-    await canvas.scene.setFlag(MODULE_ID, 'history', { events: [], pointer: 0 });
-    this.pointer = 0;
-    this.commitHistory();
   }
 
   /** @override */
@@ -323,19 +321,27 @@ export default class BloodLayer extends TilesLayer {
   }
 
   async deleteMany(data: string[] | string, options = {}): Promise<void> {
-    const collection = this.collection;
     const user = game.user;
 
     // Structure the input data
     data = data instanceof Array ? data : [data];
     const ids = new Set(data);
 
-    this.collection = collection.filter((splat) => !ids.has(splat._id));
+    const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    history.events = history.events
+      .map((e) => e.filter((splat) => !ids.has(splat._id)))
+      .filter((arr) => arr.length > 0);
+    history.pointer = history.events.length;
+
+    await canvas.scene.unsetFlag(MODULE_ID, 'history');
+    await canvas.scene.setFlag(MODULE_ID, 'history', history);
+    log(LogLevel.INFO, `deleteMany: history size now ${history.events.length}.`);
+
     // @ts-expect-error todo this
     if (this.hud) this.hud.clear();
     // @ts-expect-error todo this
     this.releaseAll();
-    this.draw();
+    //this.draw();
   }
 
   async updateMany(data: Partial<TileSplatData>, options = {} as { diff: boolean }): Promise<void> {
@@ -358,7 +364,9 @@ export default class BloodLayer extends TilesLayer {
     }
 
     // Difference each update against existing data
-    const updates = this.collection.reduce((arr, d) => {
+    const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    const collection = history.events.flat();
+    const updates = collection.reduce((arr, d) => {
       if (!pending.has(d._id)) return arr;
       let update = pending.get(d._id);
 
@@ -558,8 +566,9 @@ export default class BloodLayer extends TilesLayer {
     // splatDataObj.x += tokenCenter.x;
     // splatDataObj.y += tokenCenter.y;
     tileSplatData.maskPolygon = sight;
-    this.renderBrush(tileSplatData);
-    this.draw();
+    this.historyBuffer.push(tileSplatData);
+    this.commitHistory();
+    //this.draw();
     //BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
   }
 
@@ -644,8 +653,9 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.width = 100;
     tileSplatData.id = getUID();
 
-    this.renderBrush(tileSplatData);
-    this.draw();
+    this.historyBuffer.push(tileSplatData as TileSplatData);
+    this.commitHistory();
+    //this.draw();
   }
 
   /**
@@ -654,7 +664,10 @@ export default class BloodLayer extends TilesLayer {
    * @param save {Boolean}      If true, will add the operation to the history buffer
    */
   renderBrush(data, save = true) {
-    this.collection.push(data);
+    //this.collection.push(data);
+    const obj = this.createObject(data);
+    obj.draw();
+
     if (save) this.historyBuffer.push(data);
   }
 
@@ -690,7 +703,6 @@ export default class BloodLayer extends TilesLayer {
     }
     // Update local pointer
     this.pointer = stop;
-    this.draw();
   }
 
   /**
@@ -731,9 +743,8 @@ export default class BloodLayer extends TilesLayer {
     if (save) {
       await canvas.scene.unsetFlag(MODULE_ID, 'history');
       await canvas.scene.setFlag(MODULE_ID, 'history', { events: [], pointer: 0 });
+      this.pointer = 0;
     }
-    this.pointer = 0;
-    this.commitHistory();
   }
 
   /**
@@ -781,8 +792,27 @@ export default class BloodLayer extends TilesLayer {
       if (event.which === 90 && event.ctrlKey) {
         event.stopPropagation();
         this.undo();
-        this.draw();
       }
     });
+  }
+
+  /* -------------------------------------------- */
+  /*  Event Listeners and Handlers                */
+  /* -------------------------------------------- */
+
+  /**
+   * React to updates of canvas.scene flags
+   */
+  updateSceneHandler(scene, data): void {
+    // Check if update applies to current viewed scene
+    if (!scene._view) return;
+    // React to visibility change
+    if (hasProperty(data, `flags.${MODULE_ID}.visible`)) {
+      canvas.blood.visible = data.flags[MODULE_ID].visible;
+    }
+    // React to composite history change
+    if (hasProperty(data, `flags.${MODULE_ID}.history`)) {
+      canvas.blood.renderHistory(data.flags[MODULE_ID].history);
+    }
   }
 }
