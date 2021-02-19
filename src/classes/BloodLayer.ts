@@ -54,7 +54,7 @@ export default class BloodLayer extends TilesLayer {
     };
 
     this.DEFAULTS_TILESPLAT = {
-      alpha: 0.7,
+      alpha: 1,
       width: 0,
       height: 0,
       // @ts-expect-error bad def
@@ -100,7 +100,7 @@ export default class BloodLayer extends TilesLayer {
     this.preview = this.addChild(prevCont) as PIXI.Container;
     this.preview.alpha = this.DEFAULTS.previewAlpha;
 
-    this.resetLayer(true);
+    this.wipeLayer(true);
     //this.renderHistory();
   }
 
@@ -267,15 +267,6 @@ export default class BloodLayer extends TilesLayer {
     this.setSetting(true, 'visible', !v);
   }
 
-  /**
-   * Wipes all Blood Layer splats
-   */
-  async wipe(): Promise<void> {
-    this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
-    this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
-    this.collection = [];
-  }
-
   /** @override */
   async activate(): Promise<BloodLayer> {
     this.loadSceneSettings();
@@ -329,7 +320,7 @@ export default class BloodLayer extends TilesLayer {
     const ids = new Set(data);
 
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    history.events = history.events.filter((splat) => !ids.has(splat._id));
+    history.events = history.events.filter((splat) => !ids.has(splat._id) && !ids.has(splat.tokenId));
     history.pointer = history.events.length;
 
     await canvas.scene.unsetFlag(MODULE_ID, 'history');
@@ -730,12 +721,12 @@ export default class BloodLayer extends TilesLayer {
     // If history is blank, do nothing
     if (history === undefined) return;
     // If history is zero, reset scene fog
-    if (history.events.length === 0) this.resetLayer(false);
+    if (history.events.length === 0) this.wipeLayer(false);
     if (start === undefined) start = 0;
     if (stop === undefined) stop = history.events.length;
     // If pointer preceeds the stop, reset and start from 0
     if (stop <= start) {
-      this.resetLayer(false);
+      this.wipeLayer(false);
       start = 0;
     }
 
@@ -803,11 +794,12 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Resets the mask of the layer
-   * @param save {Boolean} If true, also resets the layer history
+   * Wipes all blood splats from the layer
+   * @param save {Boolean} If true, also wipes the layer history
    */
-  async resetLayer(save) {
-    await this.wipe();
+  async wipeLayer(save) {
+    this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
+    this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     if (save) {
       await canvas.scene.unsetFlag(MODULE_ID, 'history');
       await canvas.scene.setFlag(MODULE_ID, 'history', { events: [], pointer: 0 });

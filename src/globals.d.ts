@@ -29,23 +29,6 @@ interface TokenSettings extends ViolenceLevel {
   bloodColor: string;
 }
 
-interface SplatPoolObject {
-  data: SplatDataObject;
-  container?: PIXI.Container;
-}
-
-interface SplatDataObject {
-  id: string;
-  x: number;
-  y: number;
-  styleData: any;
-  splats: Array<any>;
-  offset: PIXI.Point;
-  maskPolygon?: Array<number>;
-  tokenId?: string;
-  alpha?: number;
-}
-
 type SplatData = TileSplatData | TokenSplatData;
 
 interface SplatDripData {
@@ -67,12 +50,8 @@ interface TileSplatData extends Tile {
   z: number;
 }
 
-interface TokenSplatData {
-  _id?: string;
-  id?: string;
-  alpha?: number;
+interface TokenSplatData extends TileSplatData {
   tokenId: string;
-  drips: SplatDripData[];
 }
 
 interface SplatStyle {

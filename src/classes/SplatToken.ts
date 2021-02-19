@@ -36,7 +36,7 @@ export default class SplatToken {
   public container: PIXI.Container;
 
   public token: Token;
-  public tokenSplats: Array<SplatDataObject>;
+  public tokenSplats: Array<TokenSplatData>;
   private bleedingDistance: number;
 
   public tokenSettings: any;
@@ -169,7 +169,7 @@ export default class SplatToken {
    * @param updatedSplats - the latest token splat data.
    * @function
    */
-  public updateSplats(updatedSplats: SplatDataObject[]): void {
+  public updateSplats(updatedSplats: TokenSplatData[]): void {
     if (this.disabled || JSON.stringify(updatedSplats) === JSON.stringify(this.tokenSplats)) return;
     this.tokenSplats = updatedSplats || [];
     this.draw();
@@ -351,13 +351,13 @@ export default class SplatToken {
   }
 
   /**
-   * Generates a blood splat on this token and returns the `SplatDataObject`s
+   * Generates a blood splat on this token and returns the `TokenSplatData`s
    * @category GMOnly
    * @function
-   * @returns {SplatDataObject[]} - the array of updated `SplatDataObject`s
+   * @returns {TokenSplatData[]} - the array of updated `TokenSplatData`s
    */
-  private bleedToken(): SplatDataObject[] {
-    const splatDataObj: Partial<SplatDataObject> = {};
+  private bleedToken(): TokenSplatData[] {
+    const splatDataObj: Partial<TokenSplatData> = {};
     const density = this.tokenSettings.tokenSplatDensity;
     if (density === 0) return;
 
@@ -412,7 +412,7 @@ export default class SplatToken {
     splatDataObj.tokenId = this.id;
 
     const updatedSplats = duplicate(this.tokenSplats);
-    updatedSplats.push(<SplatDataObject>splatDataObj);
+    updatedSplats.push(<TokenSplatData>splatDataObj);
     return updatedSplats;
   }
 
@@ -420,9 +420,9 @@ export default class SplatToken {
    * Removes token splats from our splat container based on scale of healing.
    * @category GMOnly
    * @function
-   * @returns {SplatDataObject[]} - the array of updated `SplatDataObject`s
+   * @returns {TokenSplatData[]} - the array of updated `TokenSplatData`s
    */
-  private healToken(): SplatDataObject[] {
+  private healToken(): TokenSplatData[] {
     // make positive for sanity purposes
     const tempSeverity = this.hitSeverity * -1;
     // deal with scale/healthThreshold > 1. We can only heal to 100%

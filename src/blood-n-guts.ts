@@ -40,14 +40,12 @@ export class BloodNGuts {
   public static allFontsReady: Promise<boolean>;
   public static allFonts: SplatFont[];
   public static splatTokens: Record<string, SplatToken>;
-  public static scenePool: Array<SplatPoolObject>;
   public static disabled: boolean;
   public static paintActive: boolean;
   public static layer: BloodLayer;
 
   public static initialize(): void {
     BloodNGuts.splatTokens = {};
-    BloodNGuts.scenePool = [];
     BloodNGuts.disabled = false;
     BloodNGuts.paintActive = false;
   }
@@ -66,193 +64,6 @@ export class BloodNGuts {
   }
 
   /**
-   * Loads all `SplatDataObject`s from scene flag `sceneSplats` trims them and draws them - this
-   * will also add them back into the pool.
-   * @category GMandPC
-   * @function
-   */
-  private static loadScene(): void {
-    log(LogLevel.DEBUG, 'loadScene');
-    const sceneSplats = canvas.scene.getFlag(MODULE_ID, 'sceneSplats');
-    log(LogLevel.DEBUG, 'loadScene sceneSplats loaded:', sceneSplats);
-
-    if (sceneSplats) {
-      log(LogLevel.DEBUG, 'loadScene drawSceneSplats', canvas.scene.name);
-      const trimmedSplats = this.getTrimmedSceneSplats(duplicate(sceneSplats));
-      BloodNGuts.drawSceneSplats(trimmedSplats);
-    }
-  }
-
-  /**
-   * Saves floor and trail `SplatDataObject`s to scene flag `sceneSplats`. Tokensplats are saved in their
-   * own token flags.
-   * @category GMOnly
-   * @function
-   * @returns {Promise<Entity>}
-   */
-  public static saveScene(): Promise<Entity> {
-    log(LogLevel.DEBUG, 'saveScene');
-    const sceneSplats = BloodNGuts.getTrimmedSceneSplats(BloodNGuts.scenePool.map((p) => p.data));
-    return canvas.scene.setFlag(MODULE_ID, 'sceneSplats', sceneSplats);
-  }
-
-  /**
-   * Takes an array of splats, trims the excess over 'sceneSplatPoolSize' and fades the oldest.
-   * @category GMOnly
-   * @function
-   * @param {SplatDataObject[]} splats - original splat array
-   * @returns {SplatDataObject[]} - trimmed splat array
-   */
-  public static getTrimmedSceneSplats(splats: SplatDataObject[]): SplatDataObject[] {
-    log(LogLevel.DEBUG, 'getTrimmedSceneSplats');
-    const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
-    if (splats.length > maxPoolSize) {
-      // remove the oldest splats
-      log(LogLevel.DEBUG, 'getTrimmedSceneSplats removing ', splats.length - maxPoolSize);
-      splats.splice(0, splats.length - maxPoolSize);
-    }
-
-    const fadedPoolSize = splats.length - Math.round(maxPoolSize * 0.85);
-    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
-    log(LogLevel.DEBUG, 'getTrimmedSceneSplats sizes curr, max', splats.length, maxPoolSize);
-
-    // 15% of splats will be set to fade. 1/3rd of those will be very faded
-    if (fadedPoolSize > 0) {
-      for (let i = 0; i < fadedPoolSize; i++) {
-        const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
-        splats[i].alpha = alpha;
-      }
-    }
-
-    log(
-      LogLevel.DEBUG,
-      `getTrimmedSceneSplats sceneSplatPool:${splats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
-    );
-    const trimmedSplats = splats.filter((s) => !s.tokenId);
-    return trimmedSplats;
-  }
-
-  /**
-   * Takes an array of splats, trims the excess over 'sceneSplatPoolSize' and fades the oldest.
-   * @category GMOnly
-   * @function
-   * @param {SplatDataObject[]} splats - original splat array
-   * @returns {SplatDataObject[]} - trimmed splat array
-   */
-  public static trimTileSplatData(splats: SplatData[]): TileSplatData[] {
-    log(LogLevel.DEBUG, 'getTrimmedSceneSplats');
-    const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
-    if (splats.length > maxPoolSize) {
-      // remove the oldest splats
-      log(LogLevel.DEBUG, 'getTrimmedSceneSplats removing ', splats.length - maxPoolSize);
-      splats.splice(0, splats.length - maxPoolSize);
-    }
-
-    const fadedPoolSize = splats.length - Math.round(maxPoolSize * 0.85);
-    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
-    log(LogLevel.DEBUG, 'getTrimmedSceneSplats sizes curr, max', splats.length, maxPoolSize);
-
-    // 15% of splats will be set to fade. 1/3rd of those will be very faded
-    if (fadedPoolSize > 0) {
-      for (let i = 0; i < fadedPoolSize; i++) {
-        const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
-        splats[i].alpha = alpha;
-      }
-    }
-
-    log(
-      LogLevel.DEBUG,
-      `getTrimmedSceneSplats sceneSplatPool:${splats.length}, fadedPoolSize:${fadedPoolSize}, veryFadedPoolSize:${veryFadedPoolSize}`,
-    );
-    const trimmedSplats: TileSplatData[] = splats.filter((s): s is TileSplatData => !isTokenSplatData(s));
-    return trimmedSplats;
-  }
-
-  /**
-   * Draws all new `SplatDataObject`s and those that haven't got a .splatContainer yet to the canvas
-   * and adds those to the scene pool.
-   * @category GMandPC
-   * @function
-   * @param {[SplatDataObject]} splats - updated array of scene splats
-   */
-  public static drawSceneSplats(splats: SplatDataObject[]): void {
-    log(LogLevel.DEBUG, 'drawSceneSplats');
-    const updatedIds = splats.map((s) => s.id);
-    const existingIds = BloodNGuts.scenePool.map((poolObj) => poolObj.data.id);
-    const drawnIds = BloodNGuts.scenePool.filter((poolObj) => poolObj.container).map((p) => p.data.id);
-
-    // remove splats from the pool that are not in our updated splats
-    BloodNGuts.scenePool = BloodNGuts.scenePool.filter((p) => {
-      if (p.data.tokenId || updatedIds.includes(p.data.id)) return this;
-      else {
-        if (p.container) p.container.destroy({ children: true });
-        else {
-          // todo: is there a way to make sure we always are using the latest scene flag data?
-          // sometimes when pool is full and perf decreases we will have splats here that have been added
-          // via a generate method that have not yet been saved to the scene, and therefore not included in updatedIds.
-          // if we ingore here drawSceneSplats will be called again twice, once with this splat now in updatedIds, which
-          // will then trigger another draw at which point the container is attached.
-        }
-      }
-    });
-
-    // add both new splats and those that haven't been drawn yet.
-    const splatsToAdd = splats.filter((data) => !existingIds.includes(data.id) || !drawnIds.includes(data.id));
-
-    log(LogLevel.DEBUG, 'drawSceneSplats splatsToAdd', splatsToAdd);
-
-    if (splatsToAdd.length) {
-      splatsToAdd.forEach((data: SplatDataObject) => {
-        const container = new PIXI.Container();
-        const style = new PIXI.TextStyle(data.styleData);
-        // all scene splats have a .maskPolgyon.
-        if (data.maskPolygon) {
-          data.splats.forEach((splat) => {
-            const text = new PIXI.Text(splat.glyph, style);
-            text.x = splat.x + splat.width / 2;
-            text.y = splat.y + splat.height / 2;
-            text.pivot.set(splat.width / 2, splat.height / 2);
-            text.angle = splat.angle;
-            container.addChild(text);
-            return text;
-          });
-
-          log(LogLevel.DEBUG, 'drawSceneSplats: splatDataObj.maskPolygon');
-          const sightMask = new PIXI.Graphics();
-          sightMask.beginFill(1, 1);
-          sightMask.drawPolygon(data.maskPolygon);
-          sightMask.endFill();
-          container.addChild(sightMask);
-          container.mask = sightMask;
-
-          container.x = data.x;
-          container.y = data.y;
-          container.alpha = data.alpha || 1;
-          // we don't want to save alpha to flags
-          delete data.alpha;
-          canvas.blood.addChild(container);
-
-          //if it's in the pool already update it otherwise add new entry
-          if (existingIds.includes(data.id))
-            BloodNGuts.scenePool.find((p) => p.data.id === data.id).container = container;
-          else BloodNGuts.scenePool.push({ data: data, container: container });
-        } else {
-          log(LogLevel.ERROR, 'drawSceneSplats: splatDataObject has no .maskPolygon!');
-        }
-      });
-    }
-
-    // now update the alpha on already drawn splats
-    const addedIds = splatsToAdd.map((s) => s.id);
-    const splatsToFade = splats.filter((s) => s.alpha && !addedIds.includes(s.id));
-    if (splatsToFade.length) {
-      splatsToFade.forEach((s) => {
-        BloodNGuts.scenePool.find((p) => p.data.id === s.id).container.alpha = s.alpha;
-      });
-    }
-  }
-
-  /**
    * Wipes all scene and token flags.
    * @category GMOnly
    * @function
@@ -263,7 +74,7 @@ export class BloodNGuts {
       ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
       return;
     }
-    await BloodNGuts.wipeSceneFlags();
+    await canvas.blood.wipeLayer(true);
     await BloodNGuts.wipeTokenFlags();
   }
 
@@ -278,34 +89,8 @@ export class BloodNGuts {
       ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
       return;
     }
-    BloodNGuts.wipeSceneSplats();
+    canvas.blood.wipeLayer();
     BloodNGuts.wipeTokenSplats();
-  }
-
-  /**
-   * Wipes all splats data from scene flags.
-   * @category GMOnly
-   * @function
-   */
-  public static async wipeSceneFlags(): Promise<void> {
-    log(LogLevel.INFO, 'wipeSceneFlags');
-    await canvas.scene.setFlag(MODULE_ID, 'sceneSplats', null);
-  }
-
-  /**
-   * Wipes all splats from the current scene and empties all pools.
-   * @category GMandPC
-   * @function
-   */
-  public static wipeSceneSplats(): void {
-    log(LogLevel.INFO, 'wipeSceneSplats');
-
-    // destroy scene splats
-    BloodNGuts.scenePool.forEach((poolObj) => {
-      if (!poolObj.data.tokenId) poolObj.container.destroy();
-    });
-
-    BloodNGuts.scenePool = [];
   }
 
   /**
@@ -400,19 +185,22 @@ export class BloodNGuts {
   public static updateTokenOrActorHandler(scene, tokenData, changes): void {
     if (!scene.active || BloodNGuts.disabled) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler', changes);
-    const tokenId = tokenData._id || tokenData.data._id;
 
+    const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
 
+    // remove custom settings from a SplatToken when unchecked
     if (changes.flags && changes.flags[MODULE_ID]?.customBloodChecked != null) {
       if (!changes.flags[MODULE_ID].customBloodChecked) {
-        splatToken.wipeCustomSettings().then((res) => {
+        splatToken.wipeCustomSettings().then(() => {
           return;
         });
       }
     }
 
-    if (isFirstActiveGM() && splatToken.updateChanges(changes)) BloodNGuts.saveScene();
+    if (isFirstActiveGM()) {
+      const b = splatToken.updateChanges(changes);
+    }
 
     if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
       splatToken.updateSplats(changes.flags[MODULE_ID].splats);
@@ -433,12 +221,9 @@ export class BloodNGuts {
       BloodNGuts.disabled = true;
     }
 
-    // wipe pools to be refilled from scene flag data
-    BloodNGuts.scenePool = [];
-
     // need to wait on fonts loading before we can loadScene
     BloodNGuts.allFontsReady.then(() => {
-      BloodNGuts.loadScene();
+      //BloodNGuts.loadScene();
     });
   }
 
@@ -453,12 +238,12 @@ export class BloodNGuts {
     if (!scene.active || BloodNGuts.disabled || !changes.flags || changes.flags[MODULE_ID]?.sceneSplats === undefined)
       return;
     log(LogLevel.DEBUG, 'updateSceneHandler');
-    if (changes.flags[MODULE_ID]?.sceneSplats === null) {
-      BloodNGuts.wipeSceneSplats();
-      return;
-    }
-    const trimmedSplats = BloodNGuts.getTrimmedSceneSplats(duplicate(changes.flags[MODULE_ID]?.sceneSplats));
-    BloodNGuts.drawSceneSplats(trimmedSplats);
+    // if (changes.flags[MODULE_ID]?.sceneSplats === null) {
+    //   BloodNGuts.wipeSceneSplats();
+    //   return;
+    // }
+    // const trimmedSplats = BloodNGuts.getTrimmedSceneSplats(duplicate(changes.flags[MODULE_ID]?.sceneSplats));
+    // BloodNGuts.drawSceneSplats(trimmedSplats);
   }
 
   /**
@@ -472,7 +257,7 @@ export class BloodNGuts {
     if (!scene.active || !isFirstActiveGM()) return;
     log(LogLevel.INFO, 'deleteTokenHandler', token._id);
     if (BloodNGuts.splatTokens[token._id]) delete BloodNGuts.splatTokens[token._id];
-    BloodNGuts.scenePool = BloodNGuts.scenePool.filter((poolObj) => poolObj.data.tokenId != token._id);
+    canvas.blood.deleteMany(token._id);
   }
 
   /**

@@ -54,7 +54,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
                 blank: {
                   icon: '<i class="fas fa-trash"></i>',
                   label: 'Wipe',
-                  callback: () => canvas.blood.resetLayer(true),
+                  callback: () => canvas.blood.wipeLayer(true),
                 },
                 cancel: {
                   icon: '<i class="fas fa-times"></i>',
