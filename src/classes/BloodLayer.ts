@@ -778,19 +778,22 @@ export default class BloodLayer extends TilesLayer {
       const numToRemove = history.events.length - maxPoolSize;
       log(LogLevel.INFO, 'renderHistory truncating history ', numToRemove);
       history.events.splice(0, numToRemove);
+      // setting the pointer to <= this.pointer will reset the history and render all
       history.pointer = history.events.length;
     }
 
-    const fadedPoolSize = history.events.length - Math.round(maxPoolSize * 0.85);
-    const veryFadedPoolSize = Math.ceil(fadedPoolSize * 0.33);
-    log(LogLevel.INFO, 'getTrimmedSceneSplats sizes curr, max', history.events.length, maxPoolSize);
-
-    // 15% of splats will be set to fade. 1/3rd of those will be very faded
-    if (fadedPoolSize > 0) {
-      for (let i = 0; i < fadedPoolSize; i++) {
-        const alpha = i < veryFadedPoolSize ? 0.1 : 0.3;
-        history.events[i].alpha = alpha;
-      }
+    const startFadingPointer = Math.round(maxPoolSize * 0.85);
+    const startVeryFadingPointer = Math.round(maxPoolSize * 0.95);
+    if (history.events.length > startFadingPointer) {
+      const numToFade = history.events.length - startFadingPointer;
+      let numToVeryFade = history.events.length - startVeryFadingPointer;
+      if (numToVeryFade < 1) numToVeryFade = 1;
+      history.events.slice(0, numToVeryFade).forEach((event) => {
+        event.alpha = 0.15;
+      });
+      history.events.slice(numToVeryFade, numToVeryFade + numToFade).forEach((event) => {
+        event.alpha = 0.45;
+      });
     }
 
     await canvas.scene.unsetFlag(MODULE_ID, 'history');

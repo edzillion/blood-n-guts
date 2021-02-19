@@ -41,7 +41,8 @@ export default class TileSplat extends Tile {
     // //this.container = new PIXI.Container();
 
     this.data._id = getUID();
-
+    //todo: why is this necessary?
+    if (this.data.alpha != null) this.alpha = this.data.alpha;
     /**
      * Internal timestamp for the previous freehand draw time, to limit sampling
      * @type {number}
@@ -109,7 +110,10 @@ export default class TileSplat extends Tile {
     // Set Tile position & Toggle visibility
     this.position.set(this.data.x, this.data.y);
     this.hitArea = bounds;
-    this.alpha = this.data.hidden ? 0.5 : 1.0;
+
+    // if (this.alpha > 0.5 && this.data.hidden)
+    //   this.alpha = 0.5 : 1.0;
+
     this.visible = !this.data.hidden || game.user.isGM;
     // drawDebugRect2(this.x + bounds.x, this.y + bounds.y, bounds.width, bounds.height);
     return this;
