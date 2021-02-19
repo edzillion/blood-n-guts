@@ -564,10 +564,9 @@ export default class BloodLayer extends TilesLayer {
     // splatDataObj.x += tokenCenter.x;
     // splatDataObj.y += tokenCenter.y;
     tileSplatData.maskPolygon = sight;
-    const tileSplat = new TileSplat(tileSplatData);
-    tileSplat.name = 'Floor Splat';
+    tileSplatData.name = 'Floor Splat';
 
-    this.historyBuffer.push(tileSplat.data);
+    this.historyBuffer.push(tileSplatData);
     this.commitHistory();
     //this.draw();
     //BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
@@ -654,10 +653,9 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.width = 100;
     tileSplatData.id = getUID();
 
-    const tileSplat = new TileSplat(tileSplatData as TileSplatData);
-    tileSplat.name = 'Trail Splat';
+    tileSplatData.name = 'Trail Splat';
 
-    this.historyBuffer.push(tileSplat.data);
+    this.historyBuffer.push(tileSplatData as TileSplatData);
     this.commitHistory();
     //this.draw();
   }
