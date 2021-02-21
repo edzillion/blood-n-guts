@@ -90,6 +90,7 @@ export default class SplatToken {
     }
 
     this.container = new PIXI.Container();
+    this.container.name = 'TokenSplats Container';
     await this.createMask();
     return this;
   }
@@ -172,6 +173,8 @@ export default class SplatToken {
   public updateSplats(updatedSplats: TokenSplatData[]): void {
     if (this.disabled || JSON.stringify(updatedSplats) === JSON.stringify(this.tokenSplats)) return;
     this.tokenSplats = updatedSplats || [];
+    const ids = this.tokenSplats.map((ts) => ts.id);
+    log(LogLevel.INFO, 'updateSplats, ids: ', ids);
     this.draw();
   }
 
@@ -221,6 +224,7 @@ export default class SplatToken {
     this.updateRotation(changes);
 
     this.saveState(this.token, updates, changes);
+    canvas.blood.commitHistory();
 
     return bloodTrail || (updates && Object.keys(updates).length > 0);
   }
@@ -357,7 +361,9 @@ export default class SplatToken {
    * @returns {TokenSplatData[]} - the array of updated `TokenSplatData`s
    */
   private bleedToken(): TokenSplatData[] {
-    const splatDataObj: Partial<TokenSplatData> = {};
+    const tokenSplatData: Partial<TokenSplatData> = {};
+    tokenSplatData.name = 'Token Splat';
+    tokenSplatData.alpha = 1;
     const density = this.tokenSettings.tokenSplatDensity;
     if (density === 0) return;
 
@@ -370,13 +376,13 @@ export default class SplatToken {
         this.hitSeverity,
     );
     log(LogLevel.DEBUG, 'bleedToken fontSize', fontSize);
-    splatDataObj.styleData = {
+    tokenSplatData.styleData = {
       fontFamily: font.name,
       fontSize: fontSize,
       fill: this.tokenSettings.bloodColor,
       align: 'center',
     };
-    const style = new PIXI.TextStyle(splatDataObj.styleData);
+    const style = new PIXI.TextStyle(tokenSplatData.styleData);
     // amount of splats is based on density and severity
     const amount = Math.round(density * this.hitSeverity);
     if (amount === 0) return;
@@ -388,7 +394,7 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'bleedToken pixelSpread', pixelSpreadX, pixelSpreadY);
 
     // create our splats for later drawing.
-    splatDataObj.splats = glyphArray.map((glyph) => {
+    tokenSplatData.drips = glyphArray.map((glyph) => {
       const tm = PIXI.TextMetrics.measureText(glyph, style);
       const randX = getRandomBoxMuller() * pixelSpreadX - pixelSpreadX / 2;
       const randY = getRandomBoxMuller() * pixelSpreadY - pixelSpreadY / 2;
@@ -401,18 +407,19 @@ export default class SplatToken {
         glyph: glyph,
       };
     });
-    const { dripsOffset } = alignDripsGetOffsetAndDimensions(splatDataObj.splats);
-    splatDataObj.offset = dripsOffset;
-    splatDataObj.splats.forEach((s) => {
+    const { dripsOffset } = alignDripsGetOffsetAndDimensions(tokenSplatData.drips);
+    tokenSplatData.offset = dripsOffset;
+    tokenSplatData.drips.forEach((s) => {
       s.x += dripsOffset.x + this.spriteHeight / 2;
       s.y += dripsOffset.y + this.spriteWidth / 2;
     });
 
-    splatDataObj.id = getUID();
-    splatDataObj.tokenId = this.id;
+    tokenSplatData.id = getUID();
+    tokenSplatData.tokenId = this.id;
 
     const updatedSplats = duplicate(this.tokenSplats);
-    updatedSplats.push(<TokenSplatData>splatDataObj);
+    updatedSplats.push(tokenSplatData as TokenSplatData);
+    log(LogLevel.INFO, 'adding tokenSplat to updatedSplats, id: ', tokenSplatData.id);
     return updatedSplats;
   }
 
@@ -584,6 +591,7 @@ export default class SplatToken {
    */
   public removeSplat(id: string): void {
     this.tokenSplats = this.tokenSplats.filter((s) => s.id !== id);
+    this.draw();
   }
 
   /**
@@ -618,12 +626,13 @@ export default class SplatToken {
 
     BloodNGuts.allFontsReady.then(() => {
       this.tokenSplats.forEach((splatData) => {
-        splatData.splats.forEach((splat) => {
-          const text = new PIXI.Text(splat.glyph, splatData.styleData);
-          text.x = splat.x + splat.width / 2;
-          text.y = splat.y + splat.height / 2;
-          text.pivot.set(splat.width / 2, splat.height / 2);
-          text.angle = splat.angle;
+        splatData.drips.forEach((drip) => {
+          const text = new PIXI.Text(drip.glyph, splatData.styleData);
+          text.alpha = splatData.alpha;
+          text.x = drip.x + drip.width / 2;
+          text.y = drip.y + drip.height / 2;
+          text.pivot.set(drip.width / 2, drip.height / 2);
+          text.angle = drip.angle;
           this.container.addChild(text);
         });
       });

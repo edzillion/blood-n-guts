@@ -558,7 +558,7 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.name = 'Floor Splat';
 
     this.historyBuffer.push(tileSplatData);
-    this.commitHistory();
+    //this.commitHistory();
     //this.draw();
     //BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
   }
@@ -647,7 +647,7 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.name = 'Trail Splat';
 
     this.historyBuffer.push(tileSplatData as TileSplatData);
-    this.commitHistory();
+    //this.commitHistory();
     //this.draw();
   }
 
@@ -766,7 +766,14 @@ export default class BloodLayer extends TilesLayer {
       // remove the oldest splats
       const numToRemove = history.events.length - maxPoolSize;
       log(LogLevel.INFO, 'renderHistory truncating history ', numToRemove);
-      history.events.splice(0, numToRemove);
+      history.events
+        .splice(0, numToRemove)
+        .filter((e) => e.tokenId)
+        .forEach((e) => {
+          log(LogLevel.INFO, 'removing tokenSplat id: ', e.id);
+          BloodNGuts.splatTokens[e.tokenId].removeSplat(e.id);
+        });
+
       // setting the pointer to <= this.pointer will reset the history and render all
       history.pointer = history.events.length;
     }
@@ -779,9 +786,23 @@ export default class BloodLayer extends TilesLayer {
       if (numToVeryFade < 1) numToVeryFade = 1;
       history.events.slice(0, numToVeryFade).forEach((event) => {
         event.alpha = 0.15;
+        if (event.tokenId) {
+          const splatToken = BloodNGuts.splatTokens[event.tokenId];
+          const splatData = splatToken.tokenSplats.find((s) => s.id === event.id);
+          if (!splatData) debugger;
+          splatData.alpha = 0.15;
+          //splatToken.draw();
+        }
       });
       history.events.slice(numToVeryFade, numToVeryFade + numToFade).forEach((event) => {
         event.alpha = 0.45;
+        if (event.tokenId) {
+          const splatToken = BloodNGuts.splatTokens[event.tokenId];
+          const splatData = splatToken.tokenSplats.find((s) => s.id === event.id);
+          if (!splatData) debugger;
+          splatData.alpha = 0.45;
+          //splatToken.draw();
+        }
       });
     }
 
