@@ -100,7 +100,7 @@ export default class BloodLayer extends TilesLayer {
     this.preview = this.addChild(prevCont) as PIXI.Container;
     this.preview.alpha = this.DEFAULTS.previewAlpha;
 
-    this.wipeLayer(true);
+    //this.wipeLayer(true);
     //this.renderHistory();
   }
 
@@ -314,18 +314,7 @@ export default class BloodLayer extends TilesLayer {
   async deleteMany(data: string[] | string, options = {}): Promise<void> {
     const user = game.user;
 
-    // Structure the input data
-    data = data instanceof Array ? data : [data];
-    if (data.length < 1) return;
-    const ids = new Set(data);
-
-    const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    history.events = history.events.filter((splat) => !ids.has(splat._id) && !ids.has(splat.tokenId));
-    history.pointer = history.events.length;
-
-    await canvas.scene.unsetFlag(MODULE_ID, 'history');
-    await canvas.scene.setFlag(MODULE_ID, 'history', history);
-    log(LogLevel.INFO, `deleteMany: history size now ${history.events.length}.`);
+    await this.deleteFromHistory(data, options);
 
     // @ts-expect-error todo this
     if (this.hud) this.hud.clear();
@@ -730,13 +719,22 @@ export default class BloodLayer extends TilesLayer {
       start = 0;
     }
 
+    const updatedSplatTokenIds = [];
     log(LogLevel.INFO, `Rendering from: ${start} to ${stop}`);
     // Render all ops starting from pointer
     for (let i = start; i < stop; i += 1) {
       // skip TokenSplats
-      if (history.events[i].tokenId) continue;
+      if (history.events[i].tokenId) {
+        updatedSplatTokenIds.push(history.events[i].tokenId);
+        continue;
+      }
       this.renderBrush(history.events[i], false);
     }
+    new Set(updatedSplatTokenIds).forEach((id) => {
+      const st = BloodNGuts.splatTokens[id];
+      st.draw();
+    });
+
     // Update local pointer
     this.pointer = stop;
   }
@@ -770,10 +768,10 @@ export default class BloodLayer extends TilesLayer {
         .splice(0, numToRemove)
         .filter((e) => e.tokenId)
         .forEach((e) => {
-          log(LogLevel.INFO, 'removing tokenSplat id: ', e.id);
-          BloodNGuts.splatTokens[e.tokenId].removeSplat(e.id);
+          const splatToken = BloodNGuts.splatTokens[e.tokenId];
+          // this will wipe all splats on the splatToken but any remaining will be readded on renderHistory()
+          splatToken.wipeSplats();
         });
-
       // setting the pointer to <= this.pointer will reset the history and render all
       history.pointer = history.events.length;
     }
@@ -786,23 +784,11 @@ export default class BloodLayer extends TilesLayer {
       if (numToVeryFade < 1) numToVeryFade = 1;
       history.events.slice(0, numToVeryFade).forEach((event) => {
         event.alpha = 0.15;
-        if (event.tokenId) {
-          const splatToken = BloodNGuts.splatTokens[event.tokenId];
-          const splatData = splatToken.tokenSplats.find((s) => s.id === event.id);
-          if (!splatData) debugger;
-          splatData.alpha = 0.15;
-          //splatToken.draw();
-        }
+        this.pointer = history.pointer;
       });
       history.events.slice(numToVeryFade, numToVeryFade + numToFade).forEach((event) => {
         event.alpha = 0.45;
-        if (event.tokenId) {
-          const splatToken = BloodNGuts.splatTokens[event.tokenId];
-          const splatData = splatToken.tokenSplats.find((s) => s.id === event.id);
-          if (!splatData) debugger;
-          splatData.alpha = 0.45;
-          //splatToken.draw();
-        }
+        this.pointer = history.pointer;
       });
     }
 
@@ -812,6 +798,21 @@ export default class BloodLayer extends TilesLayer {
     // Clear the history buffer
     this.historyBuffer = [];
     this.lock = false;
+  }
+
+  async deleteFromHistory(data: string[] | string, options = {}): Promise<void> {
+    // Structure the input data
+    data = data instanceof Array ? data : [data];
+    if (data.length < 1) return;
+    const ids = new Set(data);
+
+    const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    history.events = history.events.filter((splat) => !ids.has(splat.id) && !ids.has(splat.tokenId));
+    history.pointer = history.events.length;
+
+    await canvas.scene.unsetFlag(MODULE_ID, 'history');
+    await canvas.scene.setFlag(MODULE_ID, 'history', history);
+    log(LogLevel.INFO, `deleteFromHistory: size now ${history.events.length}.`);
   }
 
   /**

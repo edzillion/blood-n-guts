@@ -202,8 +202,8 @@ export class BloodNGuts {
       const b = splatToken.updateChanges(changes);
     }
 
-    if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
-      splatToken.updateSplats(changes.flags[MODULE_ID].splats);
+    // if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
+    //   splatToken.updateSplats(changes.flags[MODULE_ID].splats);
   }
 
   /**
@@ -223,7 +223,7 @@ export class BloodNGuts {
 
     // need to wait on fonts loading before we can loadScene
     BloodNGuts.allFontsReady.then(() => {
-      //BloodNGuts.loadScene();
+      canvas.blood.renderHistory();
     });
   }
 
