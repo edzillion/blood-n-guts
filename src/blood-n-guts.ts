@@ -23,7 +23,7 @@ import {
   lookupTokenBloodColor,
   isFirstActiveGM,
 } from './module/helpers';
-import { MODULE_ID, MODULE_TITLE } from './constants';
+import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
 import BloodLayer from './classes/BloodLayer';
 import * as splatFonts from './data/splatFonts';
@@ -49,7 +49,7 @@ export class BloodNGuts {
     BloodNGuts.paintActive = false;
   }
 
-  public static registerLayer() {
+  public static registerLayer(): void {
     // @ts-expect-error missing definition
     const layers = mergeObject(Canvas.layers, {
       blood: BloodLayer,
@@ -181,7 +181,12 @@ export class BloodNGuts {
    * @param tokenData - tokenData of updated Token/Actor
    * @param changes - changes
    */
-  public static updateTokenOrActorHandler(scene, tokenData, changes): void {
+  public static updateTokenOrActorHandler(
+    scene: Scene,
+    tokenData: Record<string, any>,
+    changes: Record<string, unknown>,
+  ): void {
+    // @ts-expect-error missing definition
     if (!scene.active || BloodNGuts.disabled) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler', changes);
 
@@ -198,11 +203,8 @@ export class BloodNGuts {
     }
 
     if (isFirstActiveGM()) {
-      const b = splatToken.updateChanges(changes);
+      splatToken.updateChanges(changes);
     }
-
-    // if (changes.flags && changes.flags[MODULE_ID]?.splats !== undefined)
-    //   splatToken.updateSplats(changes.flags[MODULE_ID].splats);
   }
 
   /**
@@ -211,7 +213,7 @@ export class BloodNGuts {
    * @function
    * @param canvas - reference to the canvas
    */
-  public static canvasReadyHandler(canvas): void {
+  public static canvasReadyHandler(canvas: any): void {
     if (!canvas.scene.active || BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
     const gm = game.users.find((e) => e.isGM && e.active);
@@ -227,35 +229,20 @@ export class BloodNGuts {
   }
 
   /**
-   * Handler called when scene data updated. Draws splats from scene data flags.
-   * @category GMandPC
-   * @function
-   * @param scene - reference to the current scene
-   * @param changes - changes
-   */
-  public static updateSceneHandler(scene, changes): void {
-    if (!scene.active || BloodNGuts.disabled || !changes.flags || changes.flags[MODULE_ID]?.sceneSplats === undefined)
-      return;
-    log(LogLevel.DEBUG, 'updateSceneHandler');
-    // if (changes.flags[MODULE_ID]?.sceneSplats === null) {
-    //   BloodNGuts.wipeSceneSplats();
-    //   return;
-    // }
-    // const trimmedSplats = BloodNGuts.getTrimmedSceneSplats(duplicate(changes.flags[MODULE_ID]?.sceneSplats));
-    // BloodNGuts.drawSceneSplats(trimmedSplats);
-  }
-
-  /**
    * Handler called when token is deleted. Removed tokenSplats and pool objects for this token.
    * @category GMOnly
    * @function
    * @param scene - reference to the current scene
    * @param token - reference to deleted token
    */
-  public static deleteTokenHandler(scene, token): void {
+  public static deleteTokenHandler(scene: Scene, token: Token): void {
+    //@ts-expect-error missing definition
     if (!scene.active || !isFirstActiveGM()) return;
+    //@ts-expect-error missing definition
     log(LogLevel.INFO, 'deleteTokenHandler', token._id);
+    //@ts-expect-error missing definition
     if (BloodNGuts.splatTokens[token._id]) delete BloodNGuts.splatTokens[token._id];
+    //@ts-expect-error missing definition
     canvas.blood.deleteMany(token._id);
   }
 
@@ -273,7 +260,7 @@ export class BloodNGuts {
 
     const imageTab = html.find('.tab[data-tab="image"]');
     const choices = { '': '' };
-    const violenceLevels: any = await getMergedViolenceLevels;
+    const violenceLevels: Record<string, ViolenceLevel> = await getMergedViolenceLevels;
     for (const levelName in violenceLevels) {
       choices[levelName] = levelName;
     }
@@ -484,7 +471,7 @@ Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
 // Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
 Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
 
-Hooks.on('chatMessage', (_chatTab, commandString, _user) => {
+Hooks.on('chatMessage', (_chatTab, commandString) => {
   const commands = commandString.split(' ');
   if (commands[0] != '/blood') return;
   switch (commands[1]) {

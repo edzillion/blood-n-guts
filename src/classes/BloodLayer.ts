@@ -1,15 +1,7 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import TileSplat from './TileSplat';
-import {
-  alignDripsGetOffsetAndDimensions,
-  computeSightFromPoint,
-  getPointOnCurve,
-  getRandomBoxMuller,
-  getRandomGlyph,
-  getRGBA,
-  getUID,
-} from '../module/helpers';
+import { getPointOnCurve, getRandomBoxMuller, getRandomGlyph, getRGBA, getUID } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BrushControls from './BrushControls';
@@ -27,7 +19,7 @@ export default class BloodLayer extends TilesLayer {
   visible: boolean;
   pointer: number;
   historyBuffer: Array<TileSplatData>;
-  lock: any;
+  lock: boolean;
   commitTimer: NodeJS.Timeout;
   zOrderCounter: number;
   constructor() {
@@ -277,11 +269,11 @@ export default class BloodLayer extends TilesLayer {
     return this;
   }
 
-  async deleteMany(data: string[] | string, options = {}): Promise<void> {
+  async deleteMany(data: string[] | string): Promise<void> {
     // todo: do I need to check splat ownership before deleting
     // const user = game.user;
 
-    await this.deleteFromHistory(data, options);
+    await this.deleteFromHistory(data);
 
     // @ts-expect-error todo this
     if (this.hud) this.hud.clear();
@@ -345,7 +337,7 @@ export default class BloodLayer extends TilesLayer {
     };
   }
 
-  getSetting(getFromFlag: boolean, name: string): any {
+  getSetting(getFromFlag: boolean, name: string): unknown {
     if (!getFromFlag) {
       log(LogLevel.INFO, 'getSetting', name, this.brushSettings[name]);
       return this.brushSettings[name];
@@ -355,7 +347,7 @@ export default class BloodLayer extends TilesLayer {
     return setting;
   }
 
-  async setSetting(saveToFlag: boolean, name: string, value: any): Promise<Scene> {
+  async setSetting(saveToFlag: boolean, name: string, value: unknown): Promise<Scene> {
     this.brushSettings[name] = value;
     log(LogLevel.INFO, 'setSetting brushSettings', name, value);
     if (!saveToFlag) return;
@@ -575,7 +567,7 @@ export default class BloodLayer extends TilesLayer {
    * @param data {Object}       A collection of brush parameters
    * @param save {Boolean}      If true, will add the operation to the history buffer
    */
-  renderSplat(data, save = true) {
+  renderTileSplat(data: TileSplatData, save = true): void {
     this.createObject(data).draw();
     if (save) this.historyBuffer.push(data);
   }
@@ -612,7 +604,7 @@ export default class BloodLayer extends TilesLayer {
         updatedSplatTokenIds.push(history.events[i].tokenId);
         continue;
       }
-      this.renderSplat(history.events[i], false);
+      this.renderTileSplat(history.events[i], false);
     }
     new Set(updatedSplatTokenIds).forEach((id) => {
       const st = BloodNGuts.splatTokens[id];
@@ -626,7 +618,7 @@ export default class BloodLayer extends TilesLayer {
   /**
    * Add buffered history stack to scene flag and clear buffer
    */
-  async commitHistory() {
+  async commitHistory(): Promise<void> {
     // Do nothing if no history to be committed, otherwise get history
     if (this.historyBuffer.length === 0) return;
     if (this.lock) return;
@@ -684,14 +676,13 @@ export default class BloodLayer extends TilesLayer {
     this.lock = false;
   }
 
-  async deleteFromHistory(data: string[] | string, options = {}): Promise<void> {
+  async deleteFromHistory(data: string[] | string): Promise<void> {
     // Structure the input data
     data = data instanceof Array ? data : [data];
     if (data.length < 1) return;
     const ids = new Set(data);
 
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    const histIds = history.events.map((splat) => splat.id);
     history.events = history.events.filter((splat) => !ids.has(splat.id) && !ids.has(splat.tokenId));
     history.pointer = history.events.length;
 
@@ -704,7 +695,7 @@ export default class BloodLayer extends TilesLayer {
    * Wipes all blood splats from the layer
    * @param save {Boolean} If true, also wipes the layer history
    */
-  async wipeLayer(save) {
+  async wipeLayer(save: boolean): Promise<void> {
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     if (save) {
@@ -718,7 +709,7 @@ export default class BloodLayer extends TilesLayer {
    * Steps the history buffer back X steps and redraws
    * @param steps {Integer} Number of steps to undo, default 1
    */
-  async undo(steps = 1) {
+  async undo(steps = 1): Promise<void> {
     log(LogLevel.INFO, `Undoing ${steps} steps.`);
     // Grab existing history
     // Todo: this could probably just grab and set the pointer for a slight performance improvement
@@ -760,8 +751,8 @@ export default class BloodLayer extends TilesLayer {
   /**
    * Adds the keyboard listeners to the layer
    */
-  _registerKeyboardListeners() {
-    $(document).keydown((event: any) => {
+  _registerKeyboardListeners(): void {
+    $(document).keydown((event: JQuery.KeyDownEvent) => {
       // Only react if simplefog layer is active
       // @ts-expect-error missing def
       if (ui.controls.activeControl !== 'blood') return;
@@ -790,8 +781,9 @@ export default class BloodLayer extends TilesLayer {
   /**
    * React to updates of canvas.scene flags
    */
-  updateSceneHandler(scene, data): void {
+  updateSceneHandler(scene: Scene, data: Record<string, unknown>): void {
     // Check if update applies to current viewed scene
+    // @ts-expect-error missing definition
     if (!scene._view) return;
     // React to visibility change
     if (hasProperty(data, `flags.${MODULE_ID}.visible`)) {

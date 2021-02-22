@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { computeSightFromPoint, getUID } from '../module/helpers';
+import { computeSightFromPoint } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BloodLayer from './BloodLayer';
@@ -55,7 +55,7 @@ export default class TileSplat extends Tile {
   }
 
   /** @override */
-  async draw(): Promise<any> {
+  async draw(): Promise<TileSplat> {
     this.clear();
     // Create the outer frame for the border and interaction handles
     this.frame = this.addChild(new PIXI.Container());
@@ -198,10 +198,10 @@ export default class TileSplat extends Tile {
   }
 
   /** @override */
-  _onUpdate(data) {
+  _onUpdate(data: Partial<TileSplatData>): Promise<TileSplat> {
     const changed = new Set(Object.keys(data));
     if (changed.has('z')) {
-      this.zIndex = parseInt(data.z) || 0;
+      this.zIndex = data.z || 0;
     }
 
     // Release control if the Tile was locked
@@ -258,7 +258,7 @@ export default class TileSplat extends Tile {
    * @private
    */
   _onMouseDraw(event: InteractionEvent): void {
-    const { destination, originalEvent } = event.data;
+    const { destination } = event.data;
 
     // Determine position
     const position = new PIXI.Point(

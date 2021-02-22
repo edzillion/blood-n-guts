@@ -38,9 +38,10 @@ export default class SplatToken {
   public token: Token;
   private bleedingDistance: number;
 
+  // todo: typing a Proxy is complicated
   public tokenSettings: any;
 
-  public violenceLevels: any;
+  public violenceLevels: Record<string, ViolenceLevel>;
   public defaultBloodColor: string;
 
   constructor(token: Token) {
@@ -189,7 +190,7 @@ export default class SplatToken {
    * @function
    * @returns {boolean} - whether there have been changes to the scene or not
    */
-  public updateChanges(changes): boolean {
+  public updateChanges(changes: Record<string, any>): boolean {
     log(LogLevel.DEBUG, 'updateChanges');
     if (changes.flags) {
       // todo: Proxy objects don't work with Object.assign?
@@ -576,7 +577,7 @@ export default class SplatToken {
    * @category GMOnly
    * @function
    */
-  public async wipeCustomSettings() {
+  public async wipeCustomSettings(): Promise<Entity[]> {
     const promises: Promise<Entity>[] = [];
     promises.push(this.token.unsetFlag(MODULE_ID, 'floorSplatFont'));
     promises.push(this.token.unsetFlag(MODULE_ID, 'trailSplatFont'));
