@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
-import { BloodNGuts } from '../blood-n-guts';
-import { computeSightFromPoint, drawDebugRect, drawDebugRect2, getUID } from '../module/helpers';
+import { computeSightFromPoint, getUID } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BloodLayer from './BloodLayer';
@@ -40,7 +39,8 @@ export default class TileSplat extends Tile {
     //  */
     // //this.container = new PIXI.Container();
 
-    this.data._id = getUID();
+    this.data._id = this.data.id;
+    //this.id = this.data.id;
     //todo: why is this necessary?
     if (this.data.alpha != null) this.alpha = this.data.alpha;
     /**
@@ -70,33 +70,23 @@ export default class TileSplat extends Tile {
     this.tile.img = null;
 
     this.drawBlood();
-    // const container = new PIXI.Container();
 
     const bounds = this.tile.getLocalBounds();
-
     const maxDistance = Math.max(bounds.width, bounds.height);
     const center = new PIXI.Point(this.data.x, this.data.y);
     const sight = computeSightFromPoint(center, maxDistance);
-    this.data.maskPolygon = sight;
-    // const style = new PIXI.TextStyle(this.data.styleData);
-    // // all scene drips have a .maskPolgyon.
-    if (this.data.maskPolygon) {
-      log(LogLevel.DEBUG, 'draw: data.maskPolygon');
-      const sightMask = new PIXI.Graphics();
-      sightMask.beginFill(1, 1);
-      sightMask.drawPolygon(this.data.maskPolygon);
-      sightMask.endFill();
-      this.tile.addChild(sightMask);
-      this.tile.mask = sightMask;
-    } else {
-      log(LogLevel.ERROR, 'drawSceneSplats: dataObject has no .maskPolygon!');
-    }
+    log(LogLevel.DEBUG, 'draw: data.maskPolygon');
+    const sightMask = new PIXI.Graphics();
+    sightMask.beginFill(1, 1);
+    sightMask.drawPolygon(sight);
+    sightMask.endFill();
+    this.tile.addChild(sightMask);
+    this.tile.mask = sightMask;
 
     // Refresh the current display
     this.refresh();
     // Enable interactivity, only if the Splat is not a preview?
     this.activateListeners();
-    //if (this.id) this.activateListeners();
     return this;
   }
 
@@ -115,7 +105,6 @@ export default class TileSplat extends Tile {
     //   this.alpha = 0.5 : 1.0;
 
     this.visible = !this.data.hidden || game.user.isGM;
-    // drawDebugRect2(this.x + bounds.x, this.y + bounds.y, bounds.width, bounds.height);
     return this;
   }
 
@@ -165,8 +154,8 @@ export default class TileSplat extends Tile {
     for (let i = 0; i < this.data.drips.length; i++) {
       const drip = this.data.drips[i];
       const text = new PIXI.Text(drip.glyph, this.style);
-      text.x = drip.x; // + splat.width / 2;
-      text.y = drip.y; // + splat.height / 2;
+      text.x = drip.x;
+      text.y = drip.y;
       text.pivot.set(drip.width / 2, drip.height / 2);
       text.angle = drip.angle;
       this.tile.addChild(text);
@@ -260,7 +249,6 @@ export default class TileSplat extends Tile {
       return { _id: c._original.id, x: dest.x, y: dest.y, rotation: c.data.rotation };
     });
     this.update(updates);
-    // this.refresh();
     return true;
   }
 

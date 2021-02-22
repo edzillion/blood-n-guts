@@ -18,7 +18,6 @@ import SplatToken from './SplatToken';
 //@ts-expect-error missing definition
 export default class BloodLayer extends TilesLayer {
   layer: PIXI.Container;
-  collection: TileSplatData[];
   DEFAULTS: BrushSettings;
   DEFAULTS_TILESPLAT: TileSplatData;
   brushControls: BrushControls;
@@ -30,10 +29,13 @@ export default class BloodLayer extends TilesLayer {
   historyBuffer: Array<TileSplatData>;
   lock: any;
   commitTimer: NodeJS.Timeout;
+  zOrderCounter: number;
   constructor() {
     super();
 
     this._registerKeyboardListeners();
+
+    this.zOrderCounter = 0;
 
     this.pointer = 0;
     this.historyBuffer = [];
@@ -55,8 +57,8 @@ export default class BloodLayer extends TilesLayer {
 
     this.DEFAULTS_TILESPLAT = {
       alpha: 1,
-      width: 0,
-      height: 0,
+      width: 1,
+      height: 1,
       // @ts-expect-error bad def
       scale: 1,
       x: 0,
@@ -84,8 +86,6 @@ export default class BloodLayer extends TilesLayer {
   }
 
   initialize(): void {
-    this.collection = canvas.scene.getFlag(MODULE_ID, 'sceneSplats') || [];
-
     // Create objects container which can be sorted
     const objCont = new PIXI.Container();
     objCont.name = 'Object Container';
@@ -99,21 +99,7 @@ export default class BloodLayer extends TilesLayer {
     //@ts-expect-error definition missing
     this.preview = this.addChild(prevCont) as PIXI.Container;
     this.preview.alpha = this.DEFAULTS.previewAlpha;
-
-    //this.wipeLayer(true);
-    //this.renderHistory();
   }
-
-  // static getCanvasContainer() {
-  //   const container = new PIXI.Container();
-  //   const d = canvas.dimensions;
-  //   container.width = d.width;
-  //   container.height = d.height;
-  //   container.x = 0;
-  //   container.y = 0;
-  //   container.zIndex = 0;
-  //   return container;
-  // }
 
   /** @override */
   static get layerOptions(): LayerOptions {
@@ -159,13 +145,12 @@ export default class BloodLayer extends TilesLayer {
     position.y = Math.round(position.y);
 
     if (game.activeTool === 'brush') {
-      //BloodNGuts.allFontsReady.then(() => {
       const spread = new PIXI.Point(canvas.grid.size * this.brushSettings.brushSpread);
       const amount = this.brushSettings.brushDensity;
       const font = splatFonts.fonts[this.brushStyle.fontFamily];
 
       const data = this.getNewSplatData(amount, font, position, spread, this.brushStyle);
-      //this.renderBrush(data);
+      log(LogLevel.INFO, 'adding tileSplat to historyBuffer, id: ', data.id);
       this.historyBuffer.push(data);
       this.commitTimer = setTimeout(() => {
         this.commitHistory();
@@ -186,10 +171,10 @@ export default class BloodLayer extends TilesLayer {
     const grandparentCall = PlaceablesLayer.prototype._onDragLeftStart.bind(this);
     grandparentCall(event);
 
-    // the last TileSplat in the collection should be the one just created by _onClickLeft
-    const data = this.historyBuffer[0]; //this.collection.pop();
+    // the first TileSplat in the buffer should be the one just created by _onClickLeft
+    const data = this.historyBuffer[0];
     this.objects.children.forEach((splat: TileSplat) => {
-      if (data._id === splat.id) this.objects.removeChild(splat);
+      if (data.id === splat.id) this.objects.removeChild(splat);
     });
 
     // recreate it as our preview
@@ -221,7 +206,6 @@ export default class BloodLayer extends TilesLayer {
     const object = event.data.preview;
     if (object) {
       object.zIndex = object.z || 0;
-      //this.renderBrush(object.data);
       this.historyBuffer.push(object.data);
       this.commitHistory();
     }
@@ -233,9 +217,9 @@ export default class BloodLayer extends TilesLayer {
   async draw(): Promise<BloodLayer> {
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     // Create and draw objects
-    if (!this.collection || !this.collection.length) return;
-
-    const promises = this.collection.map((data) => {
+    const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    if (!history || history.events.length === 0) return;
+    const promises = history.events.map((data) => {
       const obj = this.createObject(data);
       return obj.draw();
     });
@@ -252,7 +236,10 @@ export default class BloodLayer extends TilesLayer {
    */
   createObject(data: TileSplatData): TileSplat {
     const obj = new TileSplat(data);
-    obj.zIndex = data.z || 0;
+    if (data.z != null) {
+      obj.zIndex = data.z;
+    } else log(LogLevel.ERROR, 'createObject missing z property!');
+
     this.objects.addChild(obj);
     log(LogLevel.DEBUG, 'createObject', obj.id, obj.data._id);
     return obj;
@@ -270,27 +257,6 @@ export default class BloodLayer extends TilesLayer {
   /** @override */
   async activate(): Promise<BloodLayer> {
     this.loadSceneSettings();
-
-    // const promises = [];
-    // Object.keys(this.DEFAULTS).map((key: string) => {
-    //   promises.push(game.user.unsetFlag(MODULE_ID, key), canvas.scene.unsetFlag(MODULE_ID, key));
-    // });
-
-    // await Promise.all(promises);
-
-    // Set default flags if they dont exist already
-    // if (game.user.isGM) {
-    //   Object.keys(this.DEFAULTS).forEach((key) => {
-    //     // Check for existing scene specific setting
-    //     if (this.getSetting(key) !== undefined) return;
-    //     // Check for custom default
-    //     const def = this.getUserSetting(key);
-    //     // If user has custom default, set it for scene
-    //     if (def !== undefined) this.setSetting(key, def);
-    //     // Otherwise fall back to module default
-    //     else this.setSetting(key, this.DEFAULTS[key]);
-    //   });
-    // }
 
     CanvasLayer.prototype.activate.apply(this);
     this.objects.visible = true;
@@ -312,7 +278,8 @@ export default class BloodLayer extends TilesLayer {
   }
 
   async deleteMany(data: string[] | string, options = {}): Promise<void> {
-    const user = game.user;
+    // todo: do I need to check splat ownership before deleting
+    // const user = game.user;
 
     await this.deleteFromHistory(data, options);
 
@@ -320,7 +287,6 @@ export default class BloodLayer extends TilesLayer {
     if (this.hud) this.hud.clear();
     // @ts-expect-error todo this
     this.releaseAll();
-    //this.draw();
   }
 
   async updateMany(data: Partial<TileSplatData>, options = {} as { diff: boolean }): Promise<void> {
@@ -331,7 +297,8 @@ export default class BloodLayer extends TilesLayer {
     data: Partial<TileSplatData> | Partial<TileSplatData>[],
     options = {} as { diff: boolean },
   ): void {
-    const user = game.user;
+    // todo: do I need to check splat ownership before updating
+    // const user = game.user;
     options = mergeObject({ diff: true }, options);
 
     // Structure the update data
@@ -369,39 +336,6 @@ export default class BloodLayer extends TilesLayer {
     });
   }
 
-  // }
-
-  // addSplatsToCollection(splatDatas) {
-  //   // Prepare created Entities
-  //   const entities = splatDatas.map((data) => {
-  //     // Create the Entity instance
-  //     const entity = new this(data);
-  //     if (temporary) return entity;
-
-  //     // Add it to the EntityCollection
-  //     this.collection.insert(entity);
-
-  //     // Trigger follow-up actions and return
-  //     entity._onCreate(data, options, userId);
-  //     Hooks.callAll(`create${type}`, entity, options, userId);
-  //     return entity;
-  //   });
-
-  //   // Log creation
-  //   let msg = entities.length === 1 ? `Created ${type}` : `Created ${entities.length} ${type}s`;
-  //   if (entities.length === 1) msg += ` with id ${entities[0].id}`;
-  //   else if (entities.length <= 5) msg += ` with ids: [${entities.map((d) => d.id)}]`;
-  //   console.log(`${vtt} | ${msg}`);
-
-  //   // Re-render the parent EntityCollection
-  //   if (options.render !== false) {
-  //     this.collection.render(false, { entityType: this.entity, action: 'create', entities: entities, data: result });
-  //   }
-
-  //   // Return the created Entities
-  //   return entities;
-  // }
-
   get brushStyle(): SplatStyle {
     return {
       fontFamily: this.brushSettings.brushFont,
@@ -435,38 +369,6 @@ export default class BloodLayer extends TilesLayer {
     });
   }
 
-  // /**
-  //  * Get initial data for a new drawing.
-  //  * Start with some global defaults, apply user default config, then apply mandatory overrides per tool.
-  //  * @param {Object} origin     The initial coordinate
-  //  * @return {Object}           The new drawing data
-  //  * @private
-  //  */
-  // private getNewDrawingData(origin: PIXI.Point): TileSplatData {
-  //   const textStyle = new PIXI.TextStyle(this.brushStyle);
-  //   const font = splatFonts.fonts[this.brushStyle.fontFamily];
-  //   const defaults = duplicate(this.DEFAULTS_TILESPLAT);
-
-  //   const tileData = mergeObject(defaults, {
-  //     // each splat has at least one drip
-  //     drips: BloodNGuts.generateDrips(
-  //       textStyle,
-  //       font,
-  //       this.brushSettings.brushDensity,
-  //       this.brushSettings.brushSpread,
-  //       new PIXI.Point(0),
-  //     ),
-  //     styleData: this.brushStyle,
-  //     x: origin.x,
-  //     y: origin.y,
-  //     z: 100 + this.collection.length,
-  //   } as TileSplatData);
-
-  //   // Mandatory additions
-  //   tileData.author = game.user._id;
-  //   return tileData;
-  // }
-
   /**
    * Get initial data for a new drawing.
    * Start with some global defaults, apply user default config, then apply mandatory overrides per tool.
@@ -489,7 +391,7 @@ export default class BloodLayer extends TilesLayer {
       styleData: style,
       x: origin.x,
       y: origin.y,
-      z: 100 + this.collection.length,
+      z: 100 + this.zOrderCounter++,
       id: getUID(),
     } as TileSplatData);
 
@@ -530,26 +432,9 @@ export default class BloodLayer extends TilesLayer {
       align: 'center',
     };
     const tileSplatData: TileSplatData = this.getNewSplatData(amount, font, origin, spread, styleData);
-
-    const maxDistance = Math.max(250, 250);
-    const sight = computeSightFromPoint(origin, maxDistance);
-
-    // // since we don't want to add the mask to the container yet (as that will
-    // // screw up our alignment) we need to move it by editing the x,y points directly
-    // for (let i = 0; i < sight.length; i += 2) {
-    //   sight[i] -= splatDataObj.offset.x;
-    //   sight[i + 1] -= splatDataObj.offset.y;
-    // }
-
-    // splatDataObj.x += tokenCenter.x;
-    // splatDataObj.y += tokenCenter.y;
-    tileSplatData.maskPolygon = sight;
     tileSplatData.name = 'Floor Splat';
-
+    log(LogLevel.INFO, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
     this.historyBuffer.push(tileSplatData);
-    //this.commitHistory();
-    //this.draw();
-    //BloodNGuts.scenePool.push({ data: <SplatDataObject>splatDataObj });
   }
 
   /**
@@ -629,15 +514,14 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.offset = new PIXI.Point(0);
     tileSplatData.x = tokenCenter.x - splatToken.movePos.x / 2;
     tileSplatData.y = tokenCenter.y - splatToken.movePos.y / 2;
-    tileSplatData.height = 100;
-    tileSplatData.width = 100;
+    tileSplatData.z = 100 + this.zOrderCounter++;
+    tileSplatData.height = 1;
+    tileSplatData.width = 1;
     tileSplatData.id = getUID();
 
     tileSplatData.name = 'Trail Splat';
-
+    log(LogLevel.INFO, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
     this.historyBuffer.push(tileSplatData as TileSplatData);
-    //this.commitHistory();
-    //this.draw();
   }
 
   /**
@@ -691,7 +575,7 @@ export default class BloodLayer extends TilesLayer {
    * @param data {Object}       A collection of brush parameters
    * @param save {Boolean}      If true, will add the operation to the history buffer
    */
-  renderBrush(data, save = true) {
+  renderSplat(data, save = true) {
     this.createObject(data).draw();
     if (save) this.historyBuffer.push(data);
   }
@@ -728,7 +612,7 @@ export default class BloodLayer extends TilesLayer {
         updatedSplatTokenIds.push(history.events[i].tokenId);
         continue;
       }
-      this.renderBrush(history.events[i], false);
+      this.renderSplat(history.events[i], false);
     }
     new Set(updatedSplatTokenIds).forEach((id) => {
       const st = BloodNGuts.splatTokens[id];
@@ -807,6 +691,7 @@ export default class BloodLayer extends TilesLayer {
     const ids = new Set(data);
 
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    const histIds = history.events.map((splat) => splat.id);
     history.events = history.events.filter((splat) => !ids.has(splat.id) && !ids.has(splat.tokenId));
     history.pointer = history.events.length;
 

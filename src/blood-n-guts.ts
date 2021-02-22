@@ -22,7 +22,6 @@ import {
   rgbaStringToHexStringAndOpacity,
   lookupTokenBloodColor,
   isFirstActiveGM,
-  isTokenSplatData,
 } from './module/helpers';
 import { MODULE_ID, MODULE_TITLE } from './constants';
 import SplatToken from './classes/SplatToken';
