@@ -1,5 +1,5 @@
 import { MODULE_TITLE } from '../constants';
-import BloodConfig from '../classes/BloodConfig';
+import BrushConfig from '../classes/BrushConfig';
 
 /**
  * Add control buttons
@@ -38,7 +38,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
           icon: 'fas fa-cog',
           onClick: () => {
             // @ts-expect-error defintions wrong
-            new BloodConfig().render(true);
+            new BrushConfig().render(true);
           },
           button: true,
         },
@@ -81,7 +81,7 @@ Hooks.on('renderSceneControls', (controls) => {
   // Switching to layer
   if (controls.activeControl === 'blood') {
     // Open brush tools if not already open
-    if (!$('#blood-brush-controls').length) {
+    if (!$('#brush-controls').length) {
       canvas.blood.createBrushControls();
     }
     // Set active tool
@@ -93,7 +93,7 @@ Hooks.on('renderSceneControls', (controls) => {
     // Clear active tool
     // canvas.blood.clearActiveTool();
     // Remove brush tools if open
-    const bc = $('#blood-brush-controls');
+    const bc = $('#brush-controls');
     if (bc) bc.remove();
   }
 });
@@ -102,7 +102,7 @@ Hooks.on('renderSceneControls', (controls) => {
  * Sets Y position of the brush controls to account for scene navigation buttons
  */
 function setBrushControlPos() {
-  const bc = $('#blood-brush-controls');
+  const bc = $('#brush-controls');
   if (bc) {
     const h = $('#navigation').height();
     bc.css({ top: `${h + 30}px` });

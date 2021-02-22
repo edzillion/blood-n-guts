@@ -1,4 +1,6 @@
-export default class BloodConfig extends FormApplication {
+import { MODULE_ID } from '../constants';
+
+export default class BrushConfig extends FormApplication {
   static get defaultOptions(): FormApplicationOptions {
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
@@ -8,8 +10,8 @@ export default class BloodConfig extends FormApplication {
       popOut: true,
       editable: game.user.isGM,
       width: 500,
-      template: 'modules/blood-n-guts/templates/scene-config.html',
-      id: 'blood-scene-config',
+      template: 'modules/blood-n-guts/templates/brush-config.html',
+      id: 'brush-config',
       title: "Blood 'n Guts Brush Settings",
     });
   }
@@ -28,6 +30,18 @@ export default class BloodConfig extends FormApplication {
   /* -------------------------------------------- */
   /*  Event Listeners and Handlers                */
   /* -------------------------------------------- */
+
+  activateListeners(html: JQuery): void {
+    super.activateListeners(html);
+    const resetButton = html.find('.brush-config-reset-defaults');
+    resetButton.click(() => {
+      Object.keys(canvas.blood.brushSettings).forEach(async (name: string) => {
+        await canvas.scene.unsetFlag(MODULE_ID, name);
+        canvas.blood.brushSettings = canvas.blood.DEFAULTS_BRUSHSETTINGS;
+      });
+      this.render();
+    });
+  }
 
   /**
    * This method is called upon form submission after form data is validated
@@ -48,7 +62,7 @@ export default class BloodConfig extends FormApplication {
     // If save button was clicked, close app
     if (event.submitter?.name === 'submit') {
       Object.values(ui.windows).forEach((val) => {
-        if (val.id === 'blood-scene-config') val.close();
+        if (val.id === 'brush-config') val.close();
       });
     }
   }

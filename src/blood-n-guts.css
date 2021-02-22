@@ -66,30 +66,30 @@
   opacity: 1;
 }
 
-#blood-brush-controls {
+#brush-controls {
   position: absolute;
   left: 120px;
   width: 180px;
   text-align: center;
 }
 
-#blood-brush-controls h3,
-#blood-brush-controls .label {
+#brush-controls h3,
+#brush-controls .label {
   color: #FFF;
   text-shadow: 1px 1px 0 #000;
 }
 
-#blood-brush-controls .label {
+#brush-controls .label {
   position: absolute;
   top: 14px;
 }
-#blood-brush-controls .brush-alpha {
+#brush-controls .brush-alpha {
   position: relative;
   margin-bottom:10px;
 }
-#blood-brush-controls .right-label {
+#brush-controls .right-label {
   right: 0;
 }
-#blood-brush-controls .left-label {
+#brush-controls .left-label {
   left: 0;
 }

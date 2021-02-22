@@ -15,14 +15,7 @@ import {
   getMergedViolenceLevels,
 } from './module/settings';
 import { log, LogLevel } from './module/logging';
-import {
-  getRandomGlyph,
-  getRGBA,
-  changeColorPickerOpacityHack,
-  rgbaStringToHexStringAndOpacity,
-  lookupTokenBloodColor,
-  isFirstActiveGM,
-} from './module/helpers';
+import { getRandomGlyph, getHexColor, lookupTokenBloodColor, isFirstActiveGM } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
 import BloodLayer from './classes/BloodLayer';
@@ -124,14 +117,14 @@ export class BloodNGuts {
    * @param {SplatFont=tokenSplatFont} font - the font to use for splats
    * @param {number} size - the size of splats.
    * @param {number} density - the amount of drips.
-   * @param {string='blood'} bloodColor - splat color, can be a css color name or RBGA string e.g. '[255,255,0,0.5]'
+   * @param {string} bloodColor - splat color in hex format e.g. #FFFFFF
    */
   public static drawDOMSplats(
     html: HTMLElement,
     font: SplatFont = BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
     size: number,
     density: number,
-    bloodColor = 'blood',
+    bloodColor: string,
   ): void {
     if (!density) return;
     log(LogLevel.INFO, 'drawDOMSplats');
@@ -141,7 +134,7 @@ export class BloodNGuts {
     const containerStyle = {
       width: html.clientWidth,
       height: html.clientHeight,
-      color: getRGBA(bloodColor),
+      color: bloodColor,
     };
 
     const container = $('<div/>', {
@@ -265,14 +258,9 @@ export class BloodNGuts {
       choices[levelName] = levelName;
     }
 
-    let defaultColor =
+    const defaultColor =
       tokenConfig.object.getFlag(MODULE_ID, 'bloodColor') || (await lookupTokenBloodColor(tokenConfig.object));
-    let defaultOpacity = '0.7';
-    if (defaultColor !== 'none') {
-      const { hexString, opacity } = rgbaStringToHexStringAndOpacity(defaultColor);
-      defaultColor = hexString;
-      defaultOpacity = opacity;
-    }
+    const defaultOpacity = '0.7';
 
     const data = {
       defaultColor: defaultColor,
@@ -310,12 +298,6 @@ export class BloodNGuts {
       bloodColorPicker.prop('disabled', true);
     }
 
-    if (!data.selectedColor || data.selectedColor === 'none') {
-      changeColorPickerOpacityHack(0);
-    } else {
-      changeColorPickerOpacityHack(defaultOpacity);
-    }
-
     customBloodCheckBox.on('click', (event) => {
       // @ts-ignore
       if (event.target.checked) customBloodPanel.show();
@@ -323,31 +305,19 @@ export class BloodNGuts {
       tokenConfig.setPosition({ height: 'auto' });
     });
 
-    bloodColorPicker.on('click', (event) => {
-      changeColorPickerOpacityHack(defaultOpacity);
-    });
-
     bloodColorPicker.on('change', (event) => {
-      changeColorPickerOpacityHack(0.7);
       // @ts-ignore
-      data.selectedColor = hexToRGBAString(colorStringToHex(event.target.value), 0.7);
+      data.selectedColor = event.target.value;
       bloodColorText.val(data.selectedColor);
     });
 
     bloodColorText.on('change', (event) => {
-      // regex test for rgba here w form validation
       // @ts-ignore
       if (event.target.value === '') {
-        changeColorPickerOpacityHack(0);
         data.selectedColor = '';
       } else {
         // @ts-ignore
-        const { hexString, opacity } = rgbaStringToHexStringAndOpacity(event.target.value);
-        defaultColor = hexString;
-        defaultOpacity = opacity;
-
-        bloodColorPicker.val(defaultColor);
-        changeColorPickerOpacityHack(opacity);
+        bloodColorPicker.val(event.target.value);
       }
     });
 
@@ -356,15 +326,11 @@ export class BloodNGuts {
       if (event.target.value === 'Disabled' && !bloodColorPicker.prop('disabled')) {
         bloodColorPicker.prop('disabled', true);
         bloodColorText.prop('disabled', true);
-        changeColorPickerOpacityHack(0);
         bloodColorText.val('');
       } else if (bloodColorPicker.prop('disabled')) {
         bloodColorPicker.prop('disabled', false);
         bloodColorText.prop('disabled', false);
         if (data.selectedColor !== 'none') {
-          const { hexString, opacity } = rgbaStringToHexStringAndOpacity(data.selectedColor);
-          bloodColorPicker.val(hexString);
-          changeColorPickerOpacityHack(opacity);
           bloodColorText.val(data.selectedColor);
         }
       }

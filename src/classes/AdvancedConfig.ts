@@ -2,7 +2,7 @@
 import { log, LogLevel } from '../module/logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
-import { getRGBA } from '../module/helpers';
+import { getHexColor } from '../module/helpers';
 import { getMergedViolenceLevels } from '../module/settings';
 
 /**
@@ -13,12 +13,12 @@ import { getMergedViolenceLevels } from '../module/settings';
 export class AdvancedConfig extends FormApplication {
   font: SplatFont;
   allAsciiCharacters: string;
-  mergedViolenceLevels: any;
+  mergedViolenceLevels: Record<string, ViolenceLevel>;
   baseViolenceLevel: string;
-  dataObject: any;
+  dataObject: Record<string, unknown>;
   violenceLevelHTML: JQuery;
 
-  constructor(object: any, options?: FormApplicationOptions) {
+  constructor(object: Record<string, unknown>, options?: FormApplicationOptions) {
     super(object, options);
     game.settings.sheet.close();
     game.users.apps.push(this);
@@ -37,7 +37,7 @@ export class AdvancedConfig extends FormApplication {
     return options;
   }
 
-  async getData(): Promise<any> {
+  async getData(): Promise<Record<string, unknown>> {
     this.dataObject['violenceLevel'] = this.baseViolenceLevel = game.settings.get(MODULE_ID, 'violenceLevel');
     this.mergedViolenceLevels = await getMergedViolenceLevels;
     // we use 'Disabled' here only to iterate the obj keys
@@ -53,7 +53,7 @@ export class AdvancedConfig extends FormApplication {
     return this.dataObject;
   }
 
-  render(force: any, context = {}): any {
+  render(force: boolean, context = {}): Application {
     return super.render(force, context);
   }
 
@@ -77,7 +77,7 @@ export class AdvancedConfig extends FormApplication {
         BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
         250,
         4,
-        getRGBA('blood'),
+        getHexColor('blood'),
       );
     });
 
@@ -94,7 +94,7 @@ export class AdvancedConfig extends FormApplication {
     });
   }
 
-  async _updateObject(_event: Event, formData: any): Promise<void> {
+  async _updateObject(_event: Event, formData: Record<string, unknown>): Promise<void> {
     for (const setting in formData) {
       game.settings.set(MODULE_ID, setting, formData[setting]);
     }

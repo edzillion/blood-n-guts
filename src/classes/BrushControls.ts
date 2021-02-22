@@ -1,3 +1,5 @@
+import { BloodNGuts } from '../blood-n-guts';
+
 export default class BrushControls extends FormApplication {
   current: { brushSize: number; brushAlpha: number; brushDensity: number; brushSpread: number };
 
@@ -10,7 +12,7 @@ export default class BrushControls extends FormApplication {
       popOut: false,
       editable: game.user.isGM,
       template: 'modules/blood-n-guts/templates/brush-controls.html',
-      id: 'filter-config',
+      id: 'brush-controls',
       title: "Blood 'n Guts Brush Settings",
     });
   }
@@ -21,8 +23,9 @@ export default class BrushControls extends FormApplication {
    * Obtain module metadata and merge it with game settings which track current module visibility
    * @return {Object}   The data provided to the template when rendering the form
    */
-  getData(): BrushSettings {
-    return canvas.blood.brushSettings;
+  async getData(): Promise<BrushSettings> {
+    await BloodNGuts.allFontsReady;
+    return mergeObject(canvas.blood.brushSettings, { fonts: BloodNGuts.allFonts });
   }
 
   /* -------------------------------------------- */

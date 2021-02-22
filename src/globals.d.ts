@@ -66,11 +66,8 @@ interface BrushSettings {
   brushDensity: number;
   brushFlow: number;
   brushFont: string;
-  brushOpacity: number;
-  brushRGBA: number;
   brushSize: number;
   brushSpread: number;
-  fonts: SplatFont[];
   previewAlpha: number;
   visible: boolean;
 }

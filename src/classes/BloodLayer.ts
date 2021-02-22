@@ -1,7 +1,7 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import TileSplat from './TileSplat';
-import { getPointOnCurve, getRandomBoxMuller, getRandomGlyph, getRGBA, getUID } from '../module/helpers';
+import { getPointOnCurve, getRandomBoxMuller, getRandomGlyph, getHexColor, getUID } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BrushControls from './BrushControls';
@@ -10,7 +10,7 @@ import SplatToken from './SplatToken';
 //@ts-expect-error missing definition
 export default class BloodLayer extends TilesLayer {
   layer: PIXI.Container;
-  DEFAULTS: BrushSettings;
+  DEFAULTS_BRUSHSETTINGS: BrushSettings;
   DEFAULTS_TILESPLAT: TileSplatData;
   brushControls: BrushControls;
   brushSettings: BrushSettings;
@@ -32,23 +32,22 @@ export default class BloodLayer extends TilesLayer {
     this.pointer = 0;
     this.historyBuffer = [];
 
-    this.brushSettings = this.DEFAULTS = {
+    this.DEFAULTS_BRUSHSETTINGS = {
       brushAlpha: 0.7,
       brushColor: '#8A0707',
       brushDensity: 1,
       brushFlow: 75,
       brushFont: 'splatter',
-      brushOpacity: 0,
-      brushRGBA: 0,
       brushSize: 50,
       brushSpread: 1.0,
-      fonts: BloodNGuts.allFonts,
       previewAlpha: 0.4,
       visible: true,
     };
 
+    this.brushSettings = duplicate(this.DEFAULTS_BRUSHSETTINGS);
+
     this.DEFAULTS_TILESPLAT = {
-      alpha: 1,
+      alpha: 0.7,
       width: 1,
       height: 1,
       // @ts-expect-error bad def
@@ -63,12 +62,10 @@ export default class BloodLayer extends TilesLayer {
       styleData: {
         fontFamily: 'splatter',
         fontSize: 50,
-        fill: getRGBA('blood'),
+        fill: getHexColor('blood'),
         align: 'center',
       },
       offset: new PIXI.Point(0),
-      maskPolygon: [],
-      brushSettings: this.brushSettings,
     };
 
     // React to changes to current scene
@@ -90,7 +87,7 @@ export default class BloodLayer extends TilesLayer {
     prevCont.name = 'Preview Container';
     //@ts-expect-error definition missing
     this.preview = this.addChild(prevCont) as PIXI.Container;
-    this.preview.alpha = this.DEFAULTS.previewAlpha;
+    this.preview.alpha = this.DEFAULTS_BRUSHSETTINGS.previewAlpha;
   }
 
   /** @override */
@@ -207,18 +204,18 @@ export default class BloodLayer extends TilesLayer {
 
   /** @override */
   async draw(): Promise<BloodLayer> {
-    this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
-    // Create and draw objects
-    const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    if (!history || history.events.length === 0) return;
-    const promises = history.events.map((data) => {
-      const obj = this.createObject(data);
-      return obj.draw();
-    });
+    // this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
+    // // Create and draw objects
+    // const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    // if (!history || history.events.length === 0) return;
+    // const promises = history.events.map((data) => {
+    //   const obj = this.createObject(data);
+    //   return obj.draw();
+    // });
 
-    // Wait for all objects to draw
-    this.visible = true;
-    await Promise.all(promises);
+    // // Wait for all objects to draw
+    // this.visible = true;
+    // await Promise.all(promises);
     return this;
   }
 
@@ -332,7 +329,7 @@ export default class BloodLayer extends TilesLayer {
     return {
       fontFamily: this.brushSettings.brushFont,
       fontSize: this.brushSettings.brushSize,
-      fill: hexToRGBAString(parseInt(this.brushSettings.brushColor.slice(1), 16), this.brushSettings.brushAlpha),
+      fill: this.brushSettings.brushColor,
       align: 'center',
     };
   }
@@ -356,8 +353,9 @@ export default class BloodLayer extends TilesLayer {
   }
 
   loadSceneSettings(): void {
-    Object.keys(this.DEFAULTS).forEach((name) => {
-      if (this.getSetting(true, name) !== undefined) this.brushSettings[name] = this.getSetting(true, name);
+    Object.keys(this.DEFAULTS_BRUSHSETTINGS).forEach((name) => {
+      const val = this.getSetting(true, name);
+      if (val !== undefined) this.brushSettings[name] = val;
     });
   }
 
