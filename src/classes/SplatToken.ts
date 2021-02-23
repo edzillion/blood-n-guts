@@ -366,7 +366,7 @@ export default class SplatToken {
   private bleedToken(): void {
     const tokenSplatData: Partial<TokenSplatData> = {};
     tokenSplatData.name = 'Token Splat';
-    tokenSplatData.alpha = 1;
+    tokenSplatData.alpha = 0.75;
     const density = this.tokenSettings.tokenSplatDensity;
     if (density === 0) return;
 

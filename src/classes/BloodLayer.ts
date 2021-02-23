@@ -33,7 +33,7 @@ export default class BloodLayer extends TilesLayer {
     this.historyBuffer = [];
 
     this.DEFAULTS_BRUSHSETTINGS = {
-      brushAlpha: 0.7,
+      brushAlpha: 0.75,
       brushColor: '#8A0707',
       brushDensity: 1,
       brushFlow: 75,
@@ -47,7 +47,7 @@ export default class BloodLayer extends TilesLayer {
     this.brushSettings = duplicate(this.DEFAULTS_BRUSHSETTINGS);
 
     this.DEFAULTS_TILESPLAT = {
-      alpha: 0.7,
+      alpha: 0.75,
       width: 1,
       height: 1,
       // @ts-expect-error bad def
@@ -508,6 +508,7 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.z = 100 + this.zOrderCounter++;
     tileSplatData.height = 1;
     tileSplatData.width = 1;
+    tileSplatData.alpha = 0.75;
     tileSplatData.id = getUID();
 
     tileSplatData.name = 'Trail Splat';

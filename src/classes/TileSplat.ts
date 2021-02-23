@@ -102,8 +102,8 @@ export default class TileSplat extends Tile {
     this.hitArea = bounds;
 
     if (this.data.hidden) {
-      if (this.alpha > 0.5) this.alpha = 0.5;
-    } else if (this.alpha === 0.5) this.alpha = 1;
+      if (this.alpha === 0.75) this.alpha = 0.5;
+    } else if (this.alpha === 0.5) this.alpha = 0.75;
 
     this.visible = !this.data.hidden || game.user.isGM;
     return this;
