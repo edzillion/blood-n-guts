@@ -617,7 +617,7 @@ export default class BloodLayer extends TilesLayer {
     if (history.events.length > maxPoolSize) {
       // remove the oldest splats
       const numToRemove = history.events.length - maxPoolSize;
-      log(LogLevel.INFO, 'renderHistory truncating history ', numToRemove);
+      log(LogLevel.INFO, 'commitHistory truncating history ', numToRemove);
       history.events
         .splice(0, numToRemove)
         .filter((e) => e.tokenId)

@@ -148,8 +148,8 @@ export default class SplatToken {
    * @param updatedSplats - the latest token splat data.
    * @function
    */
-  public preSplat(): void {
-    log(LogLevel.DEBUG, 'preSpat', this.token.data.name);
+  public preSplat(): { _id: string; 'flags.blood-n-guts.bleedingSeverity': number } {
+    log(LogLevel.INFO, 'preSpat', this.token.data.name);
     if (this.tokenSplats.length === 0) {
       const currentHP = this.hp;
       const lastHP = this.maxHP * this.tokenSettings.healthThreshold;
@@ -160,8 +160,7 @@ export default class SplatToken {
       this.bleedingSeverity = this.hitSeverity = severity;
 
       this.bleedToken();
-      canvas.blood.commitHistory();
-      this.token.update({ flags: { [MODULE_ID]: { bleedingSeverity: this.bleedingSeverity } } }, { diff: false });
+      return { _id: this.id, 'flags.blood-n-guts.bleedingSeverity': this.bleedingSeverity };
     }
   }
 
@@ -350,7 +349,7 @@ export default class SplatToken {
   private bleedToken(): void {
     const tokenSplatData: Partial<TokenSplatData> = {};
     tokenSplatData.name = 'Token Splat';
-    tokenSplatData.alpha = 0.75;
+    tokenSplatData.alpha = 0.85;
     const density = this.tokenSettings.tokenSplatDensity;
     if (density === 0) return;
 

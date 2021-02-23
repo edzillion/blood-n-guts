@@ -197,6 +197,18 @@ export class BloodNGuts {
       ui.notifications.notify(`Note: Blood 'n Guts requires a GM to be online to function!`, 'warning');
       BloodNGuts.disabled = true;
     }
+
+    if (isFirstActiveGM()) {
+      let updateData = [];
+      for (const tokenId in BloodNGuts.splatTokens) {
+        updateData.push(BloodNGuts.splatTokens[tokenId].preSplat());
+      }
+      updateData = updateData.filter((u) => u != undefined);
+      if (updateData.length !== 0) {
+        canvas.blood.commitHistory();
+        BloodNGuts.splatTokens[updateData[0]._id].token.update(updateData);
+      }
+    }
   }
 
   /**
@@ -445,9 +457,6 @@ Token.prototype.draw = (function () {
     } else {
       splatToken = await new SplatToken(this).create();
       BloodNGuts.splatTokens[this.id] = splatToken;
-      if (isFirstActiveGM() && !splatToken.disabled) {
-        splatToken.preSplat();
-      }
     }
     if (splatToken.disabled) return this;
     const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;
