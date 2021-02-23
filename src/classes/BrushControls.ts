@@ -1,8 +1,6 @@
 import { BloodNGuts } from '../blood-n-guts';
 
 export default class BrushControls extends FormApplication {
-  current: { brushSize: number; brushAlpha: number; brushDensity: number; brushSpread: number };
-
   static get defaultOptions(): FormApplicationOptions {
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
@@ -20,7 +18,7 @@ export default class BrushControls extends FormApplication {
   /* -------------------------------------------- */
 
   /**
-   * Obtain module metadata and merge it with game settings which track current module visibility
+   * Obtain brush settings and merge with loaded fonts
    * @return {Object}   The data provided to the template when rendering the form
    */
   async getData(): Promise<BrushSettings> {

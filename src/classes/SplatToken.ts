@@ -108,7 +108,7 @@ export default class SplatToken {
    */
   public async createMask(): Promise<void> {
     if (this.disabled) return;
-    // @ts-ignore
+    // @ts-expect-error missing definition
     const maskTexture = await PIXI.Texture.fromURL(this.token.data.img);
     const maskSprite = PIXI.Sprite.from(maskTexture);
     maskSprite.width = this.spriteWidth;
@@ -125,8 +125,6 @@ export default class SplatToken {
       new PIXI.BaseRenderTexture({
         width: this.spriteWidth,
         height: this.spriteHeight,
-        // scaleMode: PIXI.SCALE_MODES.LINEAR,
-        // resolution: 1
       }),
     );
 
@@ -167,20 +165,6 @@ export default class SplatToken {
     }
   }
 
-  // /**
-  //  * Saves updated splats to tokenSplats and calls draw() if changed.
-  //  * @category GMandPC
-  //  * @param updatedSplats - the latest token splat data.
-  //  * @function
-  //  */
-  // public updateSplats(updatedSplats: TokenSplatData[]): void {
-  //   if (this.disabled || JSON.stringify(updatedSplats) === JSON.stringify(this.tokenSplats)) return;
-  //   this.tokenSplats = updatedSplats || [];
-  //   const ids = this.tokenSplats.map((ts) => ts.id);
-  //   log(LogLevel.INFO, 'updateSplats, ids: ', ids);
-  //   this.draw();
-  // }
-
   /**
    * Checks for token movement and damage, generates splats and saves updates.
    * @category GMOnly
@@ -209,7 +193,7 @@ export default class SplatToken {
     )
       return false;
 
-    const updates = { bleedingSeverity: null, splats: null };
+    const updates = { bleedingSeverity: null };
     [this.hitSeverity, updates.bleedingSeverity] = this.getUpdatedDamage(changes);
     if (updates.bleedingSeverity !== null) this.bleedingSeverity = updates.bleedingSeverity;
     else delete updates.bleedingSeverity;
@@ -220,7 +204,7 @@ export default class SplatToken {
       this.bleedToken();
     } else if (this.hitSeverity < 0 && this.tokenSplats.length) {
       this.healToken();
-    } else delete updates.splats;
+    }
 
     const bloodTrail = this.direction && this.bleedingSeverity ? this.bleedTrail() : false;
 
@@ -468,7 +452,6 @@ export default class SplatToken {
       const flags = {
         [MODULE_ID]: updates,
       };
-
       await this.token.update({ flags }, { diff: false });
     }
 
@@ -585,17 +568,6 @@ export default class SplatToken {
   }
 
   /**
-   * Removes a token splat based on id.
-   * @category GMOnly
-   * @function
-   * @param {string} - the id of the splat to remove.
-   */
-  public removeSplat(id: string): void {
-    // this.tokenSplats = this.tokenSplats.filter((s) => s.id !== id);
-    // this.draw();
-  }
-
-  /**
    * Wipes and draws all splats on this token.
    * @category GMandPC
    * @function
@@ -604,25 +576,6 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'tokenSplat: draw');
     this.wipeSplats();
 
-    // const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    // const extantHistoryIds =
-    //   history && history.events?.length > 0
-    //     ? history.events
-    //         .flat()
-    //         .filter((s) => s.tokenId === this.id)
-    //         .map((s) => s.id)
-    //     : [];
-    // const extantTokenIds = this.tokenSplats?.length < 1 ? [] : this.tokenSplats.map((ts) => ts.id);
-
-    // extantTokenIds
-    //   .filter((id) => !extantHistoryIds.includes(id))
-    //   .forEach((id) => {
-    //     canvas.blood.historyBuffer.push({ id: id, tokenId: this.id });
-    //   });
-    // const removeIds = extantHistoryIds.filter((id) => !extantTokenIds.includes(id));
-    // canvas.blood.commitHistory().then(canvas.blood.deleteMany(removeIds));
-
-    // @ts-ignore
     if (!this.tokenSplats || !this.tokenSplats.length) return;
 
     BloodNGuts.allFontsReady.then(() => {

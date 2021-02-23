@@ -15,7 +15,7 @@ import {
   getMergedViolenceLevels,
 } from './module/settings';
 import { log, LogLevel } from './module/logging';
-import { getRandomGlyph, getHexColor, lookupTokenBloodColor, isFirstActiveGM } from './module/helpers';
+import { getRandomGlyph, lookupTokenBloodColor, isFirstActiveGM } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
 import BloodLayer from './classes/BloodLayer';
@@ -33,13 +33,10 @@ export class BloodNGuts {
   public static allFonts: SplatFont[];
   public static splatTokens: Record<string, SplatToken>;
   public static disabled: boolean;
-  public static paintActive: boolean;
-  public static layer: BloodLayer;
 
   public static initialize(): void {
     BloodNGuts.splatTokens = {};
     BloodNGuts.disabled = false;
-    BloodNGuts.paintActive = false;
   }
 
   public static registerLayer(): void {
@@ -67,7 +64,7 @@ export class BloodNGuts {
       return;
     }
     await canvas.blood.wipeLayer(true);
-    await BloodNGuts.wipeTokenFlags();
+    BloodNGuts.wipeTokenSplats();
   }
 
   /**
@@ -83,20 +80,6 @@ export class BloodNGuts {
     }
     canvas.blood.wipeLayer();
     BloodNGuts.wipeTokenSplats();
-  }
-
-  /**
-   * Wipes all splats data from token flags.
-   * @category GMOnly
-   * @function
-   */
-  public static async wipeTokenFlags(): Promise<PlaceableObject> {
-    log(LogLevel.INFO, 'wipeTokenFlags');
-    const updateData = [];
-    for (const tokenId in BloodNGuts.splatTokens) {
-      updateData.push({ _id: tokenId, 'flags.blood-n-guts.splats': '' });
-    }
-    return BloodNGuts.splatTokens[updateData[0]._id].token.update(updateData);
   }
 
   /**
@@ -255,7 +238,6 @@ export class BloodNGuts {
 
     const defaultColor =
       tokenConfig.object.getFlag(MODULE_ID, 'bloodColor') || (await lookupTokenBloodColor(tokenConfig.object));
-    const defaultOpacity = '0.7';
 
     const data = {
       defaultColor: defaultColor,
@@ -412,7 +394,6 @@ Hooks.once('ready', () => {
 Hooks.once('canvasInit', () => {
   // Add SimplefogLayer to canvas
   canvas.blood.initialize();
-  BloodNGuts.layer = canvas.blood;
 });
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
@@ -428,8 +409,6 @@ Hooks.on('updateActor', (actor, changes) => {
 
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
-// Hooks.on('updateScene', BloodNGuts.updateSceneHandler);
-// Hooks.on('getSceneControlButtons', BloodNGuts.getSceneControlButtonsHandler);
 Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
 
 Hooks.on('chatMessage', (_chatTab, commandString) => {

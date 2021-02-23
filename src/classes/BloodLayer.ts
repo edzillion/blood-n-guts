@@ -9,7 +9,6 @@ import SplatToken from './SplatToken';
 
 //@ts-expect-error missing definition
 export default class BloodLayer extends TilesLayer {
-  layer: PIXI.Container;
   DEFAULTS_BRUSHSETTINGS: BrushSettings;
   DEFAULTS_TILESPLAT: TileSplatData;
   brushControls: BrushControls;
@@ -28,12 +27,10 @@ export default class BloodLayer extends TilesLayer {
     this._registerKeyboardListeners();
 
     this.zOrderCounter = 0;
-
     this.pointer = 0;
     this.historyBuffer = [];
 
     this.DEFAULTS_BRUSHSETTINGS = {
-      brushAlpha: 0.75,
       brushColor: '#8A0707',
       brushDensity: 1,
       brushFlow: 75,
@@ -70,8 +67,6 @@ export default class BloodLayer extends TilesLayer {
 
     // React to changes to current scene
     Hooks.on('updateScene', (scene, data) => this.updateSceneHandler(scene, data));
-    // this.layer = BloodLayer.getCanvasContainer();
-    // this.addChild(this.layer);
   }
 
   initialize(): void {
@@ -86,7 +81,7 @@ export default class BloodLayer extends TilesLayer {
     const prevCont = new PIXI.Container();
     prevCont.name = 'Preview Container';
     //@ts-expect-error definition missing
-    this.preview = this.addChild(prevCont) as PIXI.Container;
+    this.preview = this.addChild(prevCont);
     this.preview.alpha = this.DEFAULTS_BRUSHSETTINGS.previewAlpha;
   }
 
@@ -103,24 +98,6 @@ export default class BloodLayer extends TilesLayer {
       controllableObjects: true,
     });
   }
-
-  // /**
-  //  * Handler called when scene data updated. Draws splats from scene data flags.
-  //  * @category GMandPC
-  //  * @function
-  //  * @param scene - reference to the current scene
-  //  * @param changes - changes
-  //  */
-  // public updateSceneHandler(scene, changes): void {
-  //   if (!scene.active || BloodNGuts.disabled || !changes.flags || changes.flags[MODULE_ID]?.sceneSplats === undefined)
-  //     return;
-  //   log(LogLevel.DEBUG, 'updateSceneHandler');
-  //   if (changes.flags[MODULE_ID]?.sceneSplats === null) {
-  //     BloodNGuts.wipeSceneSplats();
-  //     return;
-  //   }
-  //   this.collection = BloodNGuts.trimTileSplatData(duplicate(changes.flags[MODULE_ID]?.sceneSplats));
-  // }
 
   /** @override */
   _onClickLeft(event: InteractionEvent): void {
@@ -153,7 +130,7 @@ export default class BloodLayer extends TilesLayer {
   /** @override */
   _onDragLeftStart(event: InteractionEvent): void {
     log(LogLevel.INFO, '_onDragLeftStart createState', event.data.createState);
-
+    // clear our commit timer as we upgrade a click to a drag
     clearTimeout(this.commitTimer);
 
     // @ts-expect-error definition missing
@@ -162,11 +139,11 @@ export default class BloodLayer extends TilesLayer {
 
     // the first TileSplat in the buffer should be the one just created by _onClickLeft
     const data = this.historyBuffer[0];
+    // remove it from objects
     this.objects.children.forEach((splat: TileSplat) => {
       if (data.id === splat.id) this.objects.removeChild(splat);
     });
-
-    // recreate it as our preview
+    // and recreate it as our preview
     const previewSplat = new TileSplat(data);
     previewSplat.name = 'Preview Splat';
     event.data.preview = this.preview.addChild(previewSplat);
@@ -179,7 +156,7 @@ export default class BloodLayer extends TilesLayer {
     log(LogLevel.INFO, '_onDragLeftMove createState', createState);
     if (!preview) return;
     if (preview.parent === null) {
-      // In theory this should never happen, but rarely does
+      // In theory this should never happen, but sometimes does
       this.preview.addChild(preview);
     }
     if (createState >= 1) {
@@ -273,9 +250,9 @@ export default class BloodLayer extends TilesLayer {
 
     await this.deleteFromHistory(data);
 
-    // @ts-expect-error todo this
+    // @ts-expect-error missing definition
     if (this.hud) this.hud.clear();
-    // @ts-expect-error todo this
+    // @ts-expect-error missing definition
     this.releaseAll();
   }
 
@@ -283,6 +260,7 @@ export default class BloodLayer extends TilesLayer {
     this.updateNonEmbeddedEntity(data, options);
   }
 
+  // only called for TileSplats
   public updateNonEmbeddedEntity(
     data: Partial<TileSplatData> | Partial<TileSplatData>[],
     options = {} as { diff: boolean },
@@ -320,9 +298,9 @@ export default class BloodLayer extends TilesLayer {
 
     updates.forEach((update) => {
       //@ts-expect-error definition missing
-      const s = this.get(update._id);
-      s.data = mergeObject(s.data, update);
-      s._onUpdate(update);
+      const splat = this.get(update._id);
+      splat.data = mergeObject(splat.data, update);
+      splat._onUpdate(update);
     });
   }
 
@@ -361,8 +339,7 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Get initial data for a new drawing.
-   * Start with some global defaults, apply user default config, then apply mandatory overrides per tool.
+   * Get initial data for a new TileSplat.
    * @param {Object} origin     The initial coordinate
    * @return {Object}           The new drawing data
    * @private
@@ -599,13 +576,14 @@ export default class BloodLayer extends TilesLayer {
     log(LogLevel.INFO, `Rendering from: ${start} to ${stop}`);
     // Render all ops starting from pointer
     for (let i = start; i < stop; i += 1) {
-      // skip TokenSplats
+      // if it's a TokenSplat don't render instead save id for later draw()
       if (history.events[i].tokenId) {
         updatedSplatTokenIds.push(history.events[i].tokenId);
         continue;
       }
       this.renderTileSplat(history.events[i], false);
     }
+    // draw each SplatToken that has entries in history
     new Set(updatedSplatTokenIds).forEach((id) => {
       const st = BloodNGuts.splatTokens[id];
       st.draw();
@@ -660,10 +638,12 @@ export default class BloodLayer extends TilesLayer {
       if (numToVeryFade < 1) numToVeryFade = 1;
       history.events.slice(0, numToVeryFade).forEach((event) => {
         event.alpha = 0.15;
+        // setting the pointer to <= this.pointer will reset the history and render all
         this.pointer = history.pointer;
       });
       history.events.slice(numToVeryFade, numToVeryFade + numToFade).forEach((event) => {
         event.alpha = 0.45;
+        // setting the pointer to <= this.pointer will reset the history and render all
         this.pointer = history.pointer;
       });
     }
@@ -738,8 +718,8 @@ export default class BloodLayer extends TilesLayer {
       for (const tokenId in tokenSplatsToRemove) {
         const splatToken = BloodNGuts.splatTokens[tokenId];
         if (!splatToken) log(LogLevel.ERROR, 'undo() token not found!');
-        const splats = splatToken.tokenSplats.filter((s) => !tokenSplatsToRemove[tokenId].includes(s.id));
-        splatToken.token.update({ flags: { [MODULE_ID]: { splats: splats } } }, { diff: false });
+        // wipes all splats on the splatToken, but any remaining in history will be redrawn on next renderHistory()
+        splatToken.wipeSplats();
       }
       history.events = history.events.slice(0, history.pointer);
     }
@@ -753,19 +733,11 @@ export default class BloodLayer extends TilesLayer {
    */
   _registerKeyboardListeners(): void {
     $(document).keydown((event: JQuery.KeyDownEvent) => {
-      // Only react if simplefog layer is active
+      // Only react if blood layer is active
       // @ts-expect-error missing def
       if (ui.controls.activeControl !== 'blood') return;
       // Don't react if game body isn't target
       if (event.target.tagName !== 'BODY') return;
-      // if (event.which === 219 && game.activeTool === 'brush') {
-      //   const s = this.getUserSetting('brushSize');
-      //   this.setBrushSize(s * 0.8);
-      // }
-      // if (event.which === 221 && this.activeTool === 'brush') {
-      //   const s = this.getUserSetting('brushSize');
-      //   this.setBrushSize(s * 1.25);
-      // }
       // React to ctrl+z
       if (event.which === 90 && event.ctrlKey) {
         event.stopPropagation();
@@ -779,7 +751,11 @@ export default class BloodLayer extends TilesLayer {
   /* -------------------------------------------- */
 
   /**
-   * React to updates of canvas.scene flags
+   * Handler called when scene data updated. Draws splats from scene data flags.
+   * @category GMandPC
+   * @function
+   * @param scene - reference to the current scene
+   * @param data - data updates
    */
   updateSceneHandler(scene: Scene, data: Record<string, unknown>): void {
     // Check if update applies to current viewed scene

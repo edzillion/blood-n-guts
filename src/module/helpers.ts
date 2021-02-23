@@ -7,11 +7,6 @@ import { getMergedBloodColorSettings } from './settings';
  * @module Helpers
  */
 
-// Types
-export const isTokenSplatData = (splatData: SplatData): splatData is TokenSplatData => {
-  return (splatData as TokenSplatData).tokenId !== undefined;
-};
-
 /**
  * Get the lowest x,y position of an array of `Splat`, align all splats with that
  * point and return the offset, the width and height of the area of all splats.
@@ -91,23 +86,6 @@ export const computeSightFromPoint = (fromPoint: PIXI.Point, range: number): [nu
 };
 
 /**
- * Use Box-Muller transform to return a random number of normal distribution between 0 and 1.
- * @category helpers
- * @function
- * @returns {number} - random number between 0 and 1.
- */
-export const getRandomBoxMuller = (): number => {
-  let u = 0,
-    v = 0;
-  while (u === 0) u = Math.random(); //Converting [0,1) to (0,1)
-  while (v === 0) v = Math.random();
-  let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-  num = num / 10.0 + 0.5; // Translate to 0 -> 1
-  if (num > 1 || num < 0) return getRandomBoxMuller(); // resample between 0 and 1
-  return num;
-};
-
-/**
  * Creates and returns a unique identifier.
  * @category helpers
  * @function
@@ -159,6 +137,8 @@ export const drawDebugRect2 = (x, y, w, h, width = 2, color = 0xff0000): void =>
   rect.lineStyle(width, color).drawRect(x, y, w, h);
   canvas.drawings.addChild(rect);
 };
+
+// MATHS
 
 /**
  * Gets the direction between two points, normalised from (-1,-1) to (1,1)
@@ -229,6 +209,23 @@ export function getDerivativeAt(p1: PIXI.Point, pc: PIXI.Point, p2: PIXI.Point, 
 }
 
 /**
+ * Use Box-Muller transform to return a random number of normal distribution between 0 and 1.
+ * @category helpers
+ * @function
+ * @returns {number} - random number between 0 and 1.
+ */
+export const getRandomBoxMuller = (): number => {
+  let u = 0,
+    v = 0;
+  while (u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+  while (v === 0) v = Math.random();
+  let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  num = num / 10.0 + 0.5; // Translate to 0 -> 1
+  if (num > 1 || num < 0) return getRandomBoxMuller(); // resample between 0 and 1
+  return num;
+};
+
+/**
  * Returns the distance between two Points.
  * @function
  * @param {Point} pt1
@@ -241,7 +238,7 @@ export function distanceBetween(pt1: PIXI.Point, pt2: PIXI.Point): number {
   return Math.sqrt(x * x + y * y);
 }
 
-// colors
+// COLORS
 
 /**
  * Get hex color string given a color name

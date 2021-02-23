@@ -37,7 +37,7 @@ export default class BrushConfig extends FormApplication {
     resetButton.click(() => {
       Object.keys(canvas.blood.brushSettings).forEach(async (name: string) => {
         await canvas.scene.unsetFlag(MODULE_ID, name);
-        canvas.blood.brushSettings = canvas.blood.DEFAULTS_BRUSHSETTINGS;
+        canvas.blood.brushSettings = duplicate(canvas.blood.DEFAULTS_BRUSHSETTINGS);
       });
       this.render();
     });
@@ -50,17 +50,22 @@ export default class BrushConfig extends FormApplication {
    * @private
    */
   async _updateObject(event: SubmitEvent, formData: BrushSettings): Promise<void> {
-    // drop the #
-    //formData.brushRGBA = hexToRGBAString(formData.brushColor.slice(1), formData.brushAlpha);
-    Object.entries(formData).forEach(async ([name, val]: [string, number]) => {
-      const saveToFlag = event.submitter?.name === 'saveDefaults';
-      await canvas.blood.setSetting(saveToFlag, name, val);
-    });
+    if (event.submitter?.name) {
+      Object.entries(formData).forEach(async ([name, val]: [string, number]) => {
+        const saveToFlag = event.submitter?.name === 'saveDefaults';
+        await canvas.blood.setSetting(saveToFlag, name, val);
+      });
 
-    canvas.blood.brushControls.render();
+      canvas.blood.brushControls.render();
 
-    // If save button was clicked, close app
-    if (event.submitter?.name === 'submit') {
+      // If save button was clicked, close app
+      if (event.submitter?.name === 'submit') {
+        Object.values(ui.windows).forEach((val) => {
+          if (val.id === 'brush-config') val.close();
+        });
+      }
+    } else {
+      // close button was clicked, close without doing anything
       Object.values(ui.windows).forEach((val) => {
         if (val.id === 'brush-config') val.close();
       });

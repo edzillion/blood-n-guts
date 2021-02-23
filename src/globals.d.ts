@@ -61,7 +61,6 @@ interface SplatStyle {
 }
 
 interface BrushSettings {
-  brushAlpha: number;
   brushColor: string;
   brushDensity: number;
   brushFlow: number;

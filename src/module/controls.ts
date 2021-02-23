@@ -84,17 +84,13 @@ Hooks.on('renderSceneControls', (controls) => {
     if (!$('#brush-controls').length) {
       canvas.blood.createBrushControls();
     }
-    // Set active tool
-    //const tool = controls.controls.find((control) => control.name === 'blood').activeTool;
-    // canvas.blood.setActiveTool(tool);
   }
   // Switching away from layer
   else {
-    // Clear active tool
-    // canvas.blood.clearActiveTool();
-    // Remove brush tools if open
     const bc = $('#brush-controls');
     if (bc) bc.remove();
+    const bco = $('#brush-config');
+    if (bco) bco.remove();
   }
 });
 
