@@ -204,18 +204,19 @@ export default class BloodLayer extends TilesLayer {
 
   /** @override */
   async draw(): Promise<BloodLayer> {
-    // this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
-    // // Create and draw objects
-    // const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    // if (!history || history.events.length === 0) return;
-    // const promises = history.events.map((data) => {
-    //   const obj = this.createObject(data);
-    //   return obj.draw();
-    // });
+    this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
+    // Create and draw objects
+    const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    if (!history || history.events.length === 0) return;
+    const promises = history.events.map((data) => {
+      if (data.tokenId) return;
+      const obj = this.createObject(data);
+      return obj.draw();
+    });
 
-    // // Wait for all objects to draw
-    // this.visible = true;
-    // await Promise.all(promises);
+    // Wait for all objects to draw
+    this.visible = true;
+    await Promise.all(promises);
     return this;
   }
 
@@ -785,11 +786,11 @@ export default class BloodLayer extends TilesLayer {
     if (!scene._view) return;
     // React to visibility change
     if (hasProperty(data, `flags.${MODULE_ID}.visible`)) {
-      canvas.blood.visible = data.flags[MODULE_ID].visible;
+      this.visible = data.flags[MODULE_ID].visible;
     }
     // React to composite history change
     if (hasProperty(data, `flags.${MODULE_ID}.history`)) {
-      canvas.blood.renderHistory(data.flags[MODULE_ID].history);
+      this.renderHistory(data.flags[MODULE_ID].history);
     }
   }
 }

@@ -214,11 +214,6 @@ export class BloodNGuts {
       ui.notifications.notify(`Note: Blood 'n Guts requires a GM to be online to function!`, 'warning');
       BloodNGuts.disabled = true;
     }
-
-    // need to wait on fonts loading before we can loadScene
-    BloodNGuts.allFontsReady.then(() => {
-      canvas.blood.renderHistory();
-    });
   }
 
   /**

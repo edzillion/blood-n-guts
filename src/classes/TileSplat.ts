@@ -101,8 +101,9 @@ export default class TileSplat extends Tile {
     this.position.set(this.data.x, this.data.y);
     this.hitArea = bounds;
 
-    // if (this.alpha > 0.5 && this.data.hidden)
-    //   this.alpha = 0.5 : 1.0;
+    if (this.data.hidden) {
+      if (this.alpha > 0.5) this.alpha = 0.5;
+    } else if (this.alpha === 0.5) this.alpha = 1;
 
     this.visible = !this.data.hidden || game.user.isGM;
     return this;
@@ -166,8 +167,8 @@ export default class TileSplat extends Tile {
     const drips = canvas.blood.generateDrips(
       this.style,
       this.font,
-      this.data.brushSettings.brushDensity,
-      new PIXI.Point(this.data.brushSettings.brushSpread * canvas.grid.size),
+      canvas.blood.brushSettings.brushDensity,
+      new PIXI.Point(canvas.blood.brushSettings.brushSpread * canvas.grid.size),
       position,
     );
     log(LogLevel.INFO, 'addDrips', drips[0].x, drips[0].y);

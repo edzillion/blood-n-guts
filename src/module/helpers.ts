@@ -13,45 +13,6 @@ export const isTokenSplatData = (splatData: SplatData): splatData is TokenSplatD
 };
 
 /**
- * Converts web colors to base 16
- * @param n {Hex}               Web format color, f.x. #FF0000
- * @return {Hex}                Base 16 format color, f.x. 0xFF0000
- */
-export function webToHex(n) {
-  return n.replace('#', '0x');
-}
-
-/**
- * Converts a base16 color into a web color
- * @param n {Hex}               Base 16 Color, f.x. 0xFF0000
- * @return {Hex}                Web format color, f.x. #FF0000
- */
-export function hexToWeb(n) {
-  return `${n}`.replace('0x', '#');
-}
-
-/**
- * Converts a hexadecimal color to an integer percentage
- * @param n {Hex}               Base 16 Color, f.x. 0x000000
- * @return {Integer}             f.x 0
- */
-export function hexToPercent(n) {
-  return Math.ceil((n / 0xffffff) * 100);
-}
-
-/**
- * Converts an integer percent (0-100) to a hexadecimal greyscale color
- * @param n {Number}            0-100 numeric input
- * @return {Hex}                Base 16 format color, f.x. 0xFFFFFF
- */
-export function percentToHex(n) {
-  let c = Math.ceil(n * 2.55).toString(16);
-  if (c.length === 1) c = `0${c}`;
-  c = `0x${c}${c}${c}`;
-  return c;
-}
-
-/**
  * Get the lowest x,y position of an array of `Splat`, align all splats with that
  * point and return the offset, the width and height of the area of all splats.
  * @category helpers
@@ -168,33 +129,6 @@ export const getUID = (typeCode?: string): string => {
 export const isFirstActiveGM = (): boolean => {
   // @ts-ignore
   return game.users.find((e) => e.isGM).data._id === game.user.data._id;
-};
-
-/**
- * Hacky way to change the css on pseudo element dynamically.
- * @category helpers
- * @function
- * @param {number} opacity
- */
-export const changeColorPickerOpacityHack = (opacity) => {
-  for (let i = 0; i < document.styleSheets.length; i++) {
-    const sheet = document.styleSheets[i];
-    // @ts-ignore
-    if (sheet.ownerNode?.attributes?.href?.value === 'modules/blood-n-guts/blood-n-guts.css') {
-      for (let j = 0; j < sheet.rules.length; j++) {
-        const rule = sheet.rules[j];
-        // @ts-ignore
-        if (rule.selectorText === '::-moz-color-swatch' || rule.selectorText === '::-webkit-color-swatch') {
-          // @ts-ignore
-          if (rule.style.opacity != opacity) {
-            log(LogLevel.DEBUG, 'changeColorPickerOpacityHack opacity', opacity);
-            // @ts-ignore
-            rule.style.opacity = opacity;
-          }
-        }
-      }
-    }
-  }
 };
 
 /**
@@ -323,7 +257,7 @@ export function getHexColor(colorName: string): string {
     // test whether this is a valid CSS color name
     const style = new Option().style;
     style.color = colorName;
-    // if it is not a valid this will be blank
+    // if it is not a valid color this will be blank
     return style.color;
   }
 }
@@ -366,7 +300,7 @@ export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   if (!bloodColor) return getHexColor('blood');
   if (bloodColor === 'none') return 'none';
 
-  // bloodSettings can return either an rbga string, a color string or 'name' which looks up the
+  // bloodColorSettings can return either a hex string, a color string or 'name' which looks up the
   // color based on it's name. e.g. 'Purple Ooze'
   let hexColor: string;
   if (bloodColor === 'name') {
