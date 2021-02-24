@@ -182,6 +182,7 @@ export default class BloodLayer extends TilesLayer {
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     // Create and draw objects
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    log(LogLevel.INFO, 'draw: size ' + history.events.length);
     if (!history || history.events.length === 0) return;
     const promises = history.events.map((data) => {
       if (data.tokenId) return;
@@ -192,6 +193,7 @@ export default class BloodLayer extends TilesLayer {
     // Wait for all objects to draw
     this.visible = true;
     await Promise.all(promises);
+    this.pointer = history.events.length;
     return this;
   }
 
@@ -200,12 +202,16 @@ export default class BloodLayer extends TilesLayer {
    * @return {PlaceableObject}
    */
   createObject(data: TileSplatData): TileSplat {
+    if (this.objects.children.map((splat: TileSplat) => splat.id).includes(data.id)) {
+      debugger;
+    }
+    // if (alreadyAdded) debugger;
     const obj = new TileSplat(data);
     if (data.zIndex == null) {
       log(LogLevel.ERROR, 'createObject missing zIndex property!');
     }
     this.objects.addChild(obj);
-    log(LogLevel.DEBUG, 'createObject', obj.id, obj.data._id);
+    log(LogLevel.INFO, 'createObject', obj.id);
     return obj;
   }
 
@@ -560,6 +566,8 @@ export default class BloodLayer extends TilesLayer {
     start = this.pointer,
     stop = canvas.scene.getFlag(MODULE_ID, 'history.pointer'),
   ): void {
+    log(LogLevel.INFO, 'renderHistory: size:' + history.events.length);
+
     // If history is blank, do nothing
     if (history === undefined) return;
     // If history is zero, reset scene fog
@@ -597,6 +605,7 @@ export default class BloodLayer extends TilesLayer {
    * Add buffered history stack to scene flag and clear buffer
    */
   async commitHistory(): Promise<void> {
+    log(LogLevel.INFO, `commitHistory: buffer size ${this.historyBuffer.length}.`);
     // Do nothing if no history to be committed, otherwise get history
     if (this.historyBuffer.length === 0) return;
     if (this.lock) return;
@@ -758,6 +767,7 @@ export default class BloodLayer extends TilesLayer {
    * @param data - data updates
    */
   updateSceneHandler(scene: Scene, data: Record<string, unknown>): void {
+    log(LogLevel.INFO, 'updateSceneHandler', data);
     // Check if update applies to current viewed scene
     // @ts-expect-error missing definition
     if (!scene._view) return;
