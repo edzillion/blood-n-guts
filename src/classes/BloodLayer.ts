@@ -203,7 +203,8 @@ export default class BloodLayer extends TilesLayer {
    */
   createObject(data: TileSplatData): TileSplat {
     if (this.objects.children.map((splat: TileSplat) => splat.id).includes(data.id)) {
-      debugger;
+      log(LogLevel.ERROR, 'createObject: TileSplat already present!', data.id);
+      return;
     }
     // if (alreadyAdded) debugger;
     const obj = new TileSplat(data);
