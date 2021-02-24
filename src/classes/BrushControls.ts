@@ -19,7 +19,12 @@ export default class BrushControls extends FormApplication {
 
   /**
    * Obtain brush settings and merge with loaded fonts
-   * @return {Object}   The data provided to the template when rendering the form
+   * @category Foundry
+   * @function
+   * @async
+   * @returns {Promise<BrushSettings>} - The data provided to the template when rendering the form
+   * @override
+   * @see {FormApplication#getData}
    */
   async getData(): Promise<BrushSettings> {
     await BloodNGuts.allFontsReady;
@@ -30,16 +35,27 @@ export default class BrushControls extends FormApplication {
   /*  Event Listeners and Handlers                */
   /* -------------------------------------------- */
 
-  /** @override */
+  /**
+   * Activate listeners on the form.
+   * @category Foundry
+   * @function
+   * @param {JQuery} html - the form html
+   * @override
+   * @see {FormApplication#activateListeners}
+   */
   activateListeners(html: JQuery): void {
     super.activateListeners(html);
   }
 
   /**
-   * This method is called upon form submission after form data is validated
-   * @param event {Event}       The initial triggering submission event
-   * @param formData {Object}   The object of validated form data with which to update the object
-   * @private
+   * This method is called upon form submission after form data is validated.
+   * @category Foundry
+   * @function
+   * @async
+   * @param {Event} _event - The initial triggering submission event
+   * @param {BrushSettings} formData - The object of validated form data with which to update the object
+   * @override
+   * @see {FormApplication#_updateObject}
    */
   async _updateObject(_event: Event, formData: BrushSettings): Promise<void> {
     const updated = diffObject(canvas.blood.brushSettings, formData);

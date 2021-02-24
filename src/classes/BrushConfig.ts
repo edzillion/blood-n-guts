@@ -19,8 +19,13 @@ export default class BrushConfig extends FormApplication {
   /* -------------------------------------------- */
 
   /**
-   * Obtain module metadata and merge it with game settings which track current module visibility
-   * @return {Object}   The data provided to the template when rendering the form
+   * Obtain settings data and return to the FormApplication
+   * @category Foundry
+   * @function
+   * @async
+   * @returns {BrushSettings} - The data provided to the template when rendering the form
+   * @override
+   * @see {FormApplication#getData}
    */
   getData(): BrushSettings {
     // Return data to the template
@@ -31,6 +36,14 @@ export default class BrushConfig extends FormApplication {
   /*  Event Listeners and Handlers                */
   /* -------------------------------------------- */
 
+  /**
+   * Activate listeners on the form.
+   * @category Foundry
+   * @function
+   * @param {JQuery} html - the form html
+   * @override
+   * @see {FormApplication#activateListeners}
+   */
   activateListeners(html: JQuery): void {
     super.activateListeners(html);
     const resetButton = html.find('.brush-config-reset-defaults');
@@ -44,10 +57,14 @@ export default class BrushConfig extends FormApplication {
   }
 
   /**
-   * This method is called upon form submission after form data is validated
-   * @param event {Event}       The initial triggering submission event
-   * @param formData {Object}   The object of validated form data with which to update the object
-   * @private
+   * This method is called upon form submission after form data is validated.
+   * @category Foundry
+   * @function
+   * @async
+   * @param {SubmitEvent} event - The initial triggering submission event
+   * @param {BrushSettings} formData - The object of validated form data with which to update the object
+   * @override
+   * @see {FormApplication#_updateObject}
    */
   async _updateObject(event: SubmitEvent, formData: BrushSettings): Promise<void> {
     if (event.submitter?.name) {

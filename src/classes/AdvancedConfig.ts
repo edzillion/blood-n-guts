@@ -36,6 +36,15 @@ export class AdvancedConfig extends FormApplication {
     return options;
   }
 
+  /**
+   * Obtain settings data and return to the FormApplication
+   * @category Foundry
+   * @function
+   * @async
+   * @returns {Promise<Record<string, unknown>>} - The data provided to the template when rendering the form
+   * @override
+   * @see {FormApplication#getData}
+   */
   async getData(): Promise<Record<string, unknown>> {
     this.dataObject['violenceLevel'] = this.baseViolenceLevel = game.settings.get(MODULE_ID, 'violenceLevel');
     this.mergedViolenceLevels = await getMergedViolenceLevels;
@@ -52,10 +61,28 @@ export class AdvancedConfig extends FormApplication {
     return this.dataObject;
   }
 
+  /**
+   * Calls `super.render()` - not entirely sure why it's needed.
+   * @category Foundry
+   * @function
+   * @param {boolean} force
+   * @param context
+   * @returns {Application}
+   * @override
+   * @see {FormApplication#render}
+   */
   render(force: boolean, context = {}): Application {
     return super.render(force, context);
   }
 
+  /**
+   * Activate listeners on the form.
+   * @category Foundry
+   * @function
+   * @param {JQuery} html - the form html
+   * @override
+   * @see {FormApplication#activateListeners}
+   */
   activateListeners(html: JQuery): void {
     super.activateListeners(html);
     const wipeButton = html.find('.advanced-config-wipe-scene-splats');
@@ -92,6 +119,16 @@ export class AdvancedConfig extends FormApplication {
     });
   }
 
+  /**
+   * This method is called upon form submission after form data is validated.
+   * @category Foundry
+   * @function
+   * @async
+   * @param {Event} _event - The initial triggering submission event
+   * @param {Record<string, unknown>} formData - The object of validated form data with which to update the object
+   * @override
+   * @see {FormApplication#_updateObject}
+   */
   async _updateObject(_event: Event, formData: Record<string, unknown>): Promise<void> {
     for (const setting in formData) {
       game.settings.set(MODULE_ID, setting, formData[setting]);
