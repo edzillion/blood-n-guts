@@ -28,8 +28,6 @@ export default class SplatToken {
   public spriteHeight: number;
   public direction: PIXI.Point;
   public bleedingSeverity: number;
-  public currPos: PIXI.Point;
-  public lastPos: PIXI.Point;
   public movePos: PIXI.Point;
   public container: PIXI.Container;
 
@@ -238,12 +236,12 @@ export default class SplatToken {
 
     const posX = changes.x === undefined ? this.x : changes.x;
     const posY = changes.y === undefined ? this.y : changes.y;
-    this.currPos = new PIXI.Point(posX, posY);
-    this.lastPos = new PIXI.Point(this.x, this.y);
-    this.movePos = new PIXI.Point(this.currPos.x - this.lastPos.x, this.currPos.y - this.lastPos.y);
-    log(LogLevel.DEBUG, 'checkForMovement pos: l,c:', this.lastPos, this.currPos);
+    const currPos = new PIXI.Point(posX, posY);
+    const lastPos = new PIXI.Point(this.x, this.y);
+    this.movePos = new PIXI.Point(currPos.x - lastPos.x, currPos.y - lastPos.y);
+    log(LogLevel.DEBUG, 'checkForMovement pos: l,c:', lastPos, currPos);
 
-    return getDirectionNrml(this.lastPos, this.currPos);
+    return getDirectionNrml(lastPos, currPos);
   }
 
   /**
@@ -329,7 +327,6 @@ export default class SplatToken {
       fontSize,
       numSplats,
       pixelSpread,
-      distanceBetween(new PIXI.Point(), this.movePos),
     );
     return true;
   }
