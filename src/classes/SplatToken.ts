@@ -53,6 +53,12 @@ export default class SplatToken {
     this.disabled = false;
   }
 
+  /**
+   * Get all TokenSplats owned by this SplatToken from history.
+   * @category GMandPC
+   * @function
+   * @returns {Array<TokenSplatData>}
+   */
   public get tokenSplats(): Array<TokenSplatData> {
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
     if (!history) return [];
@@ -140,8 +146,8 @@ export default class SplatToken {
 
   /**
    * Run once after constructor and createMask() to add blood to tokens on a newly loaded scene.
+   * Calls `bleedToken()` which adds to `historyBuffer` so `commitHistory()` should be run afterward.
    * @category GMandPC
-   * @param updatedSplats - the latest token splat data.
    * @function
    */
   public preSplat(): void {
@@ -160,6 +166,7 @@ export default class SplatToken {
 
   /**
    * Checks for token movement and damage, generates splats and saves updates.
+   * Adds to `historyBuffer` so `commitHistory()` should be run afterward.
    * @category GMOnly
    * @param changes - the latest token changes.
    * @function
@@ -210,11 +217,11 @@ export default class SplatToken {
   }
 
   /**
-   * Checks for token damage and returns severities.
+   * Checks for token damage and returns severity.
    * @category GMOnly
    * @function
    * @param changes - the latest token changes.
-   * @returns {number, number} - the hitSeverity and bleedingSeverity
+   * @returns {number} - the damage severity.
    */
   private getUpdatedDamage(changes): number {
     if (changes.actorData === undefined || changes.actorData.data.attributes?.hp === undefined) return;
@@ -257,8 +264,9 @@ export default class SplatToken {
   }
 
   /**
-   * Generates blood splatter on the floor under this token.
+   * Generates blood splatter on the floor under this token and adds to `historyBuffer`
    * @category GMOnly
+   * @param {number} hitSeverity
    * @function
    */
   private bleedFloor(hitSeverity: number): void {
@@ -288,7 +296,7 @@ export default class SplatToken {
   }
 
   /**
-   * Generates a blood trail behind this token.
+   * Generates a blood trail behind this token and adds to `historyBuffer`.
    * @category GMOnly
    * @function
    * @returns {boolean} - whether a blood trail has been created.
@@ -332,10 +340,10 @@ export default class SplatToken {
   }
 
   /**
-   * Generates a blood splat on this token and returns the `TokenSplatData`s
+   * Generates a blood splat on this token and adds to `historyBuffer`.
    * @category GMOnly
    * @function
-   * @returns {TokenSplatData[]} - the array of updated `TokenSplatData`s
+   * @param {number} hitSeverity
    */
   private bleedToken(hitSeverity: number): void {
     const tokenSplatData: Partial<TokenSplatData> = {};
@@ -399,10 +407,10 @@ export default class SplatToken {
   }
 
   /**
-   * Removes token splats from our splat container based on scale of healing.
+   * Removes token splats from history based on scale of healing.
    * @category GMOnly
    * @function
-   * @returns {TokenSplatData[]} - the array of updated `TokenSplatData`s
+   * @param {number} hitSeverity
    */
   private healToken(hitSeverity: number): void {
     // make positive for sanity purposes
