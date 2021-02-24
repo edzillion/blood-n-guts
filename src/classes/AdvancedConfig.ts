@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { log, LogLevel } from '../module/logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
@@ -85,11 +84,9 @@ export class AdvancedConfig extends FormApplication {
 
     // add change handlers to detect changes from base violence Level
     const settingsFields = html.find('input[type=number]');
-    settingsFields.on('input', (event) => {
-      // @ts-ignore
+    settingsFields.on('input', (event: JQuery.ChangeEvent) => {
       this.dataObject[event.target.name] = event.target.value;
       this.dataObject['violenceLevel'] = 'Custom';
-      // @ts-ignore
       this.violenceLevelHTML.text('Violence Level: Custom {' + canvas.scene.name + '}');
     });
   }

@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { computeSightFromPoint } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
-import BloodLayer from './BloodLayer';
 
 /**
  * A Splat is an implementation of PlaceableObject which represents a static piece of artwork or prop within the Scene.
@@ -28,7 +26,6 @@ import BloodLayer from './BloodLayer';
  * @see {@link TileHUD}
  */
 
-// @ts-expect-error incorrect extends
 export default class TileSplat extends Tile {
   constructor(data: TileSplatData, scene = canvas.scene) {
     super(data, scene);
@@ -184,19 +181,10 @@ export default class TileSplat extends Tile {
     return 'TileSplat';
   }
 
-  /**
-   * Provide a reference to the canvas layer which contains placeable objects of this type
-   * @type {BloodLayer}
-   */
-  static get layer(): BloodLayer {
-    return canvas.blood;
-  }
-
   /** @override */
   async update(data: TileSplatData, options = {}): Promise<TileSplat> {
     data['_id'] = this.id;
-    //@ts-expect-error todo: why does it not recognise that layer is returning a BloodLayer?
-    await this.layer.updateNonEmbeddedEntity(data, options);
+    await canvas.blood.updateNonEmbeddedEntity(data, options);
     return this;
   }
 
@@ -247,7 +235,7 @@ export default class TileSplat extends Tile {
     const updates = clones.map((c) => {
       let dest = { x: c.data.x, y: c.data.y };
       if (!event.data.originalEvent.shiftKey) {
-        dest = canvas.grid.getSnappedPosition(c.data.x, c.data.y, this.layer.options.gridPrecision);
+        dest = canvas.grid.getSnappedPosition(c.data.x, c.data.y, canvas.blood.options.gridPrecision);
       }
       return { _id: c._original.id, x: dest.x, y: dest.y, rotation: c.data.rotation };
     });
@@ -287,8 +275,7 @@ export default class TileSplat extends Tile {
    */
   _onDelete(): void {
     this.release({ trigger: false });
-    const layer = this.layer;
-    // @ts-expect-error must be due to this.layer being static?
+    const layer = canvas.blood;
     if (layer._hover === this) layer._hover = null;
   }
 }

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "es6",
     "lib": ["es6", "dom"],
-    "types": ["foundry-pc-types", "node"],
+    "types": ["foundry-pc-types", "node", "jquery", "async"],
     "moduleResolution": "node",
     "resolveJsonModule" : true,
     "baseUrl": "./",

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { log, LogLevel } from '../module/logging';
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
@@ -45,8 +44,8 @@ export default class SplatToken {
   public defaultBloodColor: string;
 
   constructor(token: Token) {
-    // @ts-ignore
-    this.id = token.id || token.actor.data._id;
+    if (!token.id) log(LogLevel.ERROR, 'SplatToken constructor() missing token.id');
+    this.id = token.id;
     log(LogLevel.INFO, 'SplatToken constructor for ' + this.id);
     this.token = token;
     this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;

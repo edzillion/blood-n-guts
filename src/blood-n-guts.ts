@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 /**
  * Documentation for Blood 'n Guts, a Foundry VTT module that adds blood splatter to your games.
  * All functionality is wrapped in it's main Class `BloodNGuts`.
@@ -287,31 +286,26 @@ export class BloodNGuts {
       bloodColorPicker.prop('disabled', true);
     }
 
-    customBloodCheckBox.on('click', (event) => {
-      // @ts-ignore
+    customBloodCheckBox.on('click', (event: JQuery.ClickEvent) => {
       if (event.target.checked) customBloodPanel.show();
       else customBloodPanel.hide();
       tokenConfig.setPosition({ height: 'auto' });
     });
 
-    bloodColorPicker.on('change', (event) => {
-      // @ts-ignore
+    bloodColorPicker.on('change', (event: JQuery.ChangeEvent) => {
       data.selectedColor = event.target.value;
       bloodColorText.val(data.selectedColor);
     });
 
-    bloodColorText.on('change', (event) => {
-      // @ts-ignore
+    bloodColorText.on('change', (event: JQuery.ChangeEvent) => {
       if (event.target.value === '') {
         data.selectedColor = '';
       } else {
-        // @ts-ignore
         bloodColorPicker.val(event.target.value);
       }
     });
 
-    selectViolenceLevel.on('change', (event) => {
-      // @ts-ignore
+    selectViolenceLevel.on('change', (event: JQuery.ChangeEvent) => {
       if (event.target.value === 'Disabled' && !bloodColorPicker.prop('disabled')) {
         bloodColorPicker.prop('disabled', true);
         bloodColorText.prop('disabled', true);

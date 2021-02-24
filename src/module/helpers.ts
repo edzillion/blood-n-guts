@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
 import { getMergedBloodColorSettings } from './settings';
+
 /**
  * Helper functions.
  * @module Helpers
@@ -105,8 +105,11 @@ export const getUID = (typeCode?: string): string => {
  * @returns {Boolean} - whether the user is the first GM
  */
 export const isFirstActiveGM = (): boolean => {
-  // @ts-ignore
-  return game.users.find((e) => e.isGM).data._id === game.user.data._id;
+  const firstGm = game.users.find((u) => u.isGM && u.active);
+  if (firstGm && game.user === firstGm) {
+    return true;
+  }
+  return false;
 };
 
 /**
