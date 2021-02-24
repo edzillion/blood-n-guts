@@ -129,7 +129,7 @@ export default class BloodLayer extends TilesLayer {
 
   /** @override */
   _onDragLeftStart(event: InteractionEvent): void {
-    log(LogLevel.INFO, '_onDragLeftStart createState', event.data.createState);
+    log(LogLevel.DEBUG, '_onDragLeftStart createState', event.data.createState);
     // clear our commit timer as we upgrade a click to a drag
     clearTimeout(this.commitTimer);
 
@@ -171,8 +171,6 @@ export default class BloodLayer extends TilesLayer {
   _onDragLeftDrop(event: InteractionEvent): void {
     const object = event.data.preview;
     if (object) {
-      object.zIndex = object.z || 0;
-      this.historyBuffer.push(object.data);
       this.commitHistory();
     }
     // now that we have saved the finished splat we wipe our preview
@@ -203,10 +201,9 @@ export default class BloodLayer extends TilesLayer {
    */
   createObject(data: TileSplatData): TileSplat {
     const obj = new TileSplat(data);
-    if (data.z != null) {
-      obj.zIndex = data.z;
-    } else log(LogLevel.ERROR, 'createObject missing z property!');
-
+    if (data.zIndex == null) {
+      log(LogLevel.ERROR, 'createObject missing zIndex property!');
+    }
     this.objects.addChild(obj);
     log(LogLevel.DEBUG, 'createObject', obj.id, obj.data._id);
     return obj;
@@ -315,11 +312,11 @@ export default class BloodLayer extends TilesLayer {
 
   getSetting(getFromFlag: boolean, name: string): unknown {
     if (!getFromFlag) {
-      log(LogLevel.INFO, 'getSetting', name, this.brushSettings[name]);
+      log(LogLevel.DEBUG, 'getSetting', name, this.brushSettings[name]);
       return this.brushSettings[name];
     }
     const setting = canvas.scene.getFlag(MODULE_ID, name);
-    log(LogLevel.INFO, 'getSetting getFromFlag', name, setting);
+    log(LogLevel.DEBUG, 'getSetting getFromFlag', name, setting);
     return setting;
   }
 
@@ -353,13 +350,15 @@ export default class BloodLayer extends TilesLayer {
   ): TileSplatData {
     const defaults = duplicate(this.DEFAULTS_TILESPLAT);
 
+    const zIndex = 100 + this.zOrderCounter++;
     const tileData = mergeObject(defaults, {
       // each splat has at least one drip
       drips: this.generateDrips(new PIXI.TextStyle(style), font, amount, spread, new PIXI.Point(0)),
       styleData: style,
       x: origin.x,
       y: origin.y,
-      z: 100 + this.zOrderCounter++,
+      z: zIndex,
+      zIndex: zIndex,
       id: getUID(),
     } as TileSplatData);
 
@@ -482,7 +481,7 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.offset = new PIXI.Point(0);
     tileSplatData.x = tokenCenter.x - splatToken.movePos.x / 2;
     tileSplatData.y = tokenCenter.y - splatToken.movePos.y / 2;
-    tileSplatData.z = 100 + this.zOrderCounter++;
+    tileSplatData.z = tileSplatData.zIndex = 100 + this.zOrderCounter++;
     tileSplatData.height = 1;
     tileSplatData.width = 1;
     tileSplatData.alpha = 0.75;
@@ -545,6 +544,7 @@ export default class BloodLayer extends TilesLayer {
    * @param save {Boolean}      If true, will add the operation to the history buffer
    */
   renderTileSplat(data: TileSplatData, save = true): void {
+    log(LogLevel.INFO, 'renderTileSplat creating id:', data.id);
     this.createObject(data).draw();
     if (save) this.historyBuffer.push(data);
   }

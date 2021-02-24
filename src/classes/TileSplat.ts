@@ -100,6 +100,8 @@ export default class TileSplat extends Tile {
     // Set Tile position & Toggle visibility
     this.position.set(this.data.x, this.data.y);
     this.hitArea = bounds;
+    this.width = bounds.width;
+    this.height = bounds.height;
 
     if (this.data.hidden) {
       if (this.alpha === 0.75) this.alpha = 0.5;
@@ -171,7 +173,7 @@ export default class TileSplat extends Tile {
       new PIXI.Point(canvas.blood.brushSettings.brushSpread * canvas.grid.size),
       position,
     );
-    log(LogLevel.INFO, 'addDrips', drips[0].x, drips[0].y);
+    log(LogLevel.DEBUG, 'addDrips', drips[0].x, drips[0].y);
     drips.forEach((drip) => this.data.drips.push(drip));
   }
 

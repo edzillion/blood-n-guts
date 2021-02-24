@@ -375,8 +375,8 @@ export default class SplatToken {
     // get a random glyph and then get a random (x,y) spread away from the token.
     const glyphArray: Array<string> = Array.from({ length: amount }, () => getRandomGlyph(font));
     // 0.8 because most sprites have a transparent surrounding
-    const pixelSpreadX = this.spriteWidth * 0.8 * this.tokenSettings.splatSpread;
-    const pixelSpreadY = this.spriteHeight * 0.8 * this.tokenSettings.splatSpread;
+    const pixelSpreadX = this.spriteWidth * 0.7 * this.tokenSettings.splatSpread;
+    const pixelSpreadY = this.spriteHeight * 0.7 * this.tokenSettings.splatSpread;
     log(LogLevel.DEBUG, 'bleedToken amount', amount);
     log(LogLevel.DEBUG, 'bleedToken pixelSpread', pixelSpreadX, pixelSpreadY);
 
@@ -394,8 +394,10 @@ export default class SplatToken {
         glyph: glyph,
       };
     });
-    const { dripsOffset } = alignDripsGetOffsetAndDimensions(tokenSplatData.drips);
+    const { dripsOffset, dripsHeight, dripsWidth } = alignDripsGetOffsetAndDimensions(tokenSplatData.drips);
     tokenSplatData.offset = dripsOffset;
+    tokenSplatData.height = dripsHeight;
+    tokenSplatData.width = dripsWidth;
     tokenSplatData.drips.forEach((s) => {
       s.x += dripsOffset.x + this.spriteHeight / 2;
       s.y += dripsOffset.y + this.spriteWidth / 2;
