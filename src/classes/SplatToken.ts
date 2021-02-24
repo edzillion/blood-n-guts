@@ -48,7 +48,7 @@ export default class SplatToken {
     this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
     this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
     this.saveState(token);
-    this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity');
+    this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
     this.bleedingDistance = 0;
     this.disabled = false;
   }
