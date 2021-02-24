@@ -184,7 +184,7 @@ export default class TileSplat extends Tile {
   /** @override */
   async update(data: TileSplatData, options = {}): Promise<TileSplat> {
     data['_id'] = this.id;
-    await canvas.blood.updateNonEmbeddedEntity(data, options);
+    await canvas.blood.updateNonEmbeddedEnties(data, options);
     return this;
   }
 

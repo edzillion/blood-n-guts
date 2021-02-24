@@ -69,6 +69,12 @@ export default class BloodLayer extends TilesLayer {
     Hooks.on('updateScene', (scene, data) => this.updateSceneHandler(scene, data));
   }
 
+  /**
+   * Initialize blood layer, creates containers and adds them to layer.
+   * Called on `canvasInit`.
+   * @category GMOnly
+   * @function
+   */
   initialize(): void {
     // Create objects container which can be sorted
     const objCont = new PIXI.Container();
@@ -85,7 +91,13 @@ export default class BloodLayer extends TilesLayer {
     this.preview.alpha = this.DEFAULTS_BRUSHSETTINGS.previewAlpha;
   }
 
-  /** @override */
+  /**
+   * Get layerOptions, used by Foundry
+   * @category Foundry
+   * @function
+   * @override
+   * @returns {LayerOptions}
+   */
   static get layerOptions(): LayerOptions {
     return mergeObject(super.layerOptions, {
       zIndex: 11,
@@ -99,7 +111,15 @@ export default class BloodLayer extends TilesLayer {
     });
   }
 
-  /** @override */
+  /**
+   * Handle left click on blood layer, note that left drag will trigger this handler
+   * before it triggers the `_onDragLeftStart` handler.
+   * @category GMOnly
+   * @function
+   * @param {InteractionEvent} event
+   * @override
+   * @see {PlaceablesLayer#_onClickLeft}
+   */
   _onClickLeft(event: InteractionEvent): void {
     log(LogLevel.INFO, '_onClickLeft createState', event.data.createState);
     // Don't allow new action if history push still in progress
@@ -127,7 +147,14 @@ export default class BloodLayer extends TilesLayer {
     super._onClickLeft(event);
   }
 
-  /** @override */
+  /**
+   * Start a left-click drag workflow originating from the blood layer.
+   * @category GMOnly
+   * @function
+   * @param {InteractionEvent} event
+   * @override
+   * @see {TilesLayer#_onDragLeftStart}
+   */
   _onDragLeftStart(event: InteractionEvent): void {
     log(LogLevel.DEBUG, '_onDragLeftStart createState', event.data.createState);
     // clear our commit timer as we upgrade a click to a drag
@@ -150,7 +177,14 @@ export default class BloodLayer extends TilesLayer {
     previewSplat.draw();
   }
 
-  /** @override */
+  /**
+   * Continue a left-click drag workflow originating from the blood layer.
+   * @category GMOnly
+   * @function
+   * @param {InteractionEvent} event
+   * @override
+   * @see {TilesLayer#_onDragLeftStart}
+   */
   _onDragLeftMove(event: InteractionEvent): void {
     const { preview, createState } = event.data;
     log(LogLevel.INFO, '_onDragLeftMove createState', createState);
@@ -165,7 +199,11 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Conclude a left-click drag workflow originating from the Canvas stage.
+   * Conclude a left-click drag workflow originating from the blood layer.
+   * @category GMOnly
+   * @function
+   * @param {InteractionEvent} event
+   * @override
    * @see {Canvas#_onDragLeftDrop}
    */
   _onDragLeftDrop(event: InteractionEvent): void {
@@ -177,7 +215,15 @@ export default class BloodLayer extends TilesLayer {
     this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
   }
 
-  /** @override */
+  /**
+   * Draw the blood layer, only called by Foundry.
+   * @category Foundry
+   * @function
+   * @async
+   * @returns {Promise<BloodLayer>}
+   * @override
+   * @see {PlaceablesLayer#draw}
+   */
   async draw(): Promise<BloodLayer> {
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     // Create and draw objects
@@ -198,8 +244,13 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Draw a single placeable object
-   * @return {PlaceableObject}
+   * Draw a single TileSplat
+   * @category GMandPC
+   * @function
+   * @param {TileSplatData} data
+   * @returns {TileSplat}
+   * @override
+   * @see {PlaceablesLayer#createObject}
    */
   createObject(data: TileSplatData): TileSplat {
     if (this.objects.children.map((splat: TileSplat) => splat.id).includes(data.id)) {
@@ -217,7 +268,9 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Toggles visibility of primary layer
+   * Toggle blood layer visiblity, does not affect TileSplats as they are on SplatTokens
+   * @category GMOnly
+   * @function
    */
   toggle(): void {
     const v = this.getSetting(false, 'visible');
@@ -225,19 +278,31 @@ export default class BloodLayer extends TilesLayer {
     this.setSetting(true, 'visible', !v);
   }
 
-  /** @override */
+  /**
+   * Activate blood layer, called by Foundry when nagivating to blood layer.
+   * @category Foundry
+   * @function
+   * @async
+   * @returns {Promise<BloodLayer>}
+   * @override
+   * @see {PlaceablesLayer#activate}
+   */
   async activate(): Promise<BloodLayer> {
     this.loadSceneSettings();
-
     CanvasLayer.prototype.activate.apply(this);
     this.objects.visible = true;
     this.objects.children.forEach((t: TileSplat) => t.refresh());
     return this;
   }
 
-  /* -------------------------------------------- */
-
-  /** @override */
+  /**
+   * Deactivate blood layer, called by Foundry when nagivating away from blood layer.
+   * @category Foundry
+   * @function
+   * @returns {BloodLayer}
+   * @override
+   * @see {TilesLayer#deactivate}
+   */
   deactivate(): BloodLayer {
     CanvasLayer.prototype.deactivate.apply(this);
     if (this.objects) this.objects.visible = true;
@@ -248,6 +313,15 @@ export default class BloodLayer extends TilesLayer {
     return this;
   }
 
+  /**
+   * Delete Splats from history, close hud and release control of all splats.
+   * @category GMOnly
+   * @function
+   * @async
+   * @param {string|string[]} data - list of splat ids to delete
+   * @override
+   * @see {PlaceablesLayer#deleteMany}
+   */
   async deleteMany(data: string[] | string): Promise<void> {
     // todo: do I need to check splat ownership before deleting
     // const user = game.user;
@@ -260,12 +334,27 @@ export default class BloodLayer extends TilesLayer {
     this.releaseAll();
   }
 
-  async updateMany(data: Partial<TileSplatData>, options = {} as { diff: boolean }): Promise<void> {
-    this.updateNonEmbeddedEntity(data, options);
+  /**
+   * Update TileSplats on the blood layer, calls `updateNonEmbeddedEnties()`.
+   * @category Foundry
+   * @function
+   * @param {Partial<TileSplatData>|Partial<TileSplatData>[]} data - update data
+   * @param options - update options
+   * @override
+   * @see {PlaceablesLayer#updateMany}
+   */
+  public updateMany(data: Partial<TileSplatData>, options = {} as { diff: boolean }): void {
+    this.updateNonEmbeddedEnties(data, options);
   }
 
-  // only called for TileSplats
-  public updateNonEmbeddedEntity(
+  /**
+   * Update TileSplats on the blood layer. Calls `_onUpdate` on each updated `TileSplat`.
+   * @category Foundry
+   * @function
+   * @param {Partial<TileSplatData>|Partial<TileSplatData>[]} data - updated TileSplatDatas
+   * @param options - update options
+   */
+  public updateNonEmbeddedEnties(
     data: Partial<TileSplatData> | Partial<TileSplatData>[],
     options = {} as { diff: boolean },
   ): void {
@@ -308,6 +397,12 @@ export default class BloodLayer extends TilesLayer {
     });
   }
 
+  /**
+   * Accessor to get current brush style.
+   * @category GMOnly
+   * @function
+   * @returns {SplatStyle}
+   */
   get brushStyle(): SplatStyle {
     return {
       fontFamily: this.brushSettings.brushFont,
@@ -317,6 +412,14 @@ export default class BloodLayer extends TilesLayer {
     };
   }
 
+  /**
+   * Get blood brush settings.
+   * @category GMOnly
+   * @function
+   * @param {boolean} getFromFlag - get setting from scene flag
+   * @param {string} name - setting name
+   * @returns {unknown} - the setting value
+   */
   getSetting(getFromFlag: boolean, name: string): unknown {
     if (!getFromFlag) {
       log(LogLevel.DEBUG, 'getSetting', name, this.brushSettings[name]);
@@ -327,6 +430,16 @@ export default class BloodLayer extends TilesLayer {
     return setting;
   }
 
+  /**
+   * Set blood brush setting.
+   * @category GMOnly
+   * @function
+   * @async
+   * @param {boolean} saveToFlag - save setting to scene flag
+   * @param {string} name - setting name
+   * @param {unknown} value - setting value
+   * @returns {Promise<Scene>}
+   */
   async setSetting(saveToFlag: boolean, name: string, value: unknown): Promise<Scene> {
     this.brushSettings[name] = value;
     log(LogLevel.INFO, 'setSetting brushSettings', name, value);
@@ -335,6 +448,11 @@ export default class BloodLayer extends TilesLayer {
     return await canvas.scene.setFlag(MODULE_ID, name, value);
   }
 
+  /**
+   * Loads all current brush settings from scene flags, falling back to defaults.
+   * @category GMOnly
+   * @function
+   */
   loadSceneSettings(): void {
     Object.keys(this.DEFAULTS_BRUSHSETTINGS).forEach((name) => {
       const val = this.getSetting(true, name);
@@ -344,8 +462,14 @@ export default class BloodLayer extends TilesLayer {
 
   /**
    * Get initial data for a new TileSplat.
-   * @param {Object} origin     The initial coordinate
-   * @return {Object}           The new drawing data
+   * @category GMOnly
+   * @function
+   * @param {number} amount - amount of drips
+   * @param {SplatFont} font - splat font
+   * @param {PIXI.Point} origin - splat position
+   * @param {PIXI.Point} spread - splat spread
+   * @param {SplatStyle} style - splat style
+   * @return {TileSplatData} - The new TileSplatData
    * @private
    */
   private getNewSplatData(
@@ -374,6 +498,11 @@ export default class BloodLayer extends TilesLayer {
     return tileData;
   }
 
+  /**
+   * Create and render the `BrushControls` onto the canvas. Called when navigating to the blood layer.
+   * @category GMOnly
+   * @function
+   */
   createBrushControls(): void {
     // @ts-expect-error bad def
     this.brushControls = new BrushControls().render(true);
@@ -383,11 +512,12 @@ export default class BloodLayer extends TilesLayer {
    * Generate splats on the floor beneath a token.
    * @category GMOnly
    * @function
-   * @param {Token} token - the token to generate splats for.
+   * @param {string} color - blood color in hex format.
    * @param {SplatFont} font - the font to use for splats.
    * @param {number} size - the size of splats.
-   * @param {number} density - the amount of splats.
-   * @param {number} spread - the distance from centre point to spread the splats.
+   * @param {number} amount - the amount of splats.
+   * @param {PIXI.Point} spread - the distance from centre point to spread the splats.
+   * @param {PIXI.Point} origin - splat position.
    */
   public generateFloorSplats(
     color: string,
@@ -396,7 +526,7 @@ export default class BloodLayer extends TilesLayer {
     amount: number,
     spread: PIXI.Point,
     origin: PIXI.Point,
-  ): TileSplatData {
+  ): void {
     if (amount < 1) return;
     log(LogLevel.DEBUG, 'generateFloorSplats fontSize', size);
     const styleData = {
@@ -415,10 +545,10 @@ export default class BloodLayer extends TilesLayer {
    * Generate splats in a trail on the floor behind a moving token.
    * @category GMOnly
    * @function
-   * @param {Token} token - the token to generate splats for.
+   * @param {SplatToken} splatToken - the token to generate splats for.
    * @param {SplatFont} font - the font to use for splats.
    * @param {number} size - the size of splats.
-   * @param {number[]} distances - distances along the trail from 0 to 1.
+   * @param {number} amount - the amount of splats.
    * @param {number} spread - the distance from centre point to spread the splats.
    */
   public generateTrailSplats(
@@ -500,14 +630,15 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Generate splats on the floor beneath a token.
+   * Generate drips for a TileSplat.
    * @category GMOnly
    * @function
-   * @param {Token} token - the token to generate splats for.
-   * @param {SplatFont} font - the font to use for splats.
-   * @param {number} size - the size of splats.
-   * @param {number} density - the amount of splats.
-   * @param {number} spread - the distance from centre point to spread the splats.
+   * @param {PIXI.TextStyle} style - drip splat style.
+   * @param {SplatFont} font - the font to use for drips.
+   * @param {number} amount - the amount of drips.
+   * @param {PIXI.Point} spread - the distance from centre point to spread the drips.
+   * @param {PIXI.Point} origin - position.
+   * @returns {SplatDripData[]}
    */
   public generateDrips(
     style: PIXI.TextStyle,
@@ -546,9 +677,11 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Gets a brush using the given parameters, renders it to mask and saves the event to history
-   * @param data {Object}       A collection of brush parameters
-   * @param save {Boolean}      If true, will add the operation to the history buffer
+   * Creates and draws a TileSplat to the blood layer, and optionally saves to scene flags.
+   * @category GMandPC
+   * @function
+   * @param {TileSplatData} data
+   * @param {Boolean} [save=true] - If true, will add the operation to the history buffer
    */
   renderTileSplat(data: TileSplatData, save = true): void {
     log(LogLevel.INFO, 'renderTileSplat creating id:', data.id);
@@ -557,10 +690,12 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Renders the history stack to the layer
-   * @param history {Array}       A collection of history events
-   * @param start {Number}        The position in the history stack to begin rendering from
-   * @param start {Number}        The position in the history stack to stop rendering
+   * Renders the history stack to the blood layer and SplatTokens.
+   * @category GMandPC
+   * @function
+   * @param {Array<TileSplatData|TokenSplatData>} [history=canvas.scene.getFlag(MODULE_ID, 'history')] - A collection of history events, including `TileSplatData` and `TokenSplatData`
+   * @param {number} [start=this.pointer] - The position in the history stack to begin rendering from
+   * @param {number} [stop=canvas.scene.getFlag(MODULE_ID, 'history.pointer')] - The position in the history stack to stop rendering
    */
   renderHistory(
     history = canvas.scene.getFlag(MODULE_ID, 'history'),
@@ -603,7 +738,11 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Add buffered history stack to scene flag and clear buffer
+   * Adds historyBuffer to history, trims history over `maxPoolSize`, fades oldest
+   * splats and saves history to scene flags.
+   * @category GMOnly
+   * @function
+   * @async
    */
   async commitHistory(): Promise<void> {
     log(LogLevel.INFO, `commitHistory: buffer size ${this.historyBuffer.length}.`);
@@ -666,6 +805,13 @@ export default class BloodLayer extends TilesLayer {
     this.lock = false;
   }
 
+  /**
+   * Deletes TileSplats and TokenSplats from history, saves to scene flags and resets history.pointer.
+   * @category GMOnly
+   * @function
+   * @async
+   * @param {string|string[]} data - list of splat ids
+   */
   async deleteFromHistory(data: string[] | string): Promise<void> {
     // Structure the input data
     data = data instanceof Array ? data : [data];
@@ -682,8 +828,11 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Wipes all blood splats from the layer
-   * @param save {Boolean} If true, also wipes the layer history
+   * Wipes all blood splats from blood layer.
+   * @category GMOnly
+   * @function
+   * @async
+   * @param {boolean} save - If true, also wipes the layer history
    */
   async wipeLayer(save: boolean): Promise<void> {
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
@@ -696,8 +845,11 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Steps the history buffer back X steps and redraws
-   * @param steps {Integer} Number of steps to undo, default 1
+   * Steps the history buffer back X steps and saves to scene flags.
+   * @category GMOnly
+   * @function
+   * @async
+   * @param {number} [steps=1] - Number of steps to undo, default 1
    */
   async undo(steps = 1): Promise<void> {
     log(LogLevel.INFO, `Undoing ${steps} steps.`);
@@ -739,7 +891,9 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Adds the keyboard listeners to the layer
+   * Adds the ctrl-z undo keyboard listener to the blood layer.
+   * @category GMOnly
+   * @function
    */
   _registerKeyboardListeners(): void {
     $(document).keydown((event: JQuery.KeyDownEvent) => {
@@ -761,11 +915,11 @@ export default class BloodLayer extends TilesLayer {
   /* -------------------------------------------- */
 
   /**
-   * Handler called when scene data updated. Draws splats from scene data flags.
+   * Handler called when scene data updated. Calls `renderHistory()` on history change.
    * @category GMandPC
    * @function
-   * @param scene - reference to the current scene
-   * @param data - data updates
+   * @param {Scene} scene - reference to the current scene
+   * @param {Record<string, unknown>} data - data updates
    */
   updateSceneHandler(scene: Scene, data: Record<string, unknown>): void {
     log(LogLevel.INFO, 'updateSceneHandler', data);

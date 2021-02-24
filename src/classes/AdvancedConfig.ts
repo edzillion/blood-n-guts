@@ -63,6 +63,7 @@ export class AdvancedConfig extends FormApplication {
       wipeButton.click(() => {
         log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeAllFlags()');
         BloodNGuts.wipeAllFlags();
+        // this will wipe any DOM splats created by splatButton
         $('.splat-container').remove();
       });
     } else wipeButton.attr('disabled', 'true');
