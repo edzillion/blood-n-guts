@@ -198,15 +198,10 @@ export class BloodNGuts {
     }
 
     if (isFirstActiveGM()) {
-      let updateData = [];
       for (const tokenId in BloodNGuts.splatTokens) {
-        updateData.push(BloodNGuts.splatTokens[tokenId].preSplat());
+        BloodNGuts.splatTokens[tokenId].preSplat();
       }
-      updateData = updateData.filter((u) => u != undefined);
-      if (updateData.length !== 0) {
-        canvas.blood.commitHistory();
-        BloodNGuts.splatTokens[updateData[0]._id].token.update(updateData);
-      }
+      canvas.blood.commitHistory();
     }
   }
 

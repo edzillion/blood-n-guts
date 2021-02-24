@@ -21,7 +21,7 @@ interface ViolenceLevel {
   sceneSplatPoolSize: number;
 }
 
-interface TokenSettings extends ViolenceLevel {
+interface TokenSettings {
   floorSplatFont: string;
   tokenSplatFont: string;
   trailSplatFont: string;
