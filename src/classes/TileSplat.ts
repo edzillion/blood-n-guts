@@ -30,16 +30,6 @@ export default class TileSplat extends Tile {
   constructor(data: TileSplatData, scene = canvas.scene) {
     super(data, scene);
 
-    // /**
-    //  * The Splat image container
-    //  * @type {PIXI.Container|null}
-    //  */
-    // //this.container = new PIXI.Container();
-
-    this.data._id = this.data.id;
-    //this.id = this.data.id;
-    //todo: why is this necessary?
-    if (this.data.alpha != null) this.alpha = this.data.alpha;
     /**
      * Internal timestamp for the previous freehand draw time, to limit sampling
      * @type {number}
@@ -47,11 +37,22 @@ export default class TileSplat extends Tile {
      */
     this._drawTime = 0;
 
+    this.data._id = this.data.id;
+    //todo: why is this necessary?
+    if (this.data.alpha != null) this.alpha = this.data.alpha;
     this.style = new PIXI.TextStyle(this.data.styleData);
     this.font = splatFonts.fonts[this.data.styleData.fontFamily];
   }
 
-  /** @override */
+  /**
+   * Draw the TileSplat
+   * @category GMandPC
+   * @function
+   * @async
+   * @returns {Promise<TileSplat>}
+   * @override
+   * @see {Tile#draw}
+   */
   async draw(): Promise<TileSplat> {
     this.clear();
     // Create the outer frame for the border and interaction handles
@@ -87,7 +88,14 @@ export default class TileSplat extends Tile {
     return this;
   }
 
-  /** @override */
+  /**
+   * Refresh the current display state of the TileSplat
+   * @category GMandPC
+   * @function
+   * @returns {TileSplat}
+   * @override
+   * @see {Tile#refresh}
+   */
   refresh(): TileSplat {
     // Determine shape bounds and update the frame
     const bounds = this.tile.getLocalBounds();
@@ -109,10 +117,12 @@ export default class TileSplat extends Tile {
   }
 
   /**
-   * Refresh the boundary frame which outlines the Drawing shape
-   * @private
+   * Refresh the boundary frame which outlines the TileSplat
+   * @category GMandPC
+   * @function
+   * @param {{ x, y, width, height }}
    */
-  private refreshFrame({ x, y, width, height }) {
+  private refreshFrame({ x, y, width, height }): void {
     // Determine the border color
     const colors = CONFIG.Canvas.dispositionColors;
     let bc = colors.INACTIVE;
@@ -147,8 +157,9 @@ export default class TileSplat extends Tile {
   /* -------------------------------------------- */
 
   /**
-   * Draw freehand shapes with bezier spline smoothing
-   * @private
+   * Draw blood drips to the TileSplat
+   * @category GMandPC
+   * @function
    */
   drawBlood(): void {
     for (let i = 0; i < this.data.drips.length; i++) {
@@ -162,6 +173,12 @@ export default class TileSplat extends Tile {
     }
   }
 
+  /**
+   * Add blood drips to the TileSplat data.
+   * @category GMOnly
+   * @function
+   * @param {PIXI.Point} position
+   */
   private addDrips(position: PIXI.Point): void {
     const drips = canvas.blood.generateDrips(
       this.style,
@@ -176,19 +193,42 @@ export default class TileSplat extends Tile {
 
   /* -------------------------------------------- */
 
-  /** @override */
+  /**
+   * Get's the name of the embedded entity. Not sure if it's actually required.
+   * @category Foundry
+   * @function
+   * @returns {string}
+   * @override
+   * @see {Tile#embeddedName}
+   */
   static get embeddedName(): string {
     return 'TileSplat';
   }
 
-  /** @override */
+  /**
+   * Update this TileSplat
+   * @category GMOnly
+   * @function
+   * @async
+   * @param {TileSplatData} data
+   * @param options
+   * @returns {Promise<TileSplat>}
+   * @override
+   * @see {Tile#update}
+   */
   async update(data: TileSplatData, options = {}): Promise<TileSplat> {
     data['_id'] = this.id;
     await canvas.blood.updateNonEmbeddedEnties(data, options);
     return this;
   }
 
-  /** @override */
+  /**
+   * Called on TileSplat.update().
+   * @category GMOnly
+   * @function
+   * @param {Partial<TileSplatData>} data
+   * @returns {Promise<TileSplat>}
+   */
   _onUpdate(data: Partial<TileSplatData>): Promise<TileSplat> {
     const changed = new Set(Object.keys(data));
     if (changed.has('z')) {
@@ -208,21 +248,40 @@ export default class TileSplat extends Tile {
 
   /* interaction */
 
-  /** @override */
+  /**
+   * Handle click on this TileSplat
+   * @category Foundry
+   * @function
+   * @param {InteractionEvent} event
+   * @returns {boolean}
+   * @override
+   * @see {PlaceableObject#_onClickLeft}
+   */
   _onClickLeft(event: InteractionEvent): boolean {
     if (game.activeTool === 'brush') return false;
     return super._onClickLeft(event);
   }
 
+  /**
+   * Handle dragging TileSplat
+   * @category Foundry
+   * @function
+   * @param {InteractionEvent} event
+   * @returns {any}
+   * @override
+   * @see {Tile#_onDragLeftDrop}
+   */
   _onDragLeftDrop(event: InteractionEvent): any {
     if (this._dragHandle) return this._onHandleDragDrop(event);
     return this._onSplatDragDrop(event);
   }
 
   /**
-   * Callback actions which occur on a mouse-move operation.
-   * @param {PIXI.interaction.InteractionEvent} event
-   * @private
+   * Conclude dragging a TileSplat
+   * @category GMOnly
+   * @function
+   * @param {InteractionEvent} event
+   * @returns {boolean}
    */
   _onSplatDragDrop(event: InteractionEvent): boolean {
     const clones = event.data.clones || [];
@@ -245,8 +304,10 @@ export default class TileSplat extends Tile {
 
   /**
    * Handle mouse movement which modifies the dimensions of the drawn shape
-   * @param {PIXI.interaction.InteractionEvent} event
-   * @private
+   * @category GMOnly
+   * @function
+   * @param {InteractionEvent} event
+   * @see {Drawing._onMouseDraw}
    */
   _onMouseDraw(event: InteractionEvent): void {
     const { destination } = event.data;
@@ -271,7 +332,10 @@ export default class TileSplat extends Tile {
 
   /**
    * Define additional steps taken when an existing placeable object of this type is deleted
-   * @private
+   * @category Foundry
+   * @function
+   * @override
+   * @see {PlaceableObject#_onDelete}
    */
   _onDelete(): void {
     this.release({ trigger: false });
