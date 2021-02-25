@@ -18,5 +18,7 @@
 	"url": "https://github.com/edzillion/blood-n-guts",
 	"manifest": "https://raw.githubusercontent.com/edzillion/blood-n-guts/dev/src/module.json",
 	"download": "https://github.com/edzillion/blood-n-guts/releases/download/v0.7.6/blood-n-guts-v0.7.6.zip",
-	"changelog": "https://github.com/edzillion/blood-n-guts/blob/v0.7.6/changelog.md"
+	"changelog": "https://github.com/edzillion/blood-n-guts/blob/v0.7.6/changelog.md",
+	"bugs": "https://github.com/edzillion/blood-n-guts/issues",
+  "allowBugReporter": true
 }
