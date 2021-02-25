@@ -21,7 +21,7 @@ import BloodLayer from './classes/BloodLayer';
 import * as splatFonts from './data/splatFonts';
 
 // CONFIG.debug.hooks = true;
-CONFIG[MODULE_ID] = { logLevel: 2 };
+CONFIG[MODULE_ID] = { logLevel: 3 };
 
 /**
  * Main class wrapper for all blood-n-guts features.
