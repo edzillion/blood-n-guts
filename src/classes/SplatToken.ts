@@ -235,7 +235,9 @@ export default class SplatToken {
     const currentHP = changes.actorData.data.attributes.hp.value;
     const lastHP = this.hp;
     const maxHP = this.maxHP;
-    return this.getDamageSeverity(currentHP, lastHP, maxHP);
+    const severity = this.getDamageSeverity(currentHP, lastHP, maxHP);
+    log(LogLevel.DEBUG, 'getUpdatedDamage: severity', severity);
+    return severity;
   }
 
   /**
@@ -253,9 +255,10 @@ export default class SplatToken {
     const currPos = new PIXI.Point(posX, posY);
     const lastPos = new PIXI.Point(this.x, this.y);
     this.movePos = new PIXI.Point(currPos.x - lastPos.x, currPos.y - lastPos.y);
-    log(LogLevel.DEBUG, 'checkForMovement pos: l,c:', lastPos, currPos);
 
-    return getDirectionNrml(lastPos, currPos);
+    const direction = getDirectionNrml(lastPos, currPos);
+    log(LogLevel.DEBUG, 'getUpdatedMovement: direction', direction);
+    return direction;
   }
 
   /**
@@ -278,7 +281,7 @@ export default class SplatToken {
    */
   private bleedFloor(hitSeverity: number): void {
     if (!this.tokenSettings.floorSplatDensity) return;
-    log(LogLevel.DEBUG, 'updateTokenOrActorHandler damageScale > 0:' + this.id + ' - bleeding:true');
+    log(LogLevel.DEBUG, 'bleedFloor: ' + this.id);
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(
@@ -381,8 +384,6 @@ export default class SplatToken {
     // 0.8 because most sprites have a transparent surrounding
     const pixelSpreadX = this.spriteWidth * 0.7 * this.tokenSettings.splatSpread;
     const pixelSpreadY = this.spriteHeight * 0.7 * this.tokenSettings.splatSpread;
-    log(LogLevel.DEBUG, 'bleedToken amount', amount);
-    log(LogLevel.DEBUG, 'bleedToken pixelSpread', pixelSpreadX, pixelSpreadY);
 
     // create our splats for later drawing.
     tokenSplatData.drips = glyphArray.map((glyph) => {
