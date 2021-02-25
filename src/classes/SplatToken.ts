@@ -43,7 +43,7 @@ export default class SplatToken {
   constructor(token: Token) {
     if (!token.id) log(LogLevel.ERROR, 'SplatToken constructor() missing token.id');
     this.id = token.id;
-    log(LogLevel.INFO, 'SplatToken constructor for ' + this.id);
+    log(LogLevel.DEBUG, 'SplatToken constructor for ' + this.id);
     this.token = token;
     this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
     this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
@@ -73,6 +73,7 @@ export default class SplatToken {
    * @returns {Promise<SplatToken>} - the created SplatToken.
    */
   public async create(): Promise<SplatToken> {
+    log(LogLevel.DEBUG, 'creating SplatToken');
     this.violenceLevels = await getMergedViolenceLevels;
     this.defaultBloodColor = await lookupTokenBloodColor(this.token);
     const baseTokenSettings = await getBaseTokenSettings(this.token);
@@ -151,7 +152,6 @@ export default class SplatToken {
    * @function
    */
   public preSplat(): void {
-    log(LogLevel.INFO, 'preSpat', this.token.data.name);
     if (this.tokenSplats.length === 0) {
       const currentHP = this.hp;
       const lastHP = this.maxHP * this.tokenSettings.healthThreshold;
@@ -159,6 +159,7 @@ export default class SplatToken {
 
       const initSeverity = this.getDamageSeverity(currentHP, lastHP, maxHP);
       if (initSeverity <= 0) return;
+      log(LogLevel.DEBUG, 'preSplat', this.token.data.name);
       this.bleedingSeverity = initSeverity;
       this.bleedToken(initSeverity);
     }
@@ -408,7 +409,7 @@ export default class SplatToken {
     tokenSplatData.id = getUID();
     tokenSplatData.tokenId = this.id;
 
-    log(LogLevel.INFO, 'adding tokenSplat to historyBuffer, id: ', tokenSplatData.id);
+    log(LogLevel.DEBUG, 'adding tokenSplat to historyBuffer, id: ', tokenSplatData.id);
     canvas.blood.historyBuffer.push(tokenSplatData);
   }
 
@@ -446,6 +447,7 @@ export default class SplatToken {
       log(LogLevel.ERROR, 'saveState missing token actor data', token);
       return;
     }
+    log(LogLevel.DEBUG, 'saveState token ', token.id);
     //local state
     this.x = changes?.x || token.x;
     this.y = changes?.y || token.y;

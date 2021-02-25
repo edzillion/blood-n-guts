@@ -34,6 +34,7 @@ export class BloodNGuts {
   public static disabled: boolean;
 
   public static initialize(): void {
+    log(LogLevel.INFO, `Initializing module ${MODULE_ID}`);
     BloodNGuts.splatTokens = {};
     BloodNGuts.disabled = false;
   }
@@ -110,7 +111,7 @@ export class BloodNGuts {
     bloodColor: string,
   ): void {
     if (!density) return;
-    log(LogLevel.INFO, 'drawDOMSplats');
+    log(LogLevel.DEBUG, 'drawDOMSplats');
 
     const glyphArray: Array<string> = Array.from({ length: density }, () => getRandomGlyph(font));
 
@@ -233,7 +234,7 @@ export class BloodNGuts {
    * @param {JQuery} html
    */
   public static async renderTokenConfigHandler(tokenConfig: TokenConfig, html: JQuery): Promise<void> {
-    log(LogLevel.INFO, 'renderTokenConfig');
+    log(LogLevel.DEBUG, 'renderTokenConfig');
 
     const imageTab = html.find('.tab[data-tab="image"]');
     const choices = { '': '' };
@@ -343,8 +344,6 @@ export class BloodNGuts {
 // HOOKS
 
 Hooks.once('init', () => {
-  log(LogLevel.INFO, `Initializing module ${MODULE_ID}`);
-
   BloodNGuts.registerLayer();
 
   // Assign custom classes and constants here

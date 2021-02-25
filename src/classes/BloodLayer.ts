@@ -76,6 +76,7 @@ export default class BloodLayer extends TilesLayer {
    * @function
    */
   initialize(): void {
+    log(LogLevel.INFO, 'Initializing Blood Layer');
     // Create objects container which can be sorted
     const objCont = new PIXI.Container();
     objCont.name = 'Object Container';
@@ -140,7 +141,7 @@ export default class BloodLayer extends TilesLayer {
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     // Create and draw objects
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    log(LogLevel.INFO, 'draw: size ' + history.events.length);
+    log(LogLevel.INFO, 'BloodLayer draw: history size ' + history.events.length);
     if (!history || history.events.length === 0) return;
     const promises = history.events.map((data) => {
       if (data.tokenId) return;
@@ -166,7 +167,7 @@ export default class BloodLayer extends TilesLayer {
    */
   createObject(data: TileSplatData): TileSplat {
     if (this.objects.children.map((splat: TileSplat) => splat.id).includes(data.id)) {
-      log(LogLevel.ERROR, 'createObject: TileSplat already present!', data.id);
+      log(LogLevel.WARN, 'createObject: TileSplat already present!', data.id);
       return;
     }
     // if (alreadyAdded) debugger;
@@ -175,7 +176,7 @@ export default class BloodLayer extends TilesLayer {
       log(LogLevel.ERROR, 'createObject missing zIndex property!');
     }
     this.objects.addChild(obj);
-    log(LogLevel.INFO, 'createObject', obj.id);
+    log(LogLevel.DEBUG, 'createObject', obj.id);
     return obj;
   }
 
@@ -231,6 +232,7 @@ export default class BloodLayer extends TilesLayer {
    * @function
    */
   createBrushControls(): void {
+    log(LogLevel.DEBUG, 'createBrushControls');
     // @ts-expect-error bad def
     this.brushControls = new BrushControls().render(true);
   }
@@ -245,6 +247,7 @@ export default class BloodLayer extends TilesLayer {
    * @see {PlaceablesLayer#deleteMany}
    */
   async deleteMany(data: string[] | string): Promise<void> {
+    log(LogLevel.DEBUG, 'deleteMany');
     // todo: do I need to check splat ownership before deleting
     // const user = game.user;
 
@@ -280,6 +283,7 @@ export default class BloodLayer extends TilesLayer {
     data: Partial<TileSplatData> | Partial<TileSplatData>[],
     options = {} as { diff: boolean },
   ): void {
+    log(LogLevel.DEBUG, 'updateNonEmbeddedEnties');
     // todo: do I need to check splat ownership before updating
     // const user = game.user;
     options = mergeObject({ diff: true }, options);
@@ -312,6 +316,7 @@ export default class BloodLayer extends TilesLayer {
     if (!updates.length) return;
 
     updates.forEach((update) => {
+      log(LogLevel.DEBUG, 'updateNonEmbeddedEnties, updating:', update._id);
       //@ts-expect-error definition missing
       const splat = this.get(update._id);
       splat.data = mergeObject(splat.data, update);
@@ -332,12 +337,11 @@ export default class BloodLayer extends TilesLayer {
    * @returns {unknown} - the setting value
    */
   getSetting(getFromFlag: boolean, name: string): unknown {
+    log(LogLevel.DEBUG, 'getSetting brushSettings', name, this.brushSettings[name], 'getFromFlag:' + getFromFlag);
     if (!getFromFlag) {
-      log(LogLevel.DEBUG, 'getSetting', name, this.brushSettings[name]);
       return this.brushSettings[name];
     }
     const setting = canvas.scene.getFlag(MODULE_ID, name);
-    log(LogLevel.DEBUG, 'getSetting getFromFlag', name, setting);
     return setting;
   }
 
@@ -352,10 +356,9 @@ export default class BloodLayer extends TilesLayer {
    * @returns {Promise<Scene>}
    */
   async setSetting(saveToFlag: boolean, name: string, value: unknown): Promise<Scene> {
+    log(LogLevel.DEBUG, 'setSetting brushSettings', name, value, 'saveToFlag:' + saveToFlag);
     this.brushSettings[name] = value;
-    log(LogLevel.INFO, 'setSetting brushSettings', name, value);
     if (!saveToFlag) return;
-    log(LogLevel.INFO, 'setSetting setFlag');
     return await canvas.scene.setFlag(MODULE_ID, name, value);
   }
 
@@ -394,8 +397,8 @@ export default class BloodLayer extends TilesLayer {
     spread: PIXI.Point,
     style: SplatStyle,
   ): TileSplatData {
+    log(LogLevel.DEBUG, 'getNewSplatData');
     const defaults = duplicate(this.DEFAULTS_TILESPLAT);
-
     const zIndex = 100 + this.zOrderCounter++;
     const tileData = mergeObject(defaults, {
       // each splat has at least one drip
@@ -433,7 +436,7 @@ export default class BloodLayer extends TilesLayer {
     origin: PIXI.Point,
   ): void {
     if (amount < 1) return;
-    log(LogLevel.DEBUG, 'generateFloorSplats fontSize', size);
+    log(LogLevel.DEBUG, 'generateFloorSplats');
     const styleData = {
       fontFamily: font.name,
       fontSize: size,
@@ -442,7 +445,7 @@ export default class BloodLayer extends TilesLayer {
     };
     const tileSplatData: TileSplatData = this.getNewSplatData(amount, font, origin, spread, styleData);
     tileSplatData.name = 'Floor Splat';
-    log(LogLevel.INFO, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
+    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
     this.historyBuffer.push(tileSplatData);
   }
 
@@ -485,7 +488,6 @@ export default class BloodLayer extends TilesLayer {
     const start = new PIXI.Point(-splatToken.movePos.x / 2, -splatToken.movePos.y / 2);
     const control = new PIXI.Point(splatToken.direction.y * randSpread, splatToken.direction.x * randSpread);
     const end = new PIXI.Point(splatToken.movePos.x / 2, splatToken.movePos.y / 2);
-    log(LogLevel.INFO, 'generateTrailSplats ', start, control, end, randSpread);
 
     // randomise endPt of curve
     const forwardOffset = Math.abs(getRandomBoxMuller() * canvas.grid.size - canvas.grid.size / 2);
@@ -530,7 +532,7 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.id = getUID();
 
     tileSplatData.name = 'Trail Splat';
-    log(LogLevel.INFO, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
+    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
     this.historyBuffer.push(tileSplatData as TileSplatData);
   }
 
@@ -593,7 +595,7 @@ export default class BloodLayer extends TilesLayer {
    * @param {Boolean} [save=true] - If true, will add the operation to the history buffer
    */
   renderTileSplat(data: TileSplatData, save = true): void {
-    log(LogLevel.INFO, 'renderTileSplat creating id:', data.id);
+    log(LogLevel.DEBUG, 'renderTileSplat creating id:', data.id);
     this.createObject(data).draw();
     if (save) this.historyBuffer.push(data);
   }
@@ -611,7 +613,7 @@ export default class BloodLayer extends TilesLayer {
     start = this.pointer,
     stop = canvas.scene.getFlag(MODULE_ID, 'history.pointer'),
   ): void {
-    log(LogLevel.INFO, 'renderHistory: size:' + history.events.length);
+    log(LogLevel.DEBUG, 'renderHistory: size:' + history.events.length);
 
     // If history is blank, do nothing
     if (history === undefined) return;
@@ -626,7 +628,7 @@ export default class BloodLayer extends TilesLayer {
     }
 
     const updatedSplatTokenIds = [];
-    log(LogLevel.INFO, `Rendering from: ${start} to ${stop}`);
+    log(LogLevel.INFO, `renderHistory from: ${start} to ${stop}`);
     // Render all ops starting from pointer
     for (let i = start; i < stop; i += 1) {
       // if it's a TokenSplat don't render instead save id for later draw()
@@ -654,7 +656,7 @@ export default class BloodLayer extends TilesLayer {
    * @async
    */
   async commitHistory(): Promise<void> {
-    log(LogLevel.INFO, `commitHistory: buffer size ${this.historyBuffer.length}.`);
+    log(LogLevel.DEBUG, `commitHistory: buffer size ${this.historyBuffer.length}.`);
     // Do nothing if no history to be committed, otherwise get history
     if (this.historyBuffer.length === 0) return;
     if (this.lock) return;
@@ -675,7 +677,7 @@ export default class BloodLayer extends TilesLayer {
     if (history.events.length > maxPoolSize) {
       // remove the oldest splats
       const numToRemove = history.events.length - maxPoolSize;
-      log(LogLevel.INFO, 'commitHistory truncating history ', numToRemove);
+      log(LogLevel.DEBUG, 'commitHistory truncating history ', numToRemove);
       history.events
         .splice(0, numToRemove)
         .filter((e) => e.tokenId)
@@ -708,7 +710,7 @@ export default class BloodLayer extends TilesLayer {
 
     await canvas.scene.unsetFlag(MODULE_ID, 'history');
     await canvas.scene.setFlag(MODULE_ID, 'history', history);
-    log(LogLevel.INFO, `Pushed ${this.historyBuffer.length} updates.`);
+    log(LogLevel.DEBUG, `Pushed ${this.historyBuffer.length} updates.`);
     // Clear the history buffer
     this.historyBuffer = [];
     this.lock = false;
@@ -733,7 +735,7 @@ export default class BloodLayer extends TilesLayer {
 
     await canvas.scene.unsetFlag(MODULE_ID, 'history');
     await canvas.scene.setFlag(MODULE_ID, 'history', history);
-    log(LogLevel.INFO, `deleteFromHistory: size now ${history.events.length}.`);
+    log(LogLevel.DEBUG, `deleteFromHistory: size now ${history.events.length}.`);
   }
 
   /**
@@ -744,6 +746,7 @@ export default class BloodLayer extends TilesLayer {
    * @param {boolean} save - If true, also wipes the layer history
    */
   async wipeLayer(save: boolean): Promise<void> {
+    log(LogLevel.INFO, 'wipeLayer: wipe history', save);
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     if (save) {
@@ -813,7 +816,7 @@ export default class BloodLayer extends TilesLayer {
    * @see {PlaceablesLayer#_onClickLeft}
    */
   _onClickLeft(event: InteractionEvent): void {
-    log(LogLevel.INFO, '_onClickLeft createState', event.data.createState);
+    log(LogLevel.DEBUG, '_onClickLeft');
     // Don't allow new action if history push still in progress
     if (this.historyBuffer.length > 0) return;
 
@@ -828,7 +831,7 @@ export default class BloodLayer extends TilesLayer {
       const font = splatFonts.fonts[this.brushStyle.fontFamily];
 
       const data = this.getNewSplatData(amount, font, position, spread, this.brushStyle);
-      log(LogLevel.INFO, 'adding tileSplat to historyBuffer, id: ', data.id);
+      log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', data.id);
       this.historyBuffer.push(data);
       // commit this click unless we upgrade it to a drag
       this.commitTimer = setTimeout(() => {
@@ -849,7 +852,7 @@ export default class BloodLayer extends TilesLayer {
    * @see {TilesLayer#_onDragLeftStart}
    */
   _onDragLeftStart(event: InteractionEvent): void {
-    log(LogLevel.DEBUG, '_onDragLeftStart createState', event.data.createState);
+    log(LogLevel.DEBUG, '_onDragLeftStart');
     // clear our commit timer as we upgrade a click to a drag
     clearTimeout(this.commitTimer);
 
@@ -879,8 +882,8 @@ export default class BloodLayer extends TilesLayer {
    * @see {TilesLayer#_onDragLeftStart}
    */
   _onDragLeftMove(event: InteractionEvent): void {
+    log(LogLevel.DEBUG, '_onDragLeftMove');
     const { preview, createState } = event.data;
-    log(LogLevel.INFO, '_onDragLeftMove createState', createState);
     if (!preview) return;
     if (preview.parent === null) {
       // In theory this should never happen, but sometimes does
@@ -900,6 +903,7 @@ export default class BloodLayer extends TilesLayer {
    * @see {Canvas#_onDragLeftDrop}
    */
   _onDragLeftDrop(event: InteractionEvent): void {
+    log(LogLevel.DEBUG, '_onDragLeftDrop');
     const object = event.data.preview;
     if (object) {
       this.commitHistory();
@@ -914,6 +918,7 @@ export default class BloodLayer extends TilesLayer {
    * @function
    */
   _registerKeyboardListeners(): void {
+    log(LogLevel.DEBUG, '_registerKeyboardListeners');
     $(document).keydown((event: JQuery.KeyDownEvent) => {
       // Only react if blood layer is active
       // @ts-expect-error missing def
@@ -936,7 +941,7 @@ export default class BloodLayer extends TilesLayer {
    * @param {Record<string, unknown>} data - data updates
    */
   updateSceneHandler(scene: Scene, data: Record<string, unknown>): void {
-    log(LogLevel.INFO, 'updateSceneHandler', data);
+    log(LogLevel.DEBUG, 'updateSceneHandler', data);
     // Check if update applies to current viewed scene
     // @ts-expect-error missing definition
     if (!scene._view) return;

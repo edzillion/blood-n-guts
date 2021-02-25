@@ -267,9 +267,8 @@ export function getHexColor(colorName: string): string {
  */
 export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
-  log(LogLevel.INFO, 'lookupTokenBloodColor enabled?: ' + bloodColorEnabled);
   if (!token.actor || !token.actor.data) {
-    log(LogLevel.ERROR, 'lookupTokenBloodColor missing actor data for token!', token);
+    log(LogLevel.WARN, 'lookupTokenBloodColor missing actor data for token!', token);
     return getHexColor('blood');
   } else if (!bloodColorEnabled) return getHexColor('blood'); // if useBloodColor is disabled then all blood is blood red
 
