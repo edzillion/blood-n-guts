@@ -95,8 +95,9 @@ export default class BloodLayer extends TilesLayer {
    * Get layerOptions, used by Foundry
    * @category Foundry
    * @function
-   * @override
    * @returns {LayerOptions}
+   * @override
+   * @see {TilesLayer#layerOptions}
    */
   static get layerOptions(): LayerOptions {
     return mergeObject(super.layerOptions, {
@@ -112,107 +113,18 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Handle left click on blood layer, note that left drag will trigger this handler
-   * before it triggers the `_onDragLeftStart` handler.
+   * Accessor to get current brush style.
    * @category GMOnly
    * @function
-   * @param {InteractionEvent} event
-   * @override
-   * @see {PlaceablesLayer#_onClickLeft}
+   * @returns {SplatStyle}
    */
-  _onClickLeft(event: InteractionEvent): void {
-    log(LogLevel.INFO, '_onClickLeft createState', event.data.createState);
-    // Don't allow new action if history push still in progress
-    if (this.historyBuffer.length > 0) return;
-
-    const position = event.data.getLocalPosition(canvas.app.stage);
-    // Round positions to nearest pixel
-    position.x = Math.round(position.x);
-    position.y = Math.round(position.y);
-
-    if (game.activeTool === 'brush') {
-      const spread = new PIXI.Point(canvas.grid.size * this.brushSettings.brushSpread);
-      const amount = this.brushSettings.brushDensity;
-      const font = splatFonts.fonts[this.brushStyle.fontFamily];
-
-      const data = this.getNewSplatData(amount, font, position, spread, this.brushStyle);
-      log(LogLevel.INFO, 'adding tileSplat to historyBuffer, id: ', data.id);
-      this.historyBuffer.push(data);
-      this.commitTimer = setTimeout(() => {
-        this.commitHistory();
-      }, 300);
-    }
-
-    // Standard left-click handling
-    super._onClickLeft(event);
-  }
-
-  /**
-   * Start a left-click drag workflow originating from the blood layer.
-   * @category GMOnly
-   * @function
-   * @param {InteractionEvent} event
-   * @override
-   * @see {TilesLayer#_onDragLeftStart}
-   */
-  _onDragLeftStart(event: InteractionEvent): void {
-    log(LogLevel.DEBUG, '_onDragLeftStart createState', event.data.createState);
-    // clear our commit timer as we upgrade a click to a drag
-    clearTimeout(this.commitTimer);
-
-    // @ts-expect-error definition missing
-    const grandparentCall = PlaceablesLayer.prototype._onDragLeftStart.bind(this);
-    grandparentCall(event);
-
-    // the first TileSplat in the buffer should be the one just created by _onClickLeft
-    const data = this.historyBuffer[0];
-    // remove it from objects
-    this.objects.children.forEach((splat: TileSplat) => {
-      if (data.id === splat.id) this.objects.removeChild(splat);
-    });
-    // and recreate it as our preview
-    const previewSplat = new TileSplat(data);
-    previewSplat.name = 'Preview Splat';
-    event.data.preview = this.preview.addChild(previewSplat);
-    previewSplat.draw();
-  }
-
-  /**
-   * Continue a left-click drag workflow originating from the blood layer.
-   * @category GMOnly
-   * @function
-   * @param {InteractionEvent} event
-   * @override
-   * @see {TilesLayer#_onDragLeftStart}
-   */
-  _onDragLeftMove(event: InteractionEvent): void {
-    const { preview, createState } = event.data;
-    log(LogLevel.INFO, '_onDragLeftMove createState', createState);
-    if (!preview) return;
-    if (preview.parent === null) {
-      // In theory this should never happen, but sometimes does
-      this.preview.addChild(preview);
-    }
-    if (createState >= 1) {
-      preview._onMouseDraw(event);
-    }
-  }
-
-  /**
-   * Conclude a left-click drag workflow originating from the blood layer.
-   * @category GMOnly
-   * @function
-   * @param {InteractionEvent} event
-   * @override
-   * @see {Canvas#_onDragLeftDrop}
-   */
-  _onDragLeftDrop(event: InteractionEvent): void {
-    const object = event.data.preview;
-    if (object) {
-      this.commitHistory();
-    }
-    // now that we have saved the finished splat we wipe our preview
-    this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
+  get brushStyle(): SplatStyle {
+    return {
+      fontFamily: this.brushSettings.brushFont,
+      fontSize: this.brushSettings.brushSize,
+      fill: this.brushSettings.brushColor,
+      align: 'center',
+    };
   }
 
   /**
@@ -314,6 +226,16 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
+   * Create and render the `BrushControls` onto the canvas. Called when navigating to the blood layer.
+   * @category GMOnly
+   * @function
+   */
+  createBrushControls(): void {
+    // @ts-expect-error bad def
+    this.brushControls = new BrushControls().render(true);
+  }
+
+  /**
    * Delete Splats from history, close hud and release control of all splats.
    * @category GMOnly
    * @function
@@ -397,20 +319,9 @@ export default class BloodLayer extends TilesLayer {
     });
   }
 
-  /**
-   * Accessor to get current brush style.
-   * @category GMOnly
-   * @function
-   * @returns {SplatStyle}
-   */
-  get brushStyle(): SplatStyle {
-    return {
-      fontFamily: this.brushSettings.brushFont,
-      fontSize: this.brushSettings.brushSize,
-      fill: this.brushSettings.brushColor,
-      align: 'center',
-    };
-  }
+  /* -------------------------------------------- */
+  /*  Layer Settings                              */
+  /* -------------------------------------------- */
 
   /**
    * Get blood brush settings.
@@ -460,6 +371,10 @@ export default class BloodLayer extends TilesLayer {
     });
   }
 
+  /* -------------------------------------------- */
+  /*  Generators                                  */
+  /* -------------------------------------------- */
+
   /**
    * Get initial data for a new TileSplat.
    * @category GMOnly
@@ -496,16 +411,6 @@ export default class BloodLayer extends TilesLayer {
     // Mandatory additions
     tileData.author = game.user._id;
     return tileData;
-  }
-
-  /**
-   * Create and render the `BrushControls` onto the canvas. Called when navigating to the blood layer.
-   * @category GMOnly
-   * @function
-   */
-  createBrushControls(): void {
-    // @ts-expect-error bad def
-    this.brushControls = new BrushControls().render(true);
   }
 
   /**
@@ -675,6 +580,10 @@ export default class BloodLayer extends TilesLayer {
 
     return drips;
   }
+
+  /* -------------------------------------------- */
+  /*  Layer History                               */
+  /* -------------------------------------------- */
 
   /**
    * Creates and draws a TileSplat to the blood layer, and optionally saves to scene flags.
@@ -890,6 +799,115 @@ export default class BloodLayer extends TilesLayer {
     await canvas.scene.setFlag(MODULE_ID, 'history', history);
   }
 
+  /* -------------------------------------------- */
+  /*  Event Listeners and Handlers                */
+  /* -------------------------------------------- */
+
+  /**
+   * Handle left click on blood layer, note that left drag will trigger this handler
+   * before it triggers the `_onDragLeftStart` handler.
+   * @category GMOnly
+   * @function
+   * @param {InteractionEvent} event
+   * @override
+   * @see {PlaceablesLayer#_onClickLeft}
+   */
+  _onClickLeft(event: InteractionEvent): void {
+    log(LogLevel.INFO, '_onClickLeft createState', event.data.createState);
+    // Don't allow new action if history push still in progress
+    if (this.historyBuffer.length > 0) return;
+
+    const position = event.data.getLocalPosition(canvas.app.stage);
+    // Round positions to nearest pixel
+    position.x = Math.round(position.x);
+    position.y = Math.round(position.y);
+
+    if (game.activeTool === 'brush') {
+      const spread = new PIXI.Point(canvas.grid.size * this.brushSettings.brushSpread);
+      const amount = this.brushSettings.brushDensity;
+      const font = splatFonts.fonts[this.brushStyle.fontFamily];
+
+      const data = this.getNewSplatData(amount, font, position, spread, this.brushStyle);
+      log(LogLevel.INFO, 'adding tileSplat to historyBuffer, id: ', data.id);
+      this.historyBuffer.push(data);
+      // commit this click unless we upgrade it to a drag
+      this.commitTimer = setTimeout(() => {
+        this.commitHistory();
+      }, 300);
+    }
+
+    // Standard left-click handling
+    super._onClickLeft(event);
+  }
+
+  /**
+   * Start a left-click drag workflow originating from the blood layer.
+   * @category GMOnly
+   * @function
+   * @param {InteractionEvent} event
+   * @override
+   * @see {TilesLayer#_onDragLeftStart}
+   */
+  _onDragLeftStart(event: InteractionEvent): void {
+    log(LogLevel.DEBUG, '_onDragLeftStart createState', event.data.createState);
+    // clear our commit timer as we upgrade a click to a drag
+    clearTimeout(this.commitTimer);
+
+    // @ts-expect-error definition missing
+    const grandparentCall = PlaceablesLayer.prototype._onDragLeftStart.bind(this);
+    grandparentCall(event);
+
+    // the first TileSplat in the buffer should be the one just created by _onClickLeft
+    const data = this.historyBuffer[0];
+    // remove it from objects
+    this.objects.children.forEach((splat: TileSplat) => {
+      if (data.id === splat.id) this.objects.removeChild(splat);
+    });
+    // and recreate it as our preview
+    const previewSplat = new TileSplat(data);
+    previewSplat.name = 'Preview Splat';
+    event.data.preview = this.preview.addChild(previewSplat);
+    previewSplat.draw();
+  }
+
+  /**
+   * Continue a left-click drag workflow originating from the blood layer.
+   * @category GMOnly
+   * @function
+   * @param {InteractionEvent} event
+   * @override
+   * @see {TilesLayer#_onDragLeftStart}
+   */
+  _onDragLeftMove(event: InteractionEvent): void {
+    const { preview, createState } = event.data;
+    log(LogLevel.INFO, '_onDragLeftMove createState', createState);
+    if (!preview) return;
+    if (preview.parent === null) {
+      // In theory this should never happen, but sometimes does
+      this.preview.addChild(preview);
+    }
+    if (createState >= 1) {
+      preview._onMouseDraw(event);
+    }
+  }
+
+  /**
+   * Conclude a left-click drag workflow originating from the blood layer.
+   * @category GMOnly
+   * @function
+   * @param {InteractionEvent} event
+   * @override
+   * @see {Canvas#_onDragLeftDrop}
+   */
+  _onDragLeftDrop(event: InteractionEvent): void {
+    const object = event.data.preview;
+    if (object) {
+      this.commitHistory();
+    }
+    // now that we have saved the finished splat we wipe our preview
+    this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
+  }
+
   /**
    * Adds the ctrl-z undo keyboard listener to the blood layer.
    * @category GMOnly
@@ -909,10 +927,6 @@ export default class BloodLayer extends TilesLayer {
       }
     });
   }
-
-  /* -------------------------------------------- */
-  /*  Event Listeners and Handlers                */
-  /* -------------------------------------------- */
 
   /**
    * Handler called when scene data updated. Calls `renderHistory()` on history change.

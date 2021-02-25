@@ -38,6 +38,7 @@ export class BloodNGuts {
     BloodNGuts.disabled = false;
   }
 
+  // register this layer with Foundry
   public static registerLayer(): void {
     // @ts-expect-error missing definition
     const layers = mergeObject(Canvas.layers, {
@@ -151,10 +152,9 @@ export class BloodNGuts {
    * calls splat generate methods.
    * @category GMandPC
    * @function
-   * @async
-   * @param scene - reference to the current scene
-   * @param tokenData - tokenData of updated Token/Actor
-   * @param changes - changes
+   * @param {Scene} scene - reference to the current scene
+   * @param {Record<string, any>} tokenData - tokenData of updated Token/Actor
+   * @param {Record<string, unknown>} changes - changes
    */
   public static updateTokenOrActorHandler(
     scene: Scene,
@@ -209,8 +209,8 @@ export class BloodNGuts {
    * Handler called when token is deleted. Removed tokenSplats and pool objects for this token.
    * @category GMOnly
    * @function
-   * @param scene - reference to the current scene
-   * @param token - reference to deleted token
+   * @param {Scene} scene - reference to the current scene
+   * @param {Token} token - reference to deleted token
    */
   public static deleteTokenHandler(scene: Scene, token: Token): void {
     //@ts-expect-error missing definition
@@ -350,6 +350,7 @@ Hooks.once('init', () => {
   // Assign custom classes and constants here
   BloodNGuts.initialize();
 
+  // check whether we are on ForgeVTT to decide where to load data from.
   let dataSource = 'data';
   try {
     // @ts-expect-error - ForgeVTT is not a global object
@@ -393,9 +394,9 @@ Hooks.once('ready', () => {
 });
 
 Hooks.once('canvasInit', () => {
-  // Add SimplefogLayer to canvas
   canvas.blood.initialize();
 });
+
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
 Hooks.on('updateActor', (actor, changes) => {
