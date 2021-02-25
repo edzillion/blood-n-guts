@@ -1,4 +1,4 @@
-import { AdvancedConfig } from './advancedConfig.js';
+import { AdvancedConfig } from '../classes/AdvancedConfig.js';
 import { MODULE_ID } from '../constants';
 import { log, LogLevel } from './logging';
 import { BloodNGuts } from '../blood-n-guts.js';
@@ -208,7 +208,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  getMergedViolenceLevels.then((mergedViolenceLevels: any) => {
+  getMergedViolenceLevels.then((mergedViolenceLevels: Record<string, ViolenceLevel>) => {
     const violenceLevelChoices = {};
     for (const level in mergedViolenceLevels) {
       violenceLevelChoices[level] = level;
@@ -249,15 +249,15 @@ export const registerSettings = (): void => {
           return;
         }
         //if the scenePool has increased in size we need to repopulate it
-        const sceneSplatsFlag = canvas.scene.getFlag(MODULE_ID, 'sceneSplats');
-        if (sceneSplatsFlag) {
-          const sceneSplats = duplicate(sceneSplatsFlag);
-          if (sceneSplats && sceneSplats.length) {
-            const trimmedSceneSplats = BloodNGuts.getTrimmedSceneSplats(sceneSplats);
-            // trim to new ScenePool size and draw
-            BloodNGuts.drawSceneSplats(trimmedSceneSplats);
-          }
-        }
+        // const sceneSplatsFlag = canvas.scene.getFlag(MODULE_ID, 'sceneSplats');
+        // if (sceneSplatsFlag) {
+        //   const sceneSplats = duplicate(sceneSplatsFlag);
+        //   if (sceneSplats && sceneSplats.length) {
+        //     const trimmedSceneSplats = BloodNGuts.getTrimmedSceneSplats(sceneSplats);
+        //     // trim to new ScenePool size and draw
+        //     BloodNGuts.drawSceneSplats(trimmedSceneSplats);
+        //   }
+        // }
       },
     });
     settingsResolved();
@@ -294,9 +294,9 @@ export const getMergedBloodColorSettings = new Promise((resolve) => {
  * Promise resolving after custom violence levels are loaded from disk.
  * @function
  * @category GMOnly
- * @returns {Promise<SplatFont[]>} - promise resolving to custom and normal violence levels merged.
+ * @returns {Promise<unknown>} - promise resolving to custom and normal violence levels merged.
  */
-export const getMergedViolenceLevels = new Promise((resolve) => {
+export const getMergedViolenceLevels = new Promise<Record<string, ViolenceLevel>>((resolve) => {
   violenceLevelSettingsResolved = resolve;
 });
 
