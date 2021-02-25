@@ -50,7 +50,7 @@ export default class SplatToken {
     this.saveState(token);
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
     this.bleedingDistance = 0;
-    this.disabled = false;
+    this.disabled = token.data.hidden || false;
   }
 
   /**
@@ -182,7 +182,13 @@ export default class SplatToken {
       }
     }
 
-    this.disabled = this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled';
+    if (
+      this.token.data.hidden ||
+      this.tokenSettings.bloodColor === 'none' ||
+      this.tokenSettings.violenceLevel === 'Disabled'
+    ) {
+      this.disabled = true;
+    } else this.disabled = false;
 
     if (
       this.disabled ||
