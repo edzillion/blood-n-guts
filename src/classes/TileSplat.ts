@@ -54,6 +54,7 @@ export default class TileSplat extends Tile {
    * @see {Tile#draw}
    */
   async draw(): Promise<TileSplat> {
+    log(LogLevel.DEBUG, 'TileSplat draw', this.id);
     this.clear();
     // Create the outer frame for the border and interaction handles
     this.frame = this.addChild(new PIXI.Container());
@@ -73,7 +74,6 @@ export default class TileSplat extends Tile {
     const maxDistance = Math.max(bounds.width, bounds.height);
     const center = new PIXI.Point(this.data.x, this.data.y);
     const sight = computeSightFromPoint(center, maxDistance);
-    log(LogLevel.DEBUG, 'draw: data.maskPolygon');
     const sightMask = new PIXI.Graphics();
     sightMask.beginFill(1, 1);
     sightMask.drawPolygon(sight);
@@ -97,6 +97,7 @@ export default class TileSplat extends Tile {
    * @see {Tile#refresh}
    */
   refresh(): TileSplat {
+    log(LogLevel.DEBUG, 'TileSplat refresh', this.id);
     // Determine shape bounds and update the frame
     const bounds = this.tile.getLocalBounds();
     if (this.id && this._controlled) this.refreshFrame(bounds);
@@ -162,6 +163,7 @@ export default class TileSplat extends Tile {
    * @function
    */
   drawBlood(): void {
+    log(LogLevel.DEBUG, 'TileSplat drawBlood');
     for (let i = 0; i < this.data.drips.length; i++) {
       const drip = this.data.drips[i];
       const text = new PIXI.Text(drip.glyph, this.style);
