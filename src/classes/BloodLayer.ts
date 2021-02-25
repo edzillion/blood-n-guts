@@ -141,7 +141,7 @@ export default class BloodLayer extends TilesLayer {
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     // Create and draw objects
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    log(LogLevel.INFO, 'BloodLayer draw: history size ' + history.events.length);
+    log(LogLevel.INFO, 'BloodLayer draw: history size ' + history?.events?.length);
     if (!history || history.events.length === 0) return;
     const promises = history.events.map((data) => {
       if (data.tokenId) return;
