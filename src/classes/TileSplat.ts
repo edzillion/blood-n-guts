@@ -1,6 +1,7 @@
 import { computeSightFromPoint } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
+import BloodLayer from './BloodLayer';
 
 /**
  * A Splat is an implementation of PlaceableObject which represents a static piece of artwork or prop within the Scene.
@@ -42,6 +43,18 @@ export default class TileSplat extends Tile {
     if (this.data.alpha != null) this.alpha = this.data.alpha;
     this.style = new PIXI.TextStyle(this.data.styleData);
     this.font = splatFonts.fonts[this.data.styleData.fontFamily];
+  }
+
+  /**
+   * Provide a reference to the canvas layer which contains placeable objects of this type
+   * @category Foundry
+   * @function
+   * @returns {PlaceablesLayer}
+   * @override
+   * @see {PlaceableObject#layer}
+   */
+  static get layer(): PlaceablesLayer {
+    return canvas.blood;
   }
 
   /**
