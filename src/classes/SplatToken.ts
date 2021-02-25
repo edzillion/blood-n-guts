@@ -50,7 +50,7 @@ export default class SplatToken {
     this.saveState(token);
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
     this.bleedingDistance = 0;
-    this.disabled = token.data.hidden || false;
+    this.disabled = false;
   }
 
   /**
@@ -183,11 +183,14 @@ export default class SplatToken {
       }
     }
 
-    if (
-      this.token.data.hidden ||
-      this.tokenSettings.bloodColor === 'none' ||
-      this.tokenSettings.violenceLevel === 'Disabled'
-    ) {
+    if (changes.hidden != null) {
+      log(LogLevel.DEBUG, 'hidden', changes.hidden);
+      // need to redraw to update alpha levels on TokenSplats
+      this.draw();
+      return false;
+    }
+
+    if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
       this.disabled = true;
     } else this.disabled = false;
 
@@ -280,7 +283,7 @@ export default class SplatToken {
    * @function
    */
   private bleedFloor(hitSeverity: number): void {
-    if (!this.tokenSettings.floorSplatDensity) return;
+    if (this.tokenSettings.floorSplatDensity === 0 || this.token.data.hidden) return;
     log(LogLevel.DEBUG, 'bleedFloor: ' + this.id);
 
     // scale the splats based on token size and severity
@@ -312,10 +315,9 @@ export default class SplatToken {
    * @returns {boolean} - whether a blood trail has been created.
    */
   private bleedTrail(): boolean {
-    const density = this.tokenSettings.trailSplatDensity;
-    if (!density) return false;
+    if (this.tokenSettings.trailSplatDensity === 0 || this.token.data.hidden) return false;
 
-    const amount = Math.round(density * this.bleedingSeverity);
+    const amount = Math.round(this.tokenSettings.trailSplatDensity * this.bleedingSeverity);
 
     const distTravelled = distanceBetween(new PIXI.Point(), this.movePos) + this.bleedingDistance;
     this.bleedingDistance = Math.round((1 / amount) * canvas.grid.size);
@@ -567,7 +569,7 @@ export default class SplatToken {
       this.tokenSplats.forEach((splatData) => {
         splatData.drips.forEach((drip) => {
           const text = new PIXI.Text(drip.glyph, splatData.styleData);
-          text.alpha = splatData.alpha;
+          text.alpha = this.token.data.hidden ? splatData.alpha / 2 : splatData.alpha;
           text.x = drip.x + drip.width / 2;
           text.y = drip.y + drip.height / 2;
           text.pivot.set(drip.width / 2, drip.height / 2);
