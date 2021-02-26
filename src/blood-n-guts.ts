@@ -14,13 +14,23 @@ import {
   getMergedViolenceLevels,
 } from './module/settings';
 import { log, LogLevel } from './module/logging';
-import { getRandomGlyph, lookupTokenBloodColor, isFirstActiveGM } from './module/helpers';
+import {
+  getRandomGlyph,
+  lookupTokenBloodColor,
+  isFirstActiveGM,
+  creatureLookupDND5E,
+  creatureLookupDCC,
+  creatureLookupARCHMAGE,
+  creatureLookupUESRPGD100,
+  creatureLookupPF1,
+  creatureLookupWFRP4E,
+} from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
 import BloodLayer from './classes/BloodLayer';
 import * as splatFonts from './data/splatFonts';
 
-// CONFIG.debug.hooks = true;
+//CONFIG.debug.hooks = true;
 CONFIG[MODULE_ID] = { logLevel: 3 };
 
 /**
@@ -32,6 +42,9 @@ export class BloodNGuts {
   public static allFonts: SplatFont[];
   public static splatTokens: Record<string, SplatToken>;
   public static disabled: boolean;
+  public static getLatestActorHP: any;
+  public static getLatestActorMaxHP: any;
+  public static lookupCreatureType: any;
 
   public static initialize(): void {
     log(LogLevel.INFO, `Initializing module ${MODULE_ID}`);
@@ -349,6 +362,70 @@ Hooks.once('init', () => {
   // Assign custom classes and constants here
   BloodNGuts.initialize();
 
+  const standardSystems = ['pf1', 'p2fe', 'dnd5e', 'dcc', 'archmage'];
+
+  if (standardSystems.includes(game.system.id)) {
+    log(LogLevel.INFO, 'standard system loading for', game.system.id);
+    BloodNGuts.getLatestActorHP = (token, changes) =>
+      changes?.actorData?.data?.attributes?.hp?.value || token.actor.data.data.attributes.hp.value;
+    BloodNGuts.getLatestActorMaxHP = (token, changes) =>
+      changes?.actorData?.data?.attributes?.hp?.max || token.actor.data.data.attributes.hp.max;
+  } else log(LogLevel.WARN, 'no system support for', game.system.id);
+
+  switch (game.system.id) {
+    case 'dcc':
+      {
+        BloodNGuts.lookupCreatureType = creatureLookupDCC;
+      }
+      break;
+    case 'dnd5e':
+      {
+        BloodNGuts.lookupCreatureType = creatureLookupDND5E;
+      }
+      break;
+    case 'archmage':
+      {
+        BloodNGuts.lookupCreatureType = creatureLookupARCHMAGE;
+      }
+      break;
+    case 'uesrpg-d100':
+      {
+        BloodNGuts.getLatestActorHP = (token, changes) =>
+          changes?.actorData?.data?.hp?.value || token.actor.data.data.hp.value;
+        BloodNGuts.getLatestActorMaxHP = (token, changes) =>
+          changes?.actorData?.data?.hp?.max || token.actor.data.data.hp.max;
+        BloodNGuts.lookupCreatureType = creatureLookupUESRPGD100;
+      }
+      break;
+    case 'pf1':
+      {
+        BloodNGuts.lookupCreatureType = creatureLookupPF1;
+      }
+      break;
+    case 'wfrp4e':
+      {
+        BloodNGuts.getLatestActorHP = (token, changes) =>
+          changes?.actorData?.data?.status?.wounds?.value || token.actor.data.data.status.wounds.value;
+        BloodNGuts.getLatestActorMaxHP = (token, changes) =>
+          changes?.actorData?.data?.status?.wounds?.max || token.actor.data.data.status.wounds.max;
+        BloodNGuts.lookupCreatureType = creatureLookupWFRP4E;
+      }
+      break;
+    case 'generic':
+      {
+        BloodNGuts.getLatestActorHP = (token, changes) => {
+          debugger;
+        };
+        BloodNGuts.getLatestActorMaxHP = (token, changes) => {
+          debugger;
+        };
+        BloodNGuts.lookupCreatureType = () => {
+          debugger;
+        };
+      }
+      break;
+  }
+
   // check whether we are on ForgeVTT to decide where to load data from.
   let dataSource = 'data';
   try {
@@ -404,8 +481,7 @@ Hooks.on('updateActor', (actor, changes) => {
   // convert into same structure as token changes.
   if (changes.data) changes.actorData = { data: changes.data };
   const token = canvas.tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === actor.id);
-  if (!token) log(LogLevel.ERROR, 'updateActor token not found!');
-  else BloodNGuts.updateTokenOrActorHandler(canvas.scene, token.data, changes);
+  if (token) BloodNGuts.updateTokenOrActorHandler(canvas.scene, token.data, changes);
 });
 
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);

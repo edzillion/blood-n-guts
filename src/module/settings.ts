@@ -286,7 +286,7 @@ export const getCustomSplatFonts = new Promise((resolve) => {
  * @category GMOnly
  * @returns {Promise<any>} - promise resolving to custom and normal colors merged.
  */
-export const getMergedBloodColorSettings = new Promise((resolve) => {
+export const getMergedBloodColorSettings = new Promise<Record<string, string>>((resolve) => {
   bloodColorSettingsResolved = resolve;
 });
 

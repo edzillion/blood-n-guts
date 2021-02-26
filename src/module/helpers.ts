@@ -1,6 +1,7 @@
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
 import { getMergedBloodColorSettings } from './settings';
+import { BloodNGuts } from '../blood-n-guts';
 
 /**
  * Helper functions.
@@ -272,33 +273,25 @@ export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
     return getHexColor('blood');
   } else if (!bloodColorEnabled) return getHexColor('blood'); // if useBloodColor is disabled then all blood is blood red
 
-  const actorType: string = token.actor.data.type;
-  let creatureType: string;
-  if (actorType === 'character') {
-    creatureType = token.actor.data.data.details.ancestry?.value || token.actor.data.data.details.race;
-  } else if (actorType === 'npc') {
-    creatureType = token.actor.data.data.details.type || token.actor.data.data.details.creatureType;
-  }
-
-  log(LogLevel.INFO, 'lookupTokenBloodColor: ', token.name, actorType, creatureType);
+  const mergedBloodColorSettings = await getMergedBloodColorSettings;
+  const creatureType = await BloodNGuts.lookupCreatureType(token, mergedBloodColorSettings);
   if (!creatureType) {
     log(LogLevel.WARN, 'lookupTokenBloodColor missing creatureType for token:', token.data.name);
+    log(LogLevel.WARN, 'is ' + game.system.id + " compatible with Blood 'n Guts?");
     return getHexColor('blood');
-  }
-
-  const mergedBloodColorSettings = await getMergedBloodColorSettings;
-  const bloodColor = mergedBloodColorSettings[creatureType.toLowerCase()];
-
-  if (!bloodColor) return getHexColor('blood');
-  else {
-    if (bloodColor[0] === '#') return bloodColor;
-    else if (bloodColor === 'none') return 'none';
   }
 
   // bloodColorSettings can return either a hex string, a color string or 'name' which looks up the
   // color based on it's name. e.g. 'Purple Ooze'
+  const bloodColor = mergedBloodColorSettings[creatureType.toLowerCase()];
+  if (!bloodColor) {
+    log(LogLevel.INFO, 'No custom color defined for:', creatureType);
+    return getHexColor('blood');
+  }
   let hexColor: string;
-  if (bloodColor === 'name') {
+  if (bloodColor[0] === '#') return bloodColor;
+  else if (bloodColor === 'none') return 'none';
+  else if (bloodColor === 'name') {
     hexColor = getColorByActorName(token.actor);
     log(LogLevel.DEBUG, 'lookupTokenBloodColor name:', bloodColor, hexColor);
   } else if (getHexColor(bloodColor)) {
@@ -306,11 +299,10 @@ export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
     log(LogLevel.DEBUG, 'lookupTokenBloodColor getHexColor:', bloodColor, hexColor);
   } else {
     log(LogLevel.ERROR, 'lookupTokenBloodColor color not recognized!', bloodColor, hexColor);
-    hexColor = getHexColor('blood');
   }
 
   log(LogLevel.INFO, 'lookupTokenBloodColor: ' + hexColor);
-  return hexColor;
+  return hexColor || getHexColor('blood');
 };
 
 /**
@@ -327,6 +319,15 @@ export const getColorByActorName = (actor: Actor): string => {
   for (let i = 0; i < wordsInName.length; i++) {
     const word = wordsInName[i].toLowerCase();
     if (getHexColor(word)) return getHexColor(word);
+  }
+};
+
+export const getCreatureByActorName = (actor: Actor, bloodColorSettings: Record<string, string>): string => {
+  log(LogLevel.DEBUG, 'getCreatureByActorName: ' + actor.data.name);
+  const wordsInName: Array<string> = actor.data.name.toLowerCase().split(' ');
+  for (let i = 0; i < wordsInName.length; i++) {
+    const word = wordsInName[i].toLowerCase();
+    if (bloodColorSettings[word]) return word;
   }
 };
 
@@ -492,3 +493,86 @@ export const colors = {
   yellow: '#ffff00',
   yellowgreen: '#9acd32',
 };
+
+// order these later
+export function creatureLookupDND5E(token: Token): string {
+  const actorType: string = token.actor.data.type.toLowerCase();
+  let creatureType: string;
+  if (actorType === 'character') {
+    creatureType = token.actor.data.data.details.ancestry?.value || token.actor.data.data.details.race;
+  } else if (actorType === 'npc') {
+    creatureType = token.actor.data.data.details.type || token.actor.data.data.details.creatureType;
+  }
+
+  log(LogLevel.INFO, 'creatureLookupDND5E: ', token.name, actorType, creatureType);
+  return creatureType.toLowerCase();
+}
+
+export async function creatureLookupDCC(token: Token, bloodColorSettings?: Record<string, string>): Promise<string> {
+  const actorType: string = token.actor.data.type.toLowerCase();
+  let creatureType: string;
+  if (actorType === 'player') {
+    creatureType = token.actor.data.data.details.sheetClass;
+  } else if (actorType === 'npc') {
+    // DCC does not have monster types so the best we can do is try to get it from the npc's name
+    return getCreatureByActorName(token.actor, bloodColorSettings);
+  }
+
+  log(LogLevel.INFO, 'creatureLookupDCC: ', token.name, actorType, creatureType);
+  return creatureType.toLowerCase();
+}
+
+// Toolkit13 (13th Age Compatible)
+export function creatureLookupARCHMAGE(token: Token): string {
+  const actorType: string = token.actor.data.type.toLowerCase();
+  let creatureType: string;
+  if (actorType === 'character') {
+    creatureType = token.actor.data.data.details.race?.value;
+  } else if (actorType === 'npc') {
+    creatureType = token.actor.data.data.details.type?.value;
+  }
+
+  log(LogLevel.INFO, 'creatureLookupARCHMAGE: ', token.name, actorType, creatureType);
+  return creatureType.toLowerCase();
+}
+
+export function creatureLookupUESRPGD100(token: Token): string {
+  const actorType: string = token.actor.data.type.toLowerCase();
+  let creatureType: string;
+  if (actorType === 'character') {
+    creatureType = token.actor.data.data.race;
+  } else if (actorType === 'npc') {
+    creatureType = token.actor.data.data.race;
+  }
+
+  log(LogLevel.INFO, 'creatureLookupUESRPGD100: ', token.name, actorType, creatureType);
+  return creatureType.toLowerCase();
+}
+
+export function creatureLookupPF1(token: Token): string {
+  const actorType: string = token.actor.data.type.toLowerCase();
+  let creatureType: string;
+  if (actorType === 'character') {
+    // @ts-expect-error bad definition
+    creatureType = token.actor.data.items.find((i) => i.type === 'race').name;
+  } else if (actorType === 'npc') {
+    // @ts-expect-error bad definition
+    creatureType = token.actor.data.items.find((i) => i.type === 'class').name;
+  }
+
+  log(LogLevel.INFO, 'creatureLookupPF1: ', token.name, actorType, creatureType);
+  return creatureType.toLowerCase();
+}
+
+export function creatureLookupWFRP4E(token: Token): string {
+  const actorType: string = token.actor.data.type.toLowerCase();
+  let creatureType: string;
+  if (actorType === 'character') {
+    creatureType = game.actors.get(token.data.actorId).data.data.details.species.value;
+  } else if (actorType === 'npc') {
+    creatureType = token.data.actorData.data.details.species.value;
+  }
+
+  log(LogLevel.INFO, 'creatureLookupWFRP4E: ', token.name, actorType, creatureType);
+  return creatureType.toLowerCase();
+}
