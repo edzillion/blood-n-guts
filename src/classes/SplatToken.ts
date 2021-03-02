@@ -237,7 +237,7 @@ export default class SplatToken {
   private getUpdatedDamage(changes): number {
     // todo: perhaps a system based guard here?
     if (changes.actorData === undefined) return; // || changes.actorData.data.attributes?.hp === undefined) return;
-    const currentHP = BloodNGuts.getLatestActorHP(this.token, changes);
+    const currentHP = BloodNGuts.system.currentHPChange(changes) || BloodNGuts.system.currentHP(this.token); //BloodNGuts.getLatestActorHP(this.token, changes);
     const lastHP = this.hp;
     const maxHP = this.maxHP;
     const severity = this.getDamageSeverity(currentHP, lastHP, maxHP);
@@ -452,8 +452,8 @@ export default class SplatToken {
     //local state
     this.x = changes?.x || token.x;
     this.y = changes?.y || token.y;
-    this.hp = BloodNGuts.getLatestActorHP(token, changes);
-    this.maxHP = BloodNGuts.getLatestActorMaxHP(token, changes);
+    this.hp = BloodNGuts.system.currentHPChange(changes) || BloodNGuts.system.currentHP(this.token);
+    this.maxHP = BloodNGuts.system.maxHPChange(changes) || BloodNGuts.system.maxHP(this.token);
     //flag state
     if (bleedingSeverity != null) {
       await this.token.setFlag(MODULE_ID, 'bleedingSeverity', bleedingSeverity);

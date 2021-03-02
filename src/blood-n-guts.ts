@@ -14,21 +14,12 @@ import {
   getMergedViolenceLevels,
 } from './module/settings';
 import { log, LogLevel } from './module/logging';
-import {
-  getRandomGlyph,
-  lookupTokenBloodColor,
-  isFirstActiveGM,
-  creatureLookupDND5E,
-  creatureLookupDCC,
-  creatureLookupARCHMAGE,
-  creatureLookupUESRPGD100,
-  creatureLookupPF1,
-  creatureLookupWFRP4E,
-} from './module/helpers';
+import { getRandomGlyph, lookupTokenBloodColor, isFirstActiveGM } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
 import BloodLayer from './classes/BloodLayer';
 import * as splatFonts from './data/splatFonts';
+import Systems from './data/systems';
 
 //CONFIG.debug.hooks = true;
 CONFIG[MODULE_ID] = { logLevel: 3 };
@@ -45,6 +36,7 @@ export class BloodNGuts {
   public static getLatestActorHP: any;
   public static getLatestActorMaxHP: any;
   public static lookupCreatureType: any;
+  public static system: any;
 
   public static initialize(): void {
     log(LogLevel.INFO, `Initializing module ${MODULE_ID}`);
@@ -362,69 +354,71 @@ Hooks.once('init', () => {
   // Assign custom classes and constants here
   BloodNGuts.initialize();
 
-  const standardSystems = ['pf1', 'p2fe', 'dnd5e', 'dcc', 'archmage'];
+  BloodNGuts.system = Systems[game.system.id];
 
-  if (standardSystems.includes(game.system.id)) {
-    log(LogLevel.INFO, 'standard system loading for', game.system.id);
-    BloodNGuts.getLatestActorHP = (token, changes) =>
-      changes?.actorData?.data?.attributes?.hp?.value || token.actor.data.data.attributes.hp.value;
-    BloodNGuts.getLatestActorMaxHP = (token, changes) =>
-      changes?.actorData?.data?.attributes?.hp?.max || token.actor.data.data.attributes.hp.max;
-  } else log(LogLevel.WARN, 'no system support for', game.system.id);
+  // const standardSystems = ['pf1', 'pf2e', 'dnd5e', 'dcc', 'archmage'];
 
-  switch (game.system.id) {
-    case 'dcc':
-      {
-        BloodNGuts.lookupCreatureType = creatureLookupDCC;
-      }
-      break;
-    case 'dnd5e':
-      {
-        BloodNGuts.lookupCreatureType = creatureLookupDND5E;
-      }
-      break;
-    case 'archmage':
-      {
-        BloodNGuts.lookupCreatureType = creatureLookupARCHMAGE;
-      }
-      break;
-    case 'uesrpg-d100':
-      {
-        BloodNGuts.getLatestActorHP = (token, changes) =>
-          changes?.actorData?.data?.hp?.value || token.actor.data.data.hp.value;
-        BloodNGuts.getLatestActorMaxHP = (token, changes) =>
-          changes?.actorData?.data?.hp?.max || token.actor.data.data.hp.max;
-        BloodNGuts.lookupCreatureType = creatureLookupUESRPGD100;
-      }
-      break;
-    case 'pf1':
-      {
-        BloodNGuts.lookupCreatureType = creatureLookupPF1;
-      }
-      break;
-    case 'wfrp4e':
-      {
-        BloodNGuts.getLatestActorHP = (token, changes) =>
-          changes?.actorData?.data?.status?.wounds?.value || token.actor.data.data.status.wounds.value;
-        BloodNGuts.getLatestActorMaxHP = (token, changes) =>
-          changes?.actorData?.data?.status?.wounds?.max || token.actor.data.data.status.wounds.max;
-        BloodNGuts.lookupCreatureType = creatureLookupWFRP4E;
-      }
-      break;
-    case 'generic':
-      {
-        BloodNGuts.getLatestActorHP = (token, changes) => {
-          debugger;
-        };
-        BloodNGuts.getLatestActorMaxHP = (token, changes) => {
-          debugger;
-        };
-        BloodNGuts.lookupCreatureType = () => {
-          debugger;
-        };
-      }
-      break;
-  }
+  // if (standardSystems.includes(game.system.id)) {
+  //   log(LogLevel.INFO, 'standard system loading for', game.system.id);
+  //   BloodNGuts.getLatestActorHP = (token, changes) =>
+  //     changes?.actorData?.data?.attributes?.hp?.value || token.actor.data.data.attributes.hp.value;
+  //   BloodNGuts.getLatestActorMaxHP = (token, changes) =>
+  //     changes?.actorData?.data?.attributes?.hp?.max || token.actor.data.data.attributes.hp.max;
+  // } else log(LogLevel.WARN, 'no system support for', game.system.id);
+
+  // switch (game.system.id) {
+  //   case 'dcc':
+  //     {
+  //       BloodNGuts.lookupCreatureType = creatureLookupDCC;
+  //     }
+  //     break;
+  //   case 'dnd5e':
+  //     {
+  //       BloodNGuts.lookupCreatureType = creatureLookupDND5E;
+  //     }
+  //     break;
+  //   case 'archmage':
+  //     {
+  //       BloodNGuts.lookupCreatureType = creatureLookupARCHMAGE;
+  //     }
+  //     break;
+  //   case 'uesrpg-d100':
+  //     {
+  //       BloodNGuts.getLatestActorHP = (token, changes) =>
+  //         changes?.actorData?.data?.hp?.value || token.actor.data.data.hp.value;
+  //       BloodNGuts.getLatestActorMaxHP = (token, changes) =>
+  //         changes?.actorData?.data?.hp?.max || token.actor.data.data.hp.max;
+  //       BloodNGuts.lookupCreatureType = creatureLookupUESRPGD100;
+  //     }
+  //     break;
+  //   case 'pf1':
+  //     {
+  //       BloodNGuts.lookupCreatureType = creatureLookupPF1;
+  //     }
+  //     break;
+  //   case 'wfrp4e':
+  //     {
+  //       BloodNGuts.getLatestActorHP = (token, changes) =>
+  //         changes?.actorData?.data?.status?.wounds?.value || token.actor.data.data.status.wounds.value;
+  //       BloodNGuts.getLatestActorMaxHP = (token, changes) =>
+  //         changes?.actorData?.data?.status?.wounds?.max || token.actor.data.data.status.wounds.max;
+  //       BloodNGuts.lookupCreatureType = creatureLookupWFRP4E;
+  //     }
+  //     break;
+  //   case 'generic':
+  //     {
+  //       BloodNGuts.getLatestActorHP = (token, changes) => {
+  //         debugger;
+  //       };
+  //       BloodNGuts.getLatestActorMaxHP = (token, changes) => {
+  //         debugger;
+  //       };
+  //       BloodNGuts.lookupCreatureType = () => {
+  //         debugger;
+  //       };
+  //     }
+  //     break;
+  // }
 
   // check whether we are on ForgeVTT to decide where to load data from.
   let dataSource = 'data';

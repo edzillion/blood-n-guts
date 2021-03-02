@@ -274,7 +274,7 @@ export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   } else if (!bloodColorEnabled) return getHexColor('blood'); // if useBloodColor is disabled then all blood is blood red
 
   const mergedBloodColorSettings = await getMergedBloodColorSettings;
-  const creatureType = await BloodNGuts.lookupCreatureType(token, mergedBloodColorSettings);
+  const creatureType = await BloodNGuts.system.creatureType(token, mergedBloodColorSettings);
   if (!creatureType) {
     log(LogLevel.WARN, 'lookupTokenBloodColor missing creatureType for token:', token.data.name);
     log(LogLevel.WARN, 'is ' + game.system.id + " compatible with Blood 'n Guts?");
@@ -327,6 +327,23 @@ export const getCreatureByActorName = (actor: Actor, bloodColorSettings: Record<
   const wordsInName: Array<string> = actor.data.name.toLowerCase().split(' ');
   for (let i = 0; i < wordsInName.length; i++) {
     const word = wordsInName[i].toLowerCase();
+    if (bloodColorSettings[word]) return word;
+  }
+};
+
+export const getCreatureFromString = (string: string, bloodColorSettings: Record<string, string>): string => {
+  log(LogLevel.DEBUG, 'getCreatureFromString: ' + string);
+  const wordsInName: Array<string> = string.replace(',', ' ').split(' ');
+  for (let i = 0; i < wordsInName.length; i++) {
+    const word = wordsInName[i].toLowerCase();
+    if (bloodColorSettings[word]) return word;
+  }
+};
+
+export const getCreatureFromArray = (array: Array<string>, bloodColorSettings: Record<string, string>): string => {
+  log(LogLevel.DEBUG, 'getCreatureFromArray: ' + array);
+  for (let i = 0; i < array.length; i++) {
+    const word = array[i].toLowerCase();
     if (bloodColorSettings[word]) return word;
   }
 };
@@ -495,46 +512,6 @@ export const colors = {
 };
 
 // order these later
-export function creatureLookupDND5E(token: Token): string {
-  const actorType: string = token.actor.data.type.toLowerCase();
-  let creatureType: string;
-  if (actorType === 'character') {
-    creatureType = token.actor.data.data.details.ancestry?.value || token.actor.data.data.details.race;
-  } else if (actorType === 'npc') {
-    creatureType = token.actor.data.data.details.type || token.actor.data.data.details.creatureType;
-  }
-
-  log(LogLevel.INFO, 'creatureLookupDND5E: ', token.name, actorType, creatureType);
-  return creatureType.toLowerCase();
-}
-
-export async function creatureLookupDCC(token: Token, bloodColorSettings?: Record<string, string>): Promise<string> {
-  const actorType: string = token.actor.data.type.toLowerCase();
-  let creatureType: string;
-  if (actorType === 'player') {
-    creatureType = token.actor.data.data.details.sheetClass;
-  } else if (actorType === 'npc') {
-    // DCC does not have monster types so the best we can do is try to get it from the npc's name
-    return getCreatureByActorName(token.actor, bloodColorSettings);
-  }
-
-  log(LogLevel.INFO, 'creatureLookupDCC: ', token.name, actorType, creatureType);
-  return creatureType.toLowerCase();
-}
-
-// Toolkit13 (13th Age Compatible)
-export function creatureLookupARCHMAGE(token: Token): string {
-  const actorType: string = token.actor.data.type.toLowerCase();
-  let creatureType: string;
-  if (actorType === 'character') {
-    creatureType = token.actor.data.data.details.race?.value;
-  } else if (actorType === 'npc') {
-    creatureType = token.actor.data.data.details.type?.value;
-  }
-
-  log(LogLevel.INFO, 'creatureLookupARCHMAGE: ', token.name, actorType, creatureType);
-  return creatureType.toLowerCase();
-}
 
 export function creatureLookupUESRPGD100(token: Token): string {
   const actorType: string = token.actor.data.type.toLowerCase();
