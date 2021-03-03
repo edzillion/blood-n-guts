@@ -322,32 +322,6 @@ export const getColorByActorName = (actor: Actor): string => {
   }
 };
 
-export const getCreatureByActorName = (actor: Actor, bloodColorSettings: Record<string, string>): string => {
-  log(LogLevel.DEBUG, 'getCreatureByActorName: ' + actor.data.name);
-  const wordsInName: Array<string> = actor.data.name.toLowerCase().split(' ');
-  for (let i = 0; i < wordsInName.length; i++) {
-    const word = wordsInName[i].toLowerCase();
-    if (bloodColorSettings[word]) return word;
-  }
-};
-
-export const getCreatureFromString = (string: string, bloodColorSettings: Record<string, string>): string => {
-  log(LogLevel.DEBUG, 'getCreatureFromString: ' + string);
-  const wordsInName: Array<string> = string.replace(',', ' ').split(' ');
-  for (let i = 0; i < wordsInName.length; i++) {
-    const word = wordsInName[i].toLowerCase();
-    if (bloodColorSettings[word]) return word;
-  }
-};
-
-export const getCreatureFromArray = (array: Array<string>, bloodColorSettings: Record<string, string>): string => {
-  log(LogLevel.DEBUG, 'getCreatureFromArray: ' + array);
-  for (let i = 0; i < array.length; i++) {
-    const word = array[i].toLowerCase();
-    if (bloodColorSettings[word]) return word;
-  }
-};
-
 /**
  * lookup table from color name to hex Color
  * @category helpers
@@ -510,46 +484,3 @@ export const colors = {
   yellow: '#ffff00',
   yellowgreen: '#9acd32',
 };
-
-// order these later
-
-export function creatureLookupUESRPGD100(token: Token): string {
-  const actorType: string = token.actor.data.type.toLowerCase();
-  let creatureType: string;
-  if (actorType === 'character') {
-    creatureType = token.actor.data.data.race;
-  } else if (actorType === 'npc') {
-    creatureType = token.actor.data.data.race;
-  }
-
-  log(LogLevel.INFO, 'creatureLookupUESRPGD100: ', token.name, actorType, creatureType);
-  return creatureType.toLowerCase();
-}
-
-export function creatureLookupPF1(token: Token): string {
-  const actorType: string = token.actor.data.type.toLowerCase();
-  let creatureType: string;
-  if (actorType === 'character') {
-    // @ts-expect-error bad definition
-    creatureType = token.actor.data.items.find((i) => i.type === 'race').name;
-  } else if (actorType === 'npc') {
-    // @ts-expect-error bad definition
-    creatureType = token.actor.data.items.find((i) => i.type === 'class').name;
-  }
-
-  log(LogLevel.INFO, 'creatureLookupPF1: ', token.name, actorType, creatureType);
-  return creatureType.toLowerCase();
-}
-
-export function creatureLookupWFRP4E(token: Token): string {
-  const actorType: string = token.actor.data.type.toLowerCase();
-  let creatureType: string;
-  if (actorType === 'character') {
-    creatureType = game.actors.get(token.data.actorId).data.data.details.species.value;
-  } else if (actorType === 'npc') {
-    creatureType = token.data.actorData.data.details.species.value;
-  }
-
-  log(LogLevel.INFO, 'creatureLookupWFRP4E: ', token.name, actorType, creatureType);
-  return creatureType.toLowerCase();
-}
