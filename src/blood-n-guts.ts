@@ -19,8 +19,9 @@ import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
 import BloodLayer from './classes/BloodLayer';
 import * as splatFonts from './data/splatFonts';
+import Systems from './data/systems';
 
-// CONFIG.debug.hooks = true;
+//CONFIG.debug.hooks = true;
 CONFIG[MODULE_ID] = { logLevel: 3 };
 
 /**
@@ -32,6 +33,10 @@ export class BloodNGuts {
   public static allFonts: SplatFont[];
   public static splatTokens: Record<string, SplatToken>;
   public static disabled: boolean;
+  public static getLatestActorHP: any;
+  public static getLatestActorMaxHP: any;
+  public static lookupCreatureType: any;
+  public static system: any;
 
   public static initialize(): void {
     log(LogLevel.INFO, `Initializing module ${MODULE_ID}`);
@@ -349,6 +354,9 @@ Hooks.once('init', () => {
   // Assign custom classes and constants here
   BloodNGuts.initialize();
 
+  BloodNGuts.system = Systems[game.system.id];
+  log(LogLevel.INFO, 'loaded system', game.system.id);
+
   // check whether we are on ForgeVTT to decide where to load data from.
   let dataSource = 'data';
   try {
@@ -404,8 +412,7 @@ Hooks.on('updateActor', (actor, changes) => {
   // convert into same structure as token changes.
   if (changes.data) changes.actorData = { data: changes.data };
   const token = canvas.tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === actor.id);
-  if (!token) log(LogLevel.ERROR, 'updateActor token not found!');
-  else BloodNGuts.updateTokenOrActorHandler(canvas.scene, token.data, changes);
+  if (token) BloodNGuts.updateTokenOrActorHandler(canvas.scene, token.data, changes);
 });
 
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
@@ -434,7 +441,14 @@ Token.prototype.draw = (function () {
   return async function () {
     await cached.apply(this);
 
-    if (!canvas.scene.active || BloodNGuts.disabled || !this.icon || this._original?.data?._id) return this; //no icon or dragging
+    if (
+      !canvas.scene.active ||
+      BloodNGuts.disabled ||
+      !this.icon ||
+      this._original?.data?._id ||
+      !BloodNGuts.system.supportedTypes.includes(this.actor.data.type.toLowerCase())
+    )
+      return this; //no icon or dragging, or not supported
     let splatToken: SplatToken;
 
     if (BloodNGuts.splatTokens[this.id]) {

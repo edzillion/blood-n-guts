@@ -177,7 +177,7 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'updateChanges');
     if (changes.flags) {
       // we only care about bleedingSeverity flag in SplatToken constructor
-      if (changes.flags[MODULE_ID].bleedingSeverity != null) delete changes.flags[MODULE_ID].bleedingSeverity;
+      if (changes.flags[MODULE_ID]?.bleedingSeverity != null) delete changes.flags[MODULE_ID].bleedingSeverity;
       for (const setting in changes.flags[MODULE_ID]) {
         this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
       }
@@ -194,13 +194,14 @@ export default class SplatToken {
       this.disabled = true;
     } else this.disabled = false;
 
-    if (
-      this.disabled ||
-      (changes.rotation === undefined &&
-        changes.x === undefined &&
-        changes.y === undefined &&
-        changes.actorData?.data?.attributes?.hp === undefined)
-    )
+    if (this.disabled)
+      // todo: perhaps a system-based check for hp here?
+      // ||
+      //   (changes.rotation === undefined &&
+      //     changes.x === undefined &&
+      //     changes.y === undefined &&
+      //     changes.actorData?.data?.attributes?.hp === undefined)
+      // )
       return false;
 
     let newBleedingSeverity;
@@ -234,8 +235,9 @@ export default class SplatToken {
    * @returns {number} - the damage severity.
    */
   private getUpdatedDamage(changes): number {
-    if (changes.actorData === undefined || changes.actorData.data.attributes?.hp === undefined) return;
-    const currentHP = changes.actorData.data.attributes.hp.value;
+    // todo: perhaps a system based guard here?
+    if (changes.actorData === undefined) return; // || changes.actorData.data.attributes?.hp === undefined) return;
+    const currentHP = BloodNGuts.system.currentHPChange(changes) || BloodNGuts.system.currentHP(this.token); //BloodNGuts.getLatestActorHP(this.token, changes);
     const lastHP = this.hp;
     const maxHP = this.maxHP;
     const severity = this.getDamageSeverity(currentHP, lastHP, maxHP);
@@ -446,16 +448,12 @@ export default class SplatToken {
    * @param changes - changes to save.
    */
   private async saveState(token, bleedingSeverity?, changes?): Promise<void> {
-    if (!token.actor?.data?.data?.attributes) {
-      log(LogLevel.ERROR, 'saveState missing token actor data', token);
-      return;
-    }
     log(LogLevel.DEBUG, 'saveState token ', token.id);
     //local state
     this.x = changes?.x || token.x;
     this.y = changes?.y || token.y;
-    this.hp = changes?.actorData?.data?.attributes?.hp?.value || token.actor.data.data.attributes.hp.value;
-    this.maxHP = changes?.actorData?.data?.attributes?.hp?.max || token.actor.data.data.attributes.hp.max;
+    this.hp = BloodNGuts.system.currentHPChange(changes) || BloodNGuts.system.currentHP(this.token);
+    this.maxHP = BloodNGuts.system.maxHPChange(changes) || BloodNGuts.system.maxHP(this.token);
     //flag state
     if (bleedingSeverity != null) {
       await this.token.setFlag(MODULE_ID, 'bleedingSeverity', bleedingSeverity);
