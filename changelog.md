@@ -5,10 +5,10 @@
 
 ### MAJOR UPDATE
 
-- Blood Layer - all blood splats other than token splats are drawn on the blood layer. 
-- TileSplat - blood layer splats are derived from `Tile`, so most tile functionality is available (e.g. delete, move, lock etc.).
-- Brush Tool - blood can now be drawn directly into the scene.
-- Blood Layer Tools:
+- **Blood Layer** - all blood splats other than token splats are drawn on the blood layer. 
+- **TileSplat** - blood layer splats are derived from `Tile`, so most tile functionality is available (e.g. delete, move, lock etc.).
+- **Brush Tool** - blood can now be drawn directly into the scene.
+- **Blood Layer Tools**:
   - Toggle - toggles layer visiblity (token splats will still be visible).
   - Select - select and manipulate blood splats on the blood layer. 
   - Brush - draw blood splats directly to the blood layer.
@@ -16,8 +16,8 @@
   - Wipe - wipes blood layer (token splats will remain).
 - Color has been simplified, rbga -> hex colors, alpha is set on the parent container instead.
 - New system compatibility system. Adding new systems possible through editing `src/data/systems.ts`
-
 - Many new systems supported: archmage, cyberpunkred, D35E, dark-heresy, dcc, dnd5e, gurps4e, lancer, lotfp, pf1, pf2e, shadowrun5e, starwarsffg, swade, twodsix, uesrpg-d100, wfrp4e
+- **Universal System Support** - if a system is not supported it is possible to set a trackable health attribute on each actor type (character, npc etc.) Note: this attribute requires both `.value` and `.max` fields to work.
 
 ## [0.7.5]
 
