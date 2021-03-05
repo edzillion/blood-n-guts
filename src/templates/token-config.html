@@ -1,45 +1,70 @@
 <div class="form-group">
-  <label>Blood Color</label>
+  <label>Custom Blood Settings:</label>
   <div class="form-fields">    
-    <input type="text" id="bloodColorText" name="flags.blood-n-guts.bloodColor" value="{{selectedColor}}" data-dtype="String" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-    <input type="color" id="bloodColorPicker" value="{{defaultColor}}" />
+    <input type="checkbox" id="customBloodCheckBox" name="flags.blood-n-guts.customBloodChecked" data-dtype="Boolean"></div>
   </div>
-</div >
-<div class="form-group">
-  <label>Violence Level</label>
-  <div class="form-fields">
-    <select name="flags.blood-n-guts.violenceLevel" class="token-config-select-violence-level" data-dtype="String"/>
-      {{ selectOptions levelNames selected=currentLevel localize=false }}
+</div>
+<div id="customBloodPanel">
+  <div class="form-group">
+    <label>Blood Color:</label>
+    <div class="form-fields">    
+      <input type="text" id="bloodColorText" name="flags.blood-n-guts.bloodColor" value="{{selectedColor}}" data-dtype="String" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="color" id="bloodColorPicker" value="{{defaultColor}}" data-edit="flags.blood-n-guts.bloodColor" />
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Violence Level:</label>
+    <div class="form-fields">
+      <select name="flags.blood-n-guts.violenceLevel" class="token-config-select-violence-level" data-dtype="String"/>
+        {{ selectOptions levelNames selected=currentLevel localize=false }}
+      </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Floor Splat Font:</label>
+    <select type="select" class="advanced-config-select-font" name="flags.blood-n-guts.floorSplatFont">    
+      {{#select floorSplatFont}}
+        {{#each fonts}}
+          <option value="{{name}}"> {{name}} </option>
+        {{/each}}
+      {{/select}}                    
+    </select>      
+  </div>
+  <div class="form-group">
+    <label>Token Splat Font:</label>
+    <select type="select" class="advanced-config-select-font" name="flags.blood-n-guts.tokenSplatFont">
+      {{#select tokenSplatFont}}
+        {{#each fonts}}
+          <option value="{{name}}"> {{name}} </option>
+        {{/each}}
+      {{/select}}                    
+    </select>      
+  </div>
+  <div class="form-group">
+    <label>Trail Splat Font:</label>
+    <select type="select" class="advanced-config-select-font" name="flags.blood-n-guts.trailSplatFont">    
+      {{#select trailSplatFont}}
+        {{#each fonts}}
+          <option value="{{name}}"> {{name}} </option>
+        {{/each}}
+      {{/select}}                    
     </select>
   </div>
-</div >
-<div class="form-group">
-  <label>Floor Splat Font:</label>
-  <select type="select" class="advanced-config-select-font" name="flags.blood-n-guts.floorSplatFont">    
-    {{#select floorSplatFont}}
-      {{#each fonts}}
-        <option value="{{name}}"> {{name}} </option>
-      {{/each}}
-    {{/select}}                    
-  </select>      
-</div>
-<div class="form-group">
-  <label>Token Splat Font:</label>
-  <select type="select" class="advanced-config-select-font" name="flags.blood-n-guts.tokenSplatFont">
-    {{#select tokenSplatFont}}
-      {{#each fonts}}
-        <option value="{{name}}"> {{name}} </option>
-      {{/each}}
-    {{/select}}                    
-  </select>      
-</div>
-<div class="form-group">
-  <label>Trail Splat Font:</label>
-  <select type="select" class="advanced-config-select-font" name="flags.blood-n-guts.trailSplatFont">    
-    {{#select trailSplatFont}}
-      {{#each fonts}}
-        <option value="{{name}}"> {{name}} </option>
-      {{/each}}
-    {{/select}}                    
-  </select>
+  {{#if customSystem}}
+  <div class="form-group">
+    <label>Trackable Health Attribute:</label>    
+    <select class="bar-attribute" id="bloodAttribute">
+        {{#select currentAttributeChoice}}
+        <option value="none">None</option>
+        {{#each attributeChoices as |attrs label|}}
+        <optgroup label="{{ label }}">
+            {{#each attrs}}
+            <option value="{{this}}">{{this}}</option>
+            {{/each}}
+        </optgroup>
+        {{/each}}
+        {{/select}}
+    </select>
+  </div>
+  {{/if}}
 </div>

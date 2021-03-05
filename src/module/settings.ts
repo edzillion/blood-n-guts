@@ -1,10 +1,11 @@
-import { AdvancedConfig } from './advancedConfig.js';
+import { AdvancedConfig } from '../classes/AdvancedConfig.js';
 import { MODULE_ID } from '../constants';
 import { log, LogLevel } from './logging';
 import { BloodNGuts } from '../blood-n-guts.js';
 
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
+//import { System } from '../globals';
 
 /**
  * Registers settings.
@@ -58,6 +59,15 @@ export const registerSettings = (): void => {
     },
   });
 
+  game.settings.register(MODULE_ID, 'system', {
+    scope: 'world',
+    config: false,
+    onChange: (value) => {
+      log(LogLevel.DEBUG, 'Settings: system set to ' + value);
+    },
+  });
+
+  // Advanced Configuration
   game.settings.registerMenu(MODULE_ID, 'advancedConfig', {
     name: 'Advanced Config',
     label: 'Advanced Configuration',
@@ -67,7 +77,6 @@ export const registerSettings = (): void => {
     restricted: true,
   });
 
-  // Settings in Advanced Configuration
   game.settings.register(MODULE_ID, 'floorSplatFont', {
     scope: 'world',
     config: false,
@@ -208,7 +217,7 @@ export const registerSettings = (): void => {
     },
   });
 
-  getMergedViolenceLevels.then((mergedViolenceLevels: any) => {
+  getMergedViolenceLevels.then((mergedViolenceLevels: Record<string, ViolenceLevel>) => {
     const violenceLevelChoices = {};
     for (const level in mergedViolenceLevels) {
       violenceLevelChoices[level] = level;
@@ -249,15 +258,15 @@ export const registerSettings = (): void => {
           return;
         }
         //if the scenePool has increased in size we need to repopulate it
-        const sceneSplatsFlag = canvas.scene.getFlag(MODULE_ID, 'sceneSplats');
-        if (sceneSplatsFlag) {
-          const sceneSplats = duplicate(sceneSplatsFlag);
-          if (sceneSplats && sceneSplats.length) {
-            const trimmedSceneSplats = BloodNGuts.getTrimmedSceneSplats(sceneSplats);
-            // trim to new ScenePool size and draw
-            BloodNGuts.drawSceneSplats(trimmedSceneSplats);
-          }
-        }
+        // const sceneSplatsFlag = canvas.scene.getFlag(MODULE_ID, 'sceneSplats');
+        // if (sceneSplatsFlag) {
+        //   const sceneSplats = duplicate(sceneSplatsFlag);
+        //   if (sceneSplats && sceneSplats.length) {
+        //     const trimmedSceneSplats = BloodNGuts.getTrimmedSceneSplats(sceneSplats);
+        //     // trim to new ScenePool size and draw
+        //     BloodNGuts.drawSceneSplats(trimmedSceneSplats);
+        //   }
+        // }
       },
     });
     settingsResolved();
@@ -286,7 +295,7 @@ export const getCustomSplatFonts = new Promise((resolve) => {
  * @category GMOnly
  * @returns {Promise<any>} - promise resolving to custom and normal colors merged.
  */
-export const getMergedBloodColorSettings = new Promise((resolve) => {
+export const getMergedBloodColorSettings = new Promise<Record<string, string>>((resolve) => {
   bloodColorSettingsResolved = resolve;
 });
 
@@ -294,9 +303,9 @@ export const getMergedBloodColorSettings = new Promise((resolve) => {
  * Promise resolving after custom violence levels are loaded from disk.
  * @function
  * @category GMOnly
- * @returns {Promise<SplatFont[]>} - promise resolving to custom and normal violence levels merged.
+ * @returns {Promise<unknown>} - promise resolving to custom and normal violence levels merged.
  */
-export const getMergedViolenceLevels = new Promise((resolve) => {
+export const getMergedViolenceLevels = new Promise<Record<string, ViolenceLevel>>((resolve) => {
   violenceLevelSettingsResolved = resolve;
 });
 
@@ -323,7 +332,7 @@ export const mergeSettingsFiles = async (dataSource: string): Promise<void> => {
       if (result.dirs.includes(MODULE_ID)) return;
       return FilePicker.createDirectory(dataSource, MODULE_ID, {})
         .then((result) => {
-          log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
+          log(LogLevel.DEBUG, `mergeSettingsFiles, creating ${result}`);
         })
         .catch((err) => {
           if (!err.includes('EEXIST')) {
@@ -341,7 +350,7 @@ export const mergeSettingsFiles = async (dataSource: string): Promise<void> => {
       if (result.dirs.includes('fonts')) return;
       return FilePicker.createDirectory(dataSource, MODULE_ID + '/fonts', {})
         .then((result) => {
-          log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
+          log(LogLevel.DEBUG, `mergeSettingsFiles, creating ${result}`);
         })
         .catch((err) => {
           if (!err.includes('EEXIST')) {

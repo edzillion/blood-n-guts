@@ -21,7 +21,7 @@ interface ViolenceLevel {
   sceneSplatPoolSize: number;
 }
 
-interface TokenSettings extends ViolenceLevel {
+interface TokenSettings {
   floorSplatFont: string;
   tokenSplatFont: string;
   trailSplatFont: string;
@@ -29,28 +29,67 @@ interface TokenSettings extends ViolenceLevel {
   bloodColor: string;
 }
 
-interface SplatPoolObject {
-  data: SplatDataObject;
-  container?: PIXI.Container;
-}
+type SplatData = TileSplatData | TokenSplatData;
 
-interface SplatDataObject {
-  id: string;
-  x: number;
-  y: number;
-  styleData: any;
-  splats: Array<Splat>;
-  offset: PIXI.Point;
-  maskPolygon?: Array<number>;
-  tokenId?: string;
-  alpha?: number;
-}
-
-interface Splat {
+interface SplatDripData {
   glyph: string;
   x: number;
   y: number;
   angle: number;
   width?: number;
   height?: number;
+}
+
+interface TileSplatData extends Tile {
+  id: string;
+  drips: SplatDripData[];
+  styleData: SplatStyle;
+  offset: PIXI.Point;
+  brushSettings: BrushSettings;
+  z: number;
+}
+
+interface TokenSplatData extends TileSplatData {
+  tokenId: string;
+}
+
+interface SplatStyle {
+  fontFamily: string;
+  fontSize: number;
+  fill: string;
+  align: string;
+}
+
+interface BrushSettings {
+  brushColor: string;
+  brushDensity: number;
+  brushFlow: number;
+  brushFont: string;
+  brushSize: number;
+  brushSpread: number;
+  previewAlpha: number;
+  visible: boolean;
+}
+
+interface SubmitEvent extends Event {
+  submitter: any;
+}
+
+interface InteractionEvent extends PIXI.interaction.InteractionEvent {
+  data: any;
+}
+
+interface HTMLFormElement {
+  onsubmit: (this: GlobalEventHandlers, ev: SubmitEvent) => any | null;
+}
+
+interface System {
+  id: string;
+  supportedTypes: Array<string>;
+  customAttributePaths?: Array<string>;
+  currentHP: (token: Token, actorType?: string) => number;
+  maxHP: (token: Token, actorType?: string) => number;
+  currentHPChange: (changes: Record<string, any>, actorType?: string) => number | void;
+  maxHPChange: (changes: Record<string, any>, actorType?: string) => number | void;
+  creatureType: (token: Token, bloodColorSettings?: Record<string, string>) => string | void;
 }
