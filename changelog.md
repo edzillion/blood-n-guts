@@ -1,6 +1,12 @@
 # CHANGELOG
 
 
+## [0.8.1]
+
+### BUGFIXES
+
+- Fixed customAttributePaths bug
+
 ## [0.8.0]
 
 ### MAJOR UPDATE
