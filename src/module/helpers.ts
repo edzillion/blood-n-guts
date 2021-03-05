@@ -113,6 +113,22 @@ export const isFirstActiveGM = (): boolean => {
   return false;
 };
 
+export const getNestedProp = (theObject: any, path: string, separator?: string): unknown => {
+  try {
+    separator = separator || '.';
+
+    return path
+      .replace('[', separator)
+      .replace(']', '')
+      .split(separator)
+      .reduce(function (obj, property) {
+        return obj[property];
+      }, theObject);
+  } catch (err) {
+    return undefined;
+  }
+};
+
 /**
  * Debug helper to draw a rectangle border around a container.
  * @category helpers
@@ -271,13 +287,13 @@ export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   if (!token.actor || !token.actor.data) {
     log(LogLevel.WARN, 'lookupTokenBloodColor missing actor data for token!', token);
     return getHexColor('blood');
-  } else if (!bloodColorEnabled) return getHexColor('blood'); // if useBloodColor is disabled then all blood is blood red
+  } // if useBloodColor is disabled or we haven't yet set a system then all blood is blood red
+  else if (!bloodColorEnabled || !BloodNGuts.system) return getHexColor('blood');
 
   const mergedBloodColorSettings = await getMergedBloodColorSettings;
   const creatureType = await BloodNGuts.system.creatureType(token, mergedBloodColorSettings);
   if (!creatureType) {
     log(LogLevel.WARN, 'lookupTokenBloodColor missing creatureType for token:', token.data.name);
-    log(LogLevel.WARN, 'is ' + game.system.id + " compatible with Blood 'n Guts?");
     return getHexColor('blood');
   }
 
@@ -483,4 +499,57 @@ export const colors = {
   whitesmoke: '#f5f5f5',
   yellow: '#ffff00',
   yellowgreen: '#9acd32',
+};
+
+export const generateCustomSystem = (
+  id: string,
+  type: string | Array<string>,
+  path: string | Array<string>,
+): System => {
+  const types = type instanceof Array ? type : [type];
+  const paths = path instanceof Array ? path : [path];
+  if (types.length != paths.length) {
+    log(LogLevel.ERROR, 'generateCustomSystem: types and paths must be matched!');
+    return;
+  }
+
+  return {
+    id: id,
+    customAttributePaths: paths,
+    supportedTypes: types,
+    currentHP: (token: Token, actorType: string): number => {
+      const hpPath = BloodNGuts.system.customAttributePaths[BloodNGuts.system.supportedTypes.indexOf(actorType)];
+      const hp = <number>getNestedProp(token.actor.data.data, hpPath + '.value');
+      return hp;
+    },
+    maxHP: (token: Token, actorType: string): number => {
+      const maxHPPath = BloodNGuts.system.customAttributePaths[BloodNGuts.system.supportedTypes.indexOf(actorType)];
+      const maxHP = <number>getNestedProp(token.actor.data.data, maxHPPath + '.max');
+      return maxHP;
+    },
+    currentHPChange: (changes: Record<string, any>, actorType: string): number | void => {
+      if (!changes) return;
+      const changeHPPath = BloodNGuts.system.customAttributePaths[BloodNGuts.system.supportedTypes.indexOf(actorType)];
+      const changeHP = <number>getNestedProp(changes?.actorData?.data, changeHPPath + '.value');
+      return changeHP;
+    },
+    maxHPChange: (changes: Record<string, any>, actorType: string): number | void => {
+      if (!changes) return;
+      const changeMaxHPPath =
+        BloodNGuts.system.customAttributePaths[BloodNGuts.system.supportedTypes.indexOf(actorType)];
+      const changeMaxHP = <number>getNestedProp(changes?.actorData?.data, changeMaxHPPath + '.max');
+      return changeMaxHP;
+    },
+    creatureType: (token: Token, bloodColorSettings?: Record<string, string>): string | void => {
+      let creatureType: string;
+      // search through the name for possible creature type
+      const wordsInName: Array<string> = token.actor.data.name.replace(',', ' ').split(' ');
+      for (let i = 0; i < wordsInName.length; i++) {
+        const word = wordsInName[i].toLowerCase();
+        if (bloodColorSettings[word]) creatureType = word;
+      }
+      log(LogLevel.DEBUG, 'creatureType custom ' + game.system.id + ':', token.name, creatureType);
+      if (creatureType) return creatureType.toLowerCase();
+    },
+  };
 };

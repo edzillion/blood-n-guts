@@ -3,6 +3,7 @@ import { log, LogLevel } from '../module/logging';
 export default {
   // Toolkit13 (13th Age Compatible)
   archmage: {
+    id: 'archmage',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -16,11 +17,12 @@ export default {
       } else if (actorType === 'npc') {
         creatureType = token.actor.data.data.details.type?.value;
       }
-      log(LogLevel.INFO, 'creatureType archmage: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType archmage: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   dcc: {
+    id: 'dcc',
     supportedTypes: ['player', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -40,11 +42,12 @@ export default {
         }
       }
 
-      log(LogLevel.INFO, 'creatureType dcc: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType dcc: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   dnd5e: {
+    id: 'dnd5e',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -58,11 +61,12 @@ export default {
       } else if (actorType === 'npc') {
         creatureType = token.actor.data.data.details.type;
       }
-      log(LogLevel.INFO, 'creatureType dnd5e: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType dnd5e: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   pf1: {
+    id: 'pf1',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -79,11 +83,12 @@ export default {
         creatureType = token.actor.data.items.find((i) => i.type === 'class').name;
       }
 
-      log(LogLevel.INFO, 'creatureType pf1: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType pf1: ', token.name, actorType, creatureType);
       return creatureType.toLowerCase();
     },
   },
   pf2e: {
+    id: 'pf2e',
     supportedTypes: ['character', 'npc', 'hazard', 'familiar'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -107,11 +112,12 @@ export default {
           }
         } else creatureType = token.actor.data.data.details.creatureType;
       }
-      log(LogLevel.INFO, 'creatureType pf2e: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType pf2e: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   'uesrpg-d100': {
+    id: 'uesrpg-d100',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.hp.max,
@@ -125,11 +131,12 @@ export default {
       } else if (actorType === 'npc') {
         creatureType = token.actor.data.data.race;
       }
-      log(LogLevel.INFO, 'creatureType uesrpg-d100: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType uesrpg-d100: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   wfrp4e: {
+    id: 'wfrp4e',
     supportedTypes: ['character', 'npc', 'creature'],
     currentHP: (token: Token): number => token.actor.data.data.status.wounds.value,
     maxHP: (token: Token): number => token.actor.data.data.status.wounds.max,
@@ -143,11 +150,12 @@ export default {
       } else if (actorType === 'npc' || actorType === 'creature') {
         creatureType = token.actor.data.data.details.species.value;
       }
-      log(LogLevel.INFO, 'creatureType wfrp4e: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType wfrp4e: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   swade: {
+    id: 'swade',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.wounds.value,
     maxHP: (token: Token): number => token.actor.data.data.wounds.max,
@@ -167,11 +175,12 @@ export default {
           if (bloodColorSettings[word]) creatureType = word;
         }
       }
-      log(LogLevel.INFO, 'creatureType swade: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType swade: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   'dark-heresy': {
+    id: 'dark-heresy',
     supportedTypes: ['acolyte', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.wounds.value,
     maxHP: (token: Token): number => token.actor.data.data.wounds.max,
@@ -186,11 +195,12 @@ export default {
         const word = wordsInName[i].toLowerCase();
         if (bloodColorSettings[word]) creatureType = word;
       }
-      log(LogLevel.INFO, 'creatureType dark-heresy: ', token.name, creatureType);
+      log(LogLevel.DEBUG, 'creatureType dark-heresy: ', token.name, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   twodsix: {
+    id: 'twodsix',
     supportedTypes: ['traveller'],
     currentHP: (token: Token): number => token.actor.data.data.hits.value,
     maxHP: (token: Token): number => token.actor.data.data.hits.max,
@@ -202,11 +212,12 @@ export default {
       if (actorType === 'traveller') {
         creatureType = token.actor.data.data.species;
       }
-      log(LogLevel.INFO, 'creatureType twodsix:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType twodsix:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   cyberpunkred: {
+    id: 'cyberpunkred',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.combatstats.healthpool.value,
     maxHP: (token: Token): number => token.actor.data.data.combatstats.healthpool.max,
@@ -221,12 +232,13 @@ export default {
         const word = wordsInName[i].toLowerCase();
         if (bloodColorSettings[word]) creatureType = word;
       }
-      log(LogLevel.INFO, 'creatureType cyberpunkred: ', token.name, creatureType);
+      log(LogLevel.DEBUG, 'creatureType cyberpunkred: ', token.name, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   // WIP - not fully functional
   gurps4e: {
+    id: 'gurps4e',
     // no actorType so no supportedTypes either !
     currentHP: (token: Token): number => token.actor.data.data.tracked.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.tracked.hp.max,
@@ -241,11 +253,12 @@ export default {
         const word = wordsInName[i].toLowerCase();
         if (bloodColorSettings[word]) creatureType = word;
       }
-      log(LogLevel.INFO, 'creatureType gurps4e: ', token.name, creatureType);
+      log(LogLevel.DEBUG, 'creatureType gurps4e: ', token.name, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   D35E: {
+    id: 'D35E',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -261,11 +274,12 @@ export default {
         creatureType = token.actor.data.data.attributes.creatureType;
       }
 
-      log(LogLevel.INFO, 'creatureType D35E:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType D35E:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   lotfp: {
+    id: 'lotfp',
     supportedTypes: ['character', 'monster'],
     currentHP: (token: Token): number => token.actor.data.data.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.hp.max,
@@ -286,11 +300,12 @@ export default {
         }
       }
 
-      log(LogLevel.INFO, 'creatureType lotfp:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType lotfp:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   shadowrun5e: {
+    id: 'shadowrun5e',
     supportedTypes: ['character', 'spirit', 'critter'],
     currentHP: (token: Token): number => token.actor.data.data.track.physical.value,
     maxHP: (token: Token): number => token.actor.data.data.track.physical.max,
@@ -313,11 +328,12 @@ export default {
         }
       }
 
-      log(LogLevel.INFO, 'creatureType shadowrun5e:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType shadowrun5e:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
   starwarsffg: {
+    id: 'starwarsffg',
     supportedTypes: ['character', 'minion'],
     currentHP: (token: Token): number => token.actor.data.data.stats.wounds.value,
     maxHP: (token: Token): number => token.actor.data.data.stats.wounds.max,
@@ -338,7 +354,7 @@ export default {
         }
       }
 
-      log(LogLevel.INFO, 'creatureType starwarsffg:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType starwarsffg:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -346,6 +362,7 @@ export default {
   // that means we would need to change the structure of BnG to accommodate this
   // so for the moment only mech works.
   lancer: {
+    id: 'lancer',
     supportedTypes: ['pilot', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.mech.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.mech.hp.max,
@@ -356,7 +373,7 @@ export default {
       const actorType: string = token.actor.data.type.toLowerCase();
       const creatureType = 'mech';
 
-      log(LogLevel.INFO, 'creatureType lancer:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType lancer:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
