@@ -262,6 +262,7 @@ export class BloodNGuts {
     let currentAttributeChoice;
     if (
       BloodNGuts.system != null &&
+      BloodNGuts.system.customAttributePaths &&
       BloodNGuts.system.customAttributePaths[BloodNGuts.system.supportedTypes.indexOf(actorType)]
     )
       currentAttributeChoice =
