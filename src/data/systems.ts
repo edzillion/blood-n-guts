@@ -17,7 +17,7 @@ export default {
       } else if (actorType === 'npc') {
         creatureType = token.actor.data.data.details.type?.value;
       }
-      log(LogLevel.INFO, 'creatureType archmage: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType archmage: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -42,7 +42,7 @@ export default {
         }
       }
 
-      log(LogLevel.INFO, 'creatureType dcc: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType dcc: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -61,7 +61,7 @@ export default {
       } else if (actorType === 'npc') {
         creatureType = token.actor.data.data.details.type;
       }
-      log(LogLevel.INFO, 'creatureType dnd5e: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType dnd5e: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -83,7 +83,7 @@ export default {
         creatureType = token.actor.data.items.find((i) => i.type === 'class').name;
       }
 
-      log(LogLevel.INFO, 'creatureType pf1: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType pf1: ', token.name, actorType, creatureType);
       return creatureType.toLowerCase();
     },
   },
@@ -112,7 +112,7 @@ export default {
           }
         } else creatureType = token.actor.data.data.details.creatureType;
       }
-      log(LogLevel.INFO, 'creatureType pf2e: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType pf2e: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -131,7 +131,7 @@ export default {
       } else if (actorType === 'npc') {
         creatureType = token.actor.data.data.race;
       }
-      log(LogLevel.INFO, 'creatureType uesrpg-d100: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType uesrpg-d100: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -150,7 +150,7 @@ export default {
       } else if (actorType === 'npc' || actorType === 'creature') {
         creatureType = token.actor.data.data.details.species.value;
       }
-      log(LogLevel.INFO, 'creatureType wfrp4e: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType wfrp4e: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -175,7 +175,7 @@ export default {
           if (bloodColorSettings[word]) creatureType = word;
         }
       }
-      log(LogLevel.INFO, 'creatureType swade: ', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType swade: ', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -195,7 +195,7 @@ export default {
         const word = wordsInName[i].toLowerCase();
         if (bloodColorSettings[word]) creatureType = word;
       }
-      log(LogLevel.INFO, 'creatureType dark-heresy: ', token.name, creatureType);
+      log(LogLevel.DEBUG, 'creatureType dark-heresy: ', token.name, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -212,7 +212,7 @@ export default {
       if (actorType === 'traveller') {
         creatureType = token.actor.data.data.species;
       }
-      log(LogLevel.INFO, 'creatureType twodsix:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType twodsix:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -232,7 +232,7 @@ export default {
         const word = wordsInName[i].toLowerCase();
         if (bloodColorSettings[word]) creatureType = word;
       }
-      log(LogLevel.INFO, 'creatureType cyberpunkred: ', token.name, creatureType);
+      log(LogLevel.DEBUG, 'creatureType cyberpunkred: ', token.name, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -253,7 +253,7 @@ export default {
         const word = wordsInName[i].toLowerCase();
         if (bloodColorSettings[word]) creatureType = word;
       }
-      log(LogLevel.INFO, 'creatureType gurps4e: ', token.name, creatureType);
+      log(LogLevel.DEBUG, 'creatureType gurps4e: ', token.name, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -274,7 +274,7 @@ export default {
         creatureType = token.actor.data.data.attributes.creatureType;
       }
 
-      log(LogLevel.INFO, 'creatureType D35E:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType D35E:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -300,7 +300,7 @@ export default {
         }
       }
 
-      log(LogLevel.INFO, 'creatureType lotfp:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType lotfp:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -328,7 +328,7 @@ export default {
         }
       }
 
-      log(LogLevel.INFO, 'creatureType shadowrun5e:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType shadowrun5e:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -354,7 +354,7 @@ export default {
         }
       }
 
-      log(LogLevel.INFO, 'creatureType starwarsffg:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType starwarsffg:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },
@@ -373,7 +373,7 @@ export default {
       const actorType: string = token.actor.data.type.toLowerCase();
       const creatureType = 'mech';
 
-      log(LogLevel.INFO, 'creatureType lancer:', token.name, actorType, creatureType);
+      log(LogLevel.DEBUG, 'creatureType lancer:', token.name, actorType, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   },

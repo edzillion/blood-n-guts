@@ -332,7 +332,7 @@ export const mergeSettingsFiles = async (dataSource: string): Promise<void> => {
       if (result.dirs.includes(MODULE_ID)) return;
       return FilePicker.createDirectory(dataSource, MODULE_ID, {})
         .then((result) => {
-          log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
+          log(LogLevel.DEBUG, `mergeSettingsFiles, creating ${result}`);
         })
         .catch((err) => {
           if (!err.includes('EEXIST')) {
@@ -350,7 +350,7 @@ export const mergeSettingsFiles = async (dataSource: string): Promise<void> => {
       if (result.dirs.includes('fonts')) return;
       return FilePicker.createDirectory(dataSource, MODULE_ID + '/fonts', {})
         .then((result) => {
-          log(LogLevel.INFO, `mergeSettingsFiles, creating ${result}`);
+          log(LogLevel.DEBUG, `mergeSettingsFiles, creating ${result}`);
         })
         .catch((err) => {
           if (!err.includes('EEXIST')) {

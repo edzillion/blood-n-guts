@@ -548,7 +548,7 @@ export const generateCustomSystem = (
         const word = wordsInName[i].toLowerCase();
         if (bloodColorSettings[word]) creatureType = word;
       }
-      log(LogLevel.INFO, 'creatureType custom ' + game.system.id + ':', token.name, creatureType);
+      log(LogLevel.DEBUG, 'creatureType custom ' + game.system.id + ':', token.name, creatureType);
       if (creatureType) return creatureType.toLowerCase();
     },
   };
