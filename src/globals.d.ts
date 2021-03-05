@@ -82,3 +82,14 @@ interface InteractionEvent extends PIXI.interaction.InteractionEvent {
 interface HTMLFormElement {
   onsubmit: (this: GlobalEventHandlers, ev: SubmitEvent) => any | null;
 }
+
+interface System {
+  id: string;
+  supportedTypes: Array<string>;
+  customAttributePaths?: Array<string>;
+  currentHP: (token: Token, actorType?: string) => number;
+  maxHP: (token: Token, actorType?: string) => number;
+  currentHPChange: (changes: Record<string, any>, actorType?: string) => number | void;
+  maxHPChange: (changes: Record<string, any>, actorType?: string) => number | void;
+  creatureType: (token: Token, bloodColorSettings?: Record<string, string>) => string | void;
+}

@@ -18,6 +18,7 @@ import { getBaseTokenSettings, getMergedViolenceLevels } from '../module/setting
  */
 export default class SplatToken {
   public id: string;
+  public actorType: string;
   public x: number;
   public y: number;
   public hp: number;
@@ -43,6 +44,7 @@ export default class SplatToken {
   constructor(token: Token) {
     if (!token.id) log(LogLevel.ERROR, 'SplatToken constructor() missing token.id');
     this.id = token.id;
+    this.actorType = token.actor.data.type.toLowerCase();
     log(LogLevel.DEBUG, 'SplatToken constructor for ' + this.id);
     this.token = token;
     this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
@@ -236,8 +238,10 @@ export default class SplatToken {
    */
   private getUpdatedDamage(changes): number {
     // todo: perhaps a system based guard here?
-    if (changes.actorData === undefined) return; // || changes.actorData.data.attributes?.hp === undefined) return;
-    const currentHP = BloodNGuts.system.currentHPChange(changes) || BloodNGuts.system.currentHP(this.token); //BloodNGuts.getLatestActorHP(this.token, changes);
+    if (changes.actorData === undefined) return;
+    const currentHP =
+      BloodNGuts.system.currentHPChange(changes, this.actorType) ||
+      BloodNGuts.system.currentHP(this.token, this.actorType);
     const lastHP = this.hp;
     const maxHP = this.maxHP;
     const severity = this.getDamageSeverity(currentHP, lastHP, maxHP);
@@ -452,8 +456,11 @@ export default class SplatToken {
     //local state
     this.x = changes?.x || token.x;
     this.y = changes?.y || token.y;
-    this.hp = BloodNGuts.system.currentHPChange(changes) || BloodNGuts.system.currentHP(this.token);
-    this.maxHP = BloodNGuts.system.maxHPChange(changes) || BloodNGuts.system.maxHP(this.token);
+    this.hp =
+      BloodNGuts.system.currentHPChange(changes, this.actorType) ||
+      BloodNGuts.system.currentHP(this.token, this.actorType);
+    this.maxHP =
+      BloodNGuts.system.maxHPChange(changes, this.actorType) || BloodNGuts.system.maxHP(this.token, this.actorType);
     //flag state
     if (bleedingSeverity != null) {
       await this.token.setFlag(MODULE_ID, 'bleedingSeverity', bleedingSeverity);
