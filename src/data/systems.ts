@@ -3,6 +3,7 @@ import { log, LogLevel } from '../module/logging';
 export default {
   // Toolkit13 (13th Age Compatible)
   archmage: {
+    id: 'archmage',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -21,6 +22,7 @@ export default {
     },
   },
   dcc: {
+    id: 'dcc',
     supportedTypes: ['player', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -45,6 +47,7 @@ export default {
     },
   },
   dnd5e: {
+    id: 'dnd5e',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -63,6 +66,7 @@ export default {
     },
   },
   pf1: {
+    id: 'pf1',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -84,6 +88,7 @@ export default {
     },
   },
   pf2e: {
+    id: 'pf2e',
     supportedTypes: ['character', 'npc', 'hazard', 'familiar'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -112,6 +117,7 @@ export default {
     },
   },
   'uesrpg-d100': {
+    id: 'uesrpg-d100',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.hp.max,
@@ -130,6 +136,7 @@ export default {
     },
   },
   wfrp4e: {
+    id: 'wfrp4e',
     supportedTypes: ['character', 'npc', 'creature'],
     currentHP: (token: Token): number => token.actor.data.data.status.wounds.value,
     maxHP: (token: Token): number => token.actor.data.data.status.wounds.max,
@@ -148,6 +155,7 @@ export default {
     },
   },
   swade: {
+    id: 'swade',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.wounds.value,
     maxHP: (token: Token): number => token.actor.data.data.wounds.max,
@@ -172,6 +180,7 @@ export default {
     },
   },
   'dark-heresy': {
+    id: 'dark-heresy',
     supportedTypes: ['acolyte', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.wounds.value,
     maxHP: (token: Token): number => token.actor.data.data.wounds.max,
@@ -191,6 +200,7 @@ export default {
     },
   },
   twodsix: {
+    id: 'twodsix',
     supportedTypes: ['traveller'],
     currentHP: (token: Token): number => token.actor.data.data.hits.value,
     maxHP: (token: Token): number => token.actor.data.data.hits.max,
@@ -207,6 +217,7 @@ export default {
     },
   },
   cyberpunkred: {
+    id: 'cyberpunkred',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.combatstats.healthpool.value,
     maxHP: (token: Token): number => token.actor.data.data.combatstats.healthpool.max,
@@ -227,6 +238,7 @@ export default {
   },
   // WIP - not fully functional
   gurps4e: {
+    id: 'gurps4e',
     // no actorType so no supportedTypes either !
     currentHP: (token: Token): number => token.actor.data.data.tracked.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.tracked.hp.max,
@@ -246,6 +258,7 @@ export default {
     },
   },
   D35E: {
+    id: 'D35E',
     supportedTypes: ['character', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
@@ -266,6 +279,7 @@ export default {
     },
   },
   lotfp: {
+    id: 'lotfp',
     supportedTypes: ['character', 'monster'],
     currentHP: (token: Token): number => token.actor.data.data.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.hp.max,
@@ -291,6 +305,7 @@ export default {
     },
   },
   shadowrun5e: {
+    id: 'shadowrun5e',
     supportedTypes: ['character', 'spirit', 'critter'],
     currentHP: (token: Token): number => token.actor.data.data.track.physical.value,
     maxHP: (token: Token): number => token.actor.data.data.track.physical.max,
@@ -318,6 +333,7 @@ export default {
     },
   },
   starwarsffg: {
+    id: 'starwarsffg',
     supportedTypes: ['character', 'minion'],
     currentHP: (token: Token): number => token.actor.data.data.stats.wounds.value,
     maxHP: (token: Token): number => token.actor.data.data.stats.wounds.max,
@@ -346,6 +362,7 @@ export default {
   // that means we would need to change the structure of BnG to accommodate this
   // so for the moment only mech works.
   lancer: {
+    id: 'lancer',
     supportedTypes: ['pilot', 'npc'],
     currentHP: (token: Token): number => token.actor.data.data.mech.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.mech.hp.max,

@@ -5,6 +5,7 @@ import { BloodNGuts } from '../blood-n-guts.js';
 
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
+//import { System } from '../globals';
 
 /**
  * Registers settings.
@@ -58,6 +59,15 @@ export const registerSettings = (): void => {
     },
   });
 
+  game.settings.register(MODULE_ID, 'system', {
+    scope: 'world',
+    config: false,
+    onChange: (value) => {
+      log(LogLevel.DEBUG, 'Settings: system set to ' + value);
+    },
+  });
+
+  // Advanced Configuration
   game.settings.registerMenu(MODULE_ID, 'advancedConfig', {
     name: 'Advanced Config',
     label: 'Advanced Configuration',
@@ -67,7 +77,6 @@ export const registerSettings = (): void => {
     restricted: true,
   });
 
-  // Settings in Advanced Configuration
   game.settings.register(MODULE_ID, 'floorSplatFont', {
     scope: 'world',
     config: false,

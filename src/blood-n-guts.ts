@@ -14,7 +14,7 @@ import {
   getMergedViolenceLevels,
 } from './module/settings';
 import { log, LogLevel } from './module/logging';
-import { getRandomGlyph, lookupTokenBloodColor, isFirstActiveGM } from './module/helpers';
+import { getRandomGlyph, lookupTokenBloodColor, isFirstActiveGM, generateCustomSystem } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
 import BloodLayer from './classes/BloodLayer';
@@ -36,7 +36,7 @@ export class BloodNGuts {
   public static getLatestActorHP: any;
   public static getLatestActorMaxHP: any;
   public static lookupCreatureType: any;
-  public static system: any;
+  public static system: System;
 
   public static initialize(): void {
     log(LogLevel.INFO, `Initializing module ${MODULE_ID}`);
@@ -241,6 +241,7 @@ export class BloodNGuts {
   public static async renderTokenConfigHandler(tokenConfig: TokenConfig, html: JQuery): Promise<void> {
     log(LogLevel.DEBUG, 'renderTokenConfig');
 
+    const actorType = tokenConfig.object.actor.data.type.toLowerCase();
     const imageTab = html.find('.tab[data-tab="image"]');
     const choices = { '': '' };
     const violenceLevels: Record<string, ViolenceLevel> = await getMergedViolenceLevels;
@@ -251,7 +252,26 @@ export class BloodNGuts {
     const defaultColor =
       tokenConfig.object.getFlag(MODULE_ID, 'bloodColor') || (await lookupTokenBloodColor(tokenConfig.object));
 
+    // @ts-expect-error missing definition
+    const attributes = tokenConfig.constructor.getTrackedAttributes(tokenConfig.object.actor.data.data);
+
+    const attributeChoices = {
+      // @ts-expect-error missing definition
+      'Trackable Attributes': tokenConfig.constructor.getTrackedAttributeChoices(attributes)['Attribute Bars'],
+    };
+    let currentAttributeChoice;
+    if (
+      BloodNGuts.system != null &&
+      BloodNGuts.system.customAttributePaths[BloodNGuts.system.supportedTypes.indexOf(actorType)]
+    )
+      currentAttributeChoice =
+        BloodNGuts.system.customAttributePaths[BloodNGuts.system.supportedTypes.indexOf(actorType)];
+
     const data = {
+      // if customAttributePaths is set then we know we are dealing with a custom system
+      customSystem: BloodNGuts.system == null || BloodNGuts.system.customAttributePaths != null,
+      attributeChoices: attributeChoices,
+      currentAttributeChoice: currentAttributeChoice,
       defaultColor: defaultColor,
       levelNames: choices,
       fonts: BloodNGuts.allFonts,
@@ -273,6 +293,7 @@ export class BloodNGuts {
     const customBloodPanel = imageTab.find('#customBloodPanel');
     const bloodColorPicker = imageTab.find('#bloodColorPicker');
     const bloodColorText = imageTab.find('#bloodColorText');
+    const bloodAttribute = imageTab.find('#bloodAttribute');
 
     // if any custom settings are set on the token
     if (data.selectedColor || data.currentLevel || data.floorSplatFont || data.tokenSplatFont || data.trailSplatFont) {
@@ -293,19 +314,6 @@ export class BloodNGuts {
       tokenConfig.setPosition({ height: 'auto' });
     });
 
-    bloodColorPicker.on('change', (event: JQuery.ChangeEvent) => {
-      data.selectedColor = event.target.value;
-      bloodColorText.val(data.selectedColor);
-    });
-
-    bloodColorText.on('change', (event: JQuery.ChangeEvent) => {
-      if (event.target.value === '') {
-        data.selectedColor = '';
-      } else {
-        bloodColorPicker.val(event.target.value);
-      }
-    });
-
     selectViolenceLevel.on('change', (event: JQuery.ChangeEvent) => {
       if (event.target.value === 'Disabled' && !bloodColorPicker.prop('disabled')) {
         bloodColorPicker.prop('disabled', true);
@@ -318,6 +326,37 @@ export class BloodNGuts {
           bloodColorText.val(data.selectedColor);
         }
       }
+    });
+
+    bloodAttribute.on('change', async (event: JQuery.ChangeEvent) => {
+      if (event.target.value === 'none') {
+        if (BloodNGuts.system != null && BloodNGuts.system.supportedTypes.includes(actorType)) {
+          // if this actorType is registered w the custom System then remove it.
+          const index = BloodNGuts.system.supportedTypes.indexOf(actorType);
+          BloodNGuts.system.customAttributePaths.splice(index, 1);
+          BloodNGuts.system.supportedTypes.splice(index, 1);
+        }
+      } else {
+        // if we do not have a custom system create one
+        if (BloodNGuts.system == null)
+          BloodNGuts.system = generateCustomSystem(game.system.id, actorType, event.target.value);
+        else if (BloodNGuts.system.supportedTypes.includes(actorType)) {
+          // if this actorType is already registered then update it
+          BloodNGuts.system.customAttributePaths[BloodNGuts.system.supportedTypes.indexOf(actorType)] =
+            event.target.value;
+        } else {
+          // if this actorType is not registered then do so
+          BloodNGuts.system.supportedTypes.push(actorType);
+          BloodNGuts.system.customAttributePaths.push(event.target.value);
+        }
+      }
+      await game.settings.set(MODULE_ID, 'system', BloodNGuts.system);
+
+      // wipe layer and history as it will conflict with new data
+      await canvas.blood.wipeLayer(true);
+      // then redraw the canvas to create SplatTokens
+      await canvas.draw();
+      canvas.blood.initialize();
     });
 
     tokenConfig.setPosition({ height: 'auto' });
@@ -354,8 +393,10 @@ Hooks.once('init', () => {
   // Assign custom classes and constants here
   BloodNGuts.initialize();
 
-  BloodNGuts.system = Systems[game.system.id];
-  log(LogLevel.INFO, 'loaded system', game.system.id);
+  if (Systems[game.system.id]) {
+    BloodNGuts.system = Systems[game.system.id];
+    log(LogLevel.INFO, 'loaded system', game.system.id);
+  }
 
   // check whether we are on ForgeVTT to decide where to load data from.
   let dataSource = 'data';
@@ -401,6 +442,27 @@ Hooks.once('ready', () => {
 });
 
 Hooks.once('canvasInit', () => {
+  // load custom system from settings if possible
+  if (BloodNGuts.system == null) {
+    const sys = game.settings.get(MODULE_ID, 'system');
+    if (sys) {
+      log(LogLevel.INFO, 'custom system found');
+      if (sys.id !== game.system.id)
+        log(LogLevel.ERROR, 'saved custom system does not match current system!', sys.id, game.system.id);
+      else if (sys.supportedTypes == null || sys.supportedTypes.length === 0)
+        log(LogLevel.WARN, 'saved custom system has no supportedTypes!', sys);
+      else {
+        BloodNGuts.system = generateCustomSystem(sys.id, sys.supportedTypes, sys.customAttributePaths);
+        ui.notifications.notify(`Blood 'n Guts - loaded custom system: ${game.system.id}`, 'info');
+        log(LogLevel.INFO, 'loaded custom system', game.system.id);
+        canvas.blood.initialize();
+        return;
+      }
+    }
+    ui.notifications.notify(`Blood 'n Guts - no compatible system: ${game.system.id}`, 'warning');
+    log(LogLevel.WARN, 'no compatible system found', game.system.id);
+  } else ui.notifications.notify(`Blood 'n Guts - loaded compatible system: ${game.system.id}`, 'info');
+
   canvas.blood.initialize();
 });
 
@@ -446,6 +508,7 @@ Token.prototype.draw = (function () {
       BloodNGuts.disabled ||
       !this.icon ||
       this._original?.data?._id ||
+      !BloodNGuts.system ||
       !BloodNGuts.system.supportedTypes.includes(this.actor.data.type.toLowerCase())
     )
       return this; //no icon or dragging, or not supported
