@@ -138,6 +138,8 @@ export default class BloodLayer extends TilesLayer {
    * @see {PlaceablesLayer#draw}
    */
   async draw(): Promise<BloodLayer> {
+    // it seems that we need to initialize every time we draw()
+    this.initialize();
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     // Create and draw objects
     const history = canvas.scene.getFlag(MODULE_ID, 'history');

@@ -357,7 +357,6 @@ export class BloodNGuts {
       await canvas.blood.wipeLayer(true);
       // then redraw the canvas to create SplatTokens
       await canvas.draw();
-      canvas.blood.initialize();
     });
 
     tokenConfig.setPosition({ height: 'auto' });
@@ -456,15 +455,12 @@ Hooks.once('canvasInit', () => {
         BloodNGuts.system = generateCustomSystem(sys.id, sys.supportedTypes, sys.customAttributePaths);
         ui.notifications.notify(`Blood 'n Guts - loaded custom system: ${game.system.id}`, 'info');
         log(LogLevel.INFO, 'loaded custom system', game.system.id);
-        canvas.blood.initialize();
         return;
       }
     }
     ui.notifications.notify(`Blood 'n Guts - no compatible system: ${game.system.id}`, 'warning');
     log(LogLevel.WARN, 'no compatible system found', game.system.id);
   } else ui.notifications.notify(`Blood 'n Guts - loaded compatible system: ${game.system.id}`, 'info');
-
-  canvas.blood.initialize();
 });
 
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
