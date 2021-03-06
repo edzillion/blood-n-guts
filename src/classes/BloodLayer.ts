@@ -833,6 +833,7 @@ export default class BloodLayer extends TilesLayer {
       const font = splatFonts.fonts[this.brushStyle.fontFamily];
 
       const data = this.getNewSplatData(amount, font, position, spread, this.brushStyle);
+      data.name = 'Brush Splat';
       log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', data.id);
       this.historyBuffer.push(data);
       // commit this click unless we upgrade it to a drag
