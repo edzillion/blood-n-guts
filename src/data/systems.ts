@@ -377,4 +377,27 @@ export default {
       if (creatureType) return creatureType.toLowerCase();
     },
   },
+  sfrpg: {
+    id: 'sfrpg',
+    supportedTypes: ['character', 'npc'],
+    currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
+    maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
+    currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.attributes?.hp?.value,
+    maxHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.attributes?.hp?.max,
+    creatureType: (token: Token, bloodColorSettings?: Record<string, string>): string | void => {
+
+      const actorType = token.actor.data.type.toLowerCase();
+      let creatureType;
+      if (actorType === 'character') {
+        creatureType = token.actor.data.data.details.race;
+      }
+      else if (actorType === 'npc') {
+        if (token.actor.data.data.details.type) {
+          creatureType = token.actor.data.data.details.type;
+        }
+      }
+      log(LogLevel.DEBUG, 'creatureType sfrpg: ', token.name, actorType, creatureType);
+      if (creatureType) return creatureType.toLowerCase();
+    },
+  }
 };
