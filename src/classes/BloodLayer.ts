@@ -90,6 +90,8 @@ export default class BloodLayer extends TilesLayer {
     //@ts-expect-error definition missing
     this.preview = this.addChild(prevCont);
     this.preview.alpha = this.DEFAULTS_BRUSHSETTINGS.previewAlpha;
+
+    this.cleanHistory();
   }
 
   /**
@@ -738,6 +740,21 @@ export default class BloodLayer extends TilesLayer {
     await canvas.scene.unsetFlag(MODULE_ID, 'history');
     await canvas.scene.setFlag(MODULE_ID, 'history', history);
     log(LogLevel.DEBUG, `deleteFromHistory: size now ${history.events.length}.`);
+  }
+
+  /**
+   * Removes all splats from history that are not present in the scene. Does not save to flag.
+   * @category GMOnly
+   * @function
+   * @param {history=canvas.scene.getFlag(MODULE_ID, 'history')} history - layer history
+   */
+  cleanHistory(history = canvas.scene.getFlag(MODULE_ID, 'history')): void {
+    log(LogLevel.DEBUG, 'cleanHistory: size:' + history.events.length);
+
+    // If history is blank, do nothing
+    if (history === undefined || history.events.length === 0) return;
+    history.events = history.events.filter((e) => !e.tokenId || canvas.tokens.get(e.tokenId));
+    history.pointer = history.events.length;
   }
 
   /**
