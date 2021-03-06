@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## [0.8.2]
+
+### FEATURES
+
+- Added native Starfinder support (thanks to [Ryan Renna](https://github.com/rrenna)!)
+
+### BUGFIXES
+
+- Fixed fxmaster / weather effects bug.
 
 ## [0.8.1]
 
