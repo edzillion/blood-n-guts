@@ -749,7 +749,7 @@ export default class BloodLayer extends TilesLayer {
    * @param {history=canvas.scene.getFlag(MODULE_ID, 'history')} history - layer history
    */
   cleanHistory(history = canvas.scene.getFlag(MODULE_ID, 'history')): void {
-    log(LogLevel.DEBUG, 'cleanHistory: size:' + history.events.length);
+    log(LogLevel.DEBUG, 'cleanHistory');
 
     // If history is blank, do nothing
     if (history === undefined || history.events.length === 0) return;
