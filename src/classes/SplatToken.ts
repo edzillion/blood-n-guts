@@ -454,8 +454,8 @@ export default class SplatToken {
   private async saveState(token, bleedingSeverity?, changes?): Promise<void> {
     log(LogLevel.DEBUG, 'saveState token ', token.id);
     //local state
-    this.x = changes?.x || token.x;
-    this.y = changes?.y || token.y;
+    this.x = changes?.x || token.data.x;
+    this.y = changes?.y || token.data.y;
     this.hp =
       BloodNGuts.system.currentHPChange(changes, this.actorType) ||
       BloodNGuts.system.currentHP(this.token, this.actorType);

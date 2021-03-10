@@ -171,6 +171,10 @@ export class BloodNGuts {
     if (!scene.active || BloodNGuts.disabled) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler', changes);
 
+    // if the update is a flag but not from our module then return
+    const entries = Object.entries(changes);
+    if (entries.length === 2 && entries[0][0] === 'flags' && entries[0][1][MODULE_ID] == null) return;
+
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
 

@@ -112,15 +112,17 @@ export default class TileSplat extends Tile {
   refresh(): TileSplat {
     log(LogLevel.DEBUG, 'TileSplat refresh', this.id);
     // Determine shape bounds and update the frame
-    const bounds = this.tile.getLocalBounds();
-    if (this.id && this._controlled) this.refreshFrame(bounds);
-    else this.frame.visible = false;
+    if (this.tile) {
+      const bounds = this.tile.getLocalBounds();
+      if (this.id && this._controlled) this.refreshFrame(bounds);
+      else this.frame.visible = false;
 
-    // Set Tile position & Toggle visibility
-    this.position.set(this.data.x, this.data.y);
-    this.hitArea = bounds;
-    this.width = bounds.width;
-    this.height = bounds.height;
+      // Set Tile position & Toggle visibility
+      this.position.set(this.data.x, this.data.y);
+      this.hitArea = bounds;
+      this.width = bounds.width;
+      this.height = bounds.height;
+    }
 
     if (this.data.hidden) {
       if (this.alpha === 0.75) this.alpha = 0.5;
