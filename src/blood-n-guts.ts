@@ -188,7 +188,10 @@ export class BloodNGuts {
     }
 
     if (isFirstActiveGM()) {
-      splatToken.updateChanges(changes);
+      const type = game.actors.get(tokenData.actorId).data.type.toLowerCase();
+      if (BloodNGuts.system.supportedTypes.includes(type)) {
+        splatToken.updateChanges(changes);
+      }
     }
   }
 
