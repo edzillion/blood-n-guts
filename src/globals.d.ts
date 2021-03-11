@@ -87,6 +87,7 @@ interface System {
   id: string;
   supportedTypes: Array<string>;
   customAttributePaths?: Array<string>;
+  ascendingDamage?: boolean;
   currentHP: (token: Token, actorType?: string) => number;
   maxHP: (token: Token, actorType?: string) => number;
   currentHPChange: (changes: Record<string, any>, actorType?: string) => number | void;
