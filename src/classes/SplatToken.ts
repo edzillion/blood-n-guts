@@ -179,7 +179,9 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'updateChanges');
     if (changes.flags) {
       // we only care about bleedingSeverity flag in SplatToken constructor
-      if (changes.flags[MODULE_ID]?.bleedingSeverity != null) delete changes.flags[MODULE_ID].bleedingSeverity;
+      if (changes.flags[MODULE_ID]?.bleedingSeverity != null) {
+        if (Object.entries(changes.flags[MODULE_ID]).length === 1) return false;
+      }
       for (const setting in changes.flags[MODULE_ID]) {
         this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
       }
