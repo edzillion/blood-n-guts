@@ -114,7 +114,7 @@ export default class SplatToken {
   public async createMask(): Promise<void> {
     if (this.disabled) return;
     // @ts-expect-error missing definition
-    const maskTexture = await PIXI.Texture.fromURL(this.token.data.img);
+    const maskTexture = await loadTexture(this.token.data.img, { fallback: CONST.DEFAULT_TOKEN });
     const maskSprite = PIXI.Sprite.from(maskTexture);
     maskSprite.width = this.spriteWidth;
     maskSprite.height = this.spriteHeight;

@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [0.8.4]
+
+### BUGFIXES
+
+- Fix silent error when token missing it's icon, fallback to default
+
 ## [0.8.3]
 
 ### FEATURES
