@@ -333,14 +333,15 @@ export default {
       if (creatureType) return creatureType.toLowerCase();
     },
   },
+  // starwarsffg threshold +1 is dead.
   starwarsffg: {
     id: 'starwarsffg',
     supportedTypes: ['character', 'minion'],
     ascendingDamage: true,
     currentHP: (token: Token): number => token.actor.data.data.stats.wounds.value,
-    maxHP: (token: Token): number => token.actor.data.data.stats.wounds.max,
+    maxHP: (token: Token): number => token.actor.data.data.stats.wounds.max + 1,
     currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.stats?.wounds?.value,
-    maxHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.stats?.wounds?.max,
+    maxHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.stats?.wounds?.max + 1,
     creatureType: (token: Token, bloodColorSettings?: Record<string, string>): string | void => {
       const actorType: string = token.actor.data.type.toLowerCase();
       let creatureType: string;
