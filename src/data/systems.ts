@@ -267,11 +267,14 @@ export default {
     creatureType: (token: Token, bloodColorSettings?: Record<string, string>): string | void => {
       let creatureType: string;
       // No races or creatureTypes in GURPS apparently
-      // Instead just search through the name for possible creature type
-      const wordsInName: Array<string> = token.actor.data.name.replace(',', ' ').split(' ');
-      for (let i = 0; i < wordsInName.length; i++) {
-        const word = wordsInName[i].toLowerCase();
-        if (bloodColorSettings[word]) creatureType = word;
+      creatureType = token.actor.data.data.additionalresources.bloodtype;
+      if (!bloodColorSettings[creatureType]) {
+        // Instead just search through the name for possible creature type
+        const wordsInName: Array<string> = token.actor.data.name.replace(',', ' ').split(' ');
+        for (let i = 0; i < wordsInName.length; i++) {
+          const word = wordsInName[i].toLowerCase();
+          if (bloodColorSettings[word]) creatureType = word;
+        }
       }
       log(LogLevel.DEBUG, 'creatureType gurps: ', token.name, creatureType);
       if (creatureType) return creatureType.toLowerCase();
