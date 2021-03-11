@@ -171,6 +171,10 @@ export class BloodNGuts {
     if (!scene.active || BloodNGuts.disabled) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler', changes);
 
+    // if the update is a flag but not from our module then return
+    const entries = Object.entries(changes);
+    if (entries.length === 2 && entries[0][0] === 'flags' && entries[0][1][MODULE_ID] == null) return;
+
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
 
@@ -184,7 +188,10 @@ export class BloodNGuts {
     }
 
     if (isFirstActiveGM()) {
-      splatToken.updateChanges(changes);
+      const type = game.actors.get(tokenData.actorId).data.type.toLowerCase();
+      if (BloodNGuts.system.supportedTypes.includes(type)) {
+        splatToken.updateChanges(changes);
+      }
     }
   }
 
@@ -513,6 +520,7 @@ Token.prototype.draw = (function () {
 
     if (BloodNGuts.splatTokens[this.id]) {
       splatToken = BloodNGuts.splatTokens[this.id];
+      // if for some reason our mask is missing then recreate it
       if (splatToken.container.children.length === 0) {
         splatToken.container = new PIXI.Container();
         await BloodNGuts.splatTokens[this.id].createMask();
@@ -520,6 +528,12 @@ Token.prototype.draw = (function () {
     } else {
       splatToken = await new SplatToken(this).create();
       BloodNGuts.splatTokens[this.id] = splatToken;
+      // if BnG is loading then we can presplat every TokenSplat in one go on canvasReady
+      // otherwise it is an new token so we do it now.
+      if (window.BloodNGuts != null) {
+        splatToken.preSplat();
+        canvas.blood.commitHistory();
+      }
     }
     if (splatToken.disabled) return this;
     const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;

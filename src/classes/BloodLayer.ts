@@ -90,6 +90,8 @@ export default class BloodLayer extends TilesLayer {
     //@ts-expect-error definition missing
     this.preview = this.addChild(prevCont);
     this.preview.alpha = this.DEFAULTS_BRUSHSETTINGS.previewAlpha;
+
+    this.cleanHistory();
   }
 
   /**
@@ -741,6 +743,21 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
+   * Removes all splats from history that are not present in the scene. Does not save to flag.
+   * @category GMOnly
+   * @function
+   * @param {history=canvas.scene.getFlag(MODULE_ID, 'history')} history - layer history
+   */
+  cleanHistory(history = canvas.scene.getFlag(MODULE_ID, 'history')): void {
+    log(LogLevel.DEBUG, 'cleanHistory');
+
+    // If history is blank, do nothing
+    if (history === undefined || history.events.length === 0) return;
+    history.events = history.events.filter((e) => !e.tokenId || canvas.tokens.get(e.tokenId));
+    history.pointer = history.events.length;
+  }
+
+  /**
    * Wipes all blood splats from blood layer.
    * @category GMOnly
    * @function
@@ -833,6 +850,7 @@ export default class BloodLayer extends TilesLayer {
       const font = splatFonts.fonts[this.brushStyle.fontFamily];
 
       const data = this.getNewSplatData(amount, font, position, spread, this.brushStyle);
+      data.name = 'Brush Splat';
       log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', data.id);
       this.historyBuffer.push(data);
       // commit this click unless we upgrade it to a drag

@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [0.8.3]
+
+### FEATURES
+
+- Ascending Damage - now supports systems which count damage upward from 0.
+- Added native StarWarsFFG support.
+- Added native SWADE support.
+
+### BUGFIXES
+
+- Fix missing splatToken.updateChanges() bug
+- Potential fix for `_updateID` bug
+- Fix for missing TokenSplat position bug
+
 ## [0.8.2]
 
 ### FEATURES

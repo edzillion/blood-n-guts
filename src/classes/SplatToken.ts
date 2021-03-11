@@ -156,7 +156,7 @@ export default class SplatToken {
   public preSplat(): void {
     if (this.tokenSplats.length === 0) {
       const currentHP = this.hp;
-      const lastHP = this.maxHP * this.tokenSettings.healthThreshold;
+      const lastHP = BloodNGuts.system.ascendingDamage ? 0 : this.maxHP;
       const maxHP = this.maxHP;
 
       const initSeverity = this.getDamageSeverity(currentHP, lastHP, maxHP);
@@ -179,7 +179,9 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'updateChanges');
     if (changes.flags) {
       // we only care about bleedingSeverity flag in SplatToken constructor
-      if (changes.flags[MODULE_ID]?.bleedingSeverity != null) delete changes.flags[MODULE_ID].bleedingSeverity;
+      if (changes.flags[MODULE_ID]?.bleedingSeverity != null) {
+        if (Object.entries(changes.flags[MODULE_ID]).length === 1) return false;
+      }
       for (const setting in changes.flags[MODULE_ID]) {
         this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
       }
@@ -454,8 +456,8 @@ export default class SplatToken {
   private async saveState(token, bleedingSeverity?, changes?): Promise<void> {
     log(LogLevel.DEBUG, 'saveState token ', token.id);
     //local state
-    this.x = changes?.x || token.x;
-    this.y = changes?.y || token.y;
+    this.x = changes?.x || token.data.x;
+    this.y = changes?.y || token.data.y;
     this.hp =
       BloodNGuts.system.currentHPChange(changes, this.actorType) ||
       BloodNGuts.system.currentHP(this.token, this.actorType);
@@ -479,27 +481,33 @@ export default class SplatToken {
    * * or 0 if not hit at all.
    * @category GMOnly
    * @function
-   * @param {Token} token - the token to check.
-   * @param {any} changes - the token.actor changes object.
+   * @param {Token} currentHP - current health.
+   * @param {any} lastHP - health last round.
+   * @param {any} maxHP - max health / maximum health value.
+   * @param {ascending=false} ascending - does damage count up or down?
    * @returns {number} - the damage severity.
    */
-  private getDamageSeverity(currentHP, lastHP, maxHP): number {
+  private getDamageSeverity(currentHP, lastHP, maxHP, ascending = false): number {
     log(LogLevel.DEBUG, 'getDamageSeverity');
+
+    if (ascending || BloodNGuts.system.ascendingDamage) {
+      currentHP = maxHP - currentHP;
+      lastHP = maxHP - lastHP;
+    }
 
     //fully healed, return -1
     if (currentHP === maxHP) return -1;
+    if (currentHP > maxHP || currentHP < 0) return 0;
 
-    const healthThreshold = this.tokenSettings.healthThreshold;
-    const damageThreshold = this.tokenSettings.damageThreshold;
     const fractionOfMax = currentHP / maxHP;
     const changeFractionOfMax = (lastHP - currentHP) / maxHP;
 
-    if (currentHP && currentHP < lastHP) {
-      if (fractionOfMax > healthThreshold) {
-        log(LogLevel.DEBUG, 'getDamageSeverity below healthThreshold', fractionOfMax);
+    if (currentHP && changeFractionOfMax > 0) {
+      if (fractionOfMax > this.tokenSettings.healthThreshold) {
+        log(LogLevel.DEBUG, 'getDamageSeverity above healthThreshold', fractionOfMax);
         return 0;
       }
-      if (changeFractionOfMax < damageThreshold) {
+      if (changeFractionOfMax < this.tokenSettings.damageThreshold) {
         log(LogLevel.DEBUG, 'getDamageSeverity below damageThreshold', fractionOfMax);
         return 0;
       }
@@ -508,8 +516,9 @@ export default class SplatToken {
     // healing
     if (changeFractionOfMax < 0) {
       //renormalise scale based on threshold.
-      return -fractionOfMax / healthThreshold;
+      return -fractionOfMax / this.tokenSettings.healthThreshold;
     }
+
     // dead, multiply splats.
     const deathMultiplier = currentHP === 0 ? this.tokenSettings.deathMultiplier : 1;
     const severity = 1 + (changeFractionOfMax / 2) * deathMultiplier;
