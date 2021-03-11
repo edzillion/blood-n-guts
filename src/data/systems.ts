@@ -157,6 +157,7 @@ export default {
   swade: {
     id: 'swade',
     supportedTypes: ['character', 'npc'],
+    ascendingDamage: true,
     currentHP: (token: Token): number => token.actor.data.data.wounds.value,
     maxHP: (token: Token): number => token.actor.data.data.wounds.max,
     currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.wounds?.value,
@@ -335,6 +336,7 @@ export default {
   starwarsffg: {
     id: 'starwarsffg',
     supportedTypes: ['character', 'minion'],
+    ascendingDamage: true,
     currentHP: (token: Token): number => token.actor.data.data.stats.wounds.value,
     maxHP: (token: Token): number => token.actor.data.data.stats.wounds.max,
     currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.stats?.wounds?.value,
