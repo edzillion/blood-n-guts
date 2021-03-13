@@ -204,13 +204,10 @@ export class BloodNGuts {
   public static canvasReadyHandler(canvas: any): void {
     if (!canvas.scene.active || BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
-    const gm = game.users.find((e) => e.isGM && e.active);
-    if (!gm) {
-      ui.notifications.notify(`Note: Blood 'n Guts requires a GM to be online to function!`, 'warning');
+    if (!isFirstActiveGM()) {
+      ui.notifications.notify(`Note: Blood 'n Guts requires the first GM to be online to function!`, 'warning');
       BloodNGuts.disabled = true;
-    }
-
-    if (isFirstActiveGM()) {
+    } else {
       for (const tokenId in BloodNGuts.splatTokens) {
         BloodNGuts.splatTokens[tokenId].preSplat();
       }
@@ -512,10 +509,13 @@ Token.prototype.draw = (function () {
       BloodNGuts.disabled ||
       !this.icon ||
       this._original?.data?._id ||
+      !this.actor ||
       !BloodNGuts.system ||
       !BloodNGuts.system.supportedTypes.includes(this.actor.data.type.toLowerCase())
-    )
+    ) {
+      log(LogLevel.INFO, 'Token.draw() not creating SplatToken for', this.data.name);
       return this; //no icon or dragging, or not supported
+    }
     let splatToken: SplatToken;
 
     if (BloodNGuts.splatTokens[this.id]) {

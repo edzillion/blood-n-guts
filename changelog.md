@@ -1,5 +1,12 @@
 # CHANGELOG
 
+
+## [0.8.5]
+
+### BUGFIXES
+
+- Fix Token.draw() crash when token missing actor.
+
 ## [0.8.4]
 
 ### BUGFIXES

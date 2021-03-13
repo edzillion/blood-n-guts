@@ -24,8 +24,6 @@ export default class BloodLayer extends TilesLayer {
   constructor() {
     super();
 
-    this._registerKeyboardListeners();
-
     this.zOrderCounter = 0;
     this.pointer = 0;
     this.historyBuffer = [];
@@ -65,6 +63,7 @@ export default class BloodLayer extends TilesLayer {
       offset: new PIXI.Point(0),
     };
 
+    this._registerKeyboardListeners();
     // React to changes to current scene
     Hooks.on('updateScene', (scene, data) => this.updateSceneHandler(scene, data));
   }
@@ -77,6 +76,7 @@ export default class BloodLayer extends TilesLayer {
    */
   initialize(): void {
     log(LogLevel.INFO, 'Initializing Blood Layer');
+
     // Create objects container which can be sorted
     const objCont = new PIXI.Container();
     objCont.name = 'Object Container';
@@ -140,6 +140,9 @@ export default class BloodLayer extends TilesLayer {
    * @see {PlaceablesLayer#draw}
    */
   async draw(): Promise<BloodLayer> {
+    if (BloodNGuts.disabled) {
+      return;
+    }
     // it seems that we need to initialize every time we draw()
     this.initialize();
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
