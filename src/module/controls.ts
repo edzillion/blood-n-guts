@@ -1,5 +1,6 @@
 import { MODULE_TITLE } from '../constants';
 import BrushConfig from '../classes/BrushConfig';
+import ViolenceConfig from '../classes/ViolenceConfig';
 
 /**
  * Add control buttons
@@ -39,6 +40,17 @@ Hooks.on('getSceneControlButtons', (controls) => {
           onClick: () => {
             // @ts-expect-error defintions wrong
             new BrushConfig().render(true);
+          },
+          button: true,
+        },
+        {
+          name: 'violenceConfig',
+          title: 'Configure Violence Levels',
+          icon: 'fas fa-plus-circle',
+          visible: game.user.isGM,
+          onClick: () => {
+            // @ts-expect-error defintions wrong
+            new ViolenceConfig().render(true);
           },
           button: true,
         },

@@ -1,0 +1,51 @@
+{
+  "blood-n-guts.settings.blah": "You have gone over the maximum points allowed for Point Buy",
+  "blood-n-guts.options.blah": "translation",
+  "blood-n-guts.violence-config.preset.label": "Preset",
+  "blood-n-guts.violence-config.name.label": "Name",
+  "blood-n-guts.violence-config.floorSplatSize.label": "Floor Splat Size",
+  "blood-n-guts.violence-config.floorSplatSize.hint": "This will increase the size of floor splats",
+  
+  "blood-n-guts.violence-config.floorSplatDensity.label": "Floor Splat Density",
+  "blood-n-guts.violence-config.floorSplatDensity.hint": "This will increase the amount of floor splats",
+
+  "blood-n-guts.violence-config.tokenSplatSize.label": "Token Splat Size",
+  "blood-n-guts.violence-config.tokenSplatSize.hint": "This will increase the size of token splats",
+
+  "blood-n-guts.violence-config.tokenSplatDensity.label": "Token Splat Density",
+  "blood-n-guts.violence-config.tokenSplatDensity.hint": "This will increase the amount of token splats",
+
+  "blood-n-guts.violence-config.trailSplatSize.label": "Trail Splat Size",
+  "blood-n-guts.violence-config.trailSplatSize.hint": "This will increase the size of splats in a blood trail",
+
+  "blood-n-guts.violence-config.trailSplatDensity.label": "Trail Splat Density",
+  "blood-n-guts.violence-config.trailSplatDensity.hint": "This will increase the amount of blood splats in a trail",
+
+  "blood-n-guts.violence-config.splatSpread.label": "Splat Spread",
+  "blood-n-guts.violence-config.splatSpread.hint": "This will increase the spread of splats",
+
+  "blood-n-guts.violence-config.healthThreshold.label": "Health Threshold",
+  "blood-n-guts.violence-config.healthThreshold.hint": "he % of max health to start showing splats e.g. 1.0 will show splats all the time, 0.25 will show splats when HP is 25% or less.",
+
+  "blood-n-guts.violence-config.damageThreshold.label": "Damage Threshold",
+  "blood-n-guts.violence-config.damageThreshold.hint": "The % of max damage to show splats. e.g. 0 will never show splats, 0.25 will show them on a hit that reduces health by 25%.",
+
+  "blood-n-guts.violence-config.deathMultiplier.label": "Death Multiplier",
+  "blood-n-guts.violence-config.deathMultiplier.hint": "Scales the amount of blood to show on a death hit",
+
+  "blood-n-guts.violence-config.sceneSplatPoolSize.label": "Splat Pool Size",
+  "blood-n-guts.violence-config.sceneSplatPoolSize.hint": "The max amount of splats to display at once",
+  
+  "blood-n-guts.violence-config.button.Update": "Update",
+  "blood-n-guts.violence-config.button.Reset": "Reset",
+  "blood-n-guts.violence-config.button.Submit": "Submit",
+  "blood-n-guts.violence-config.button.Save": "Save",
+
+  "blood-n-guts.violence-levels.choices.Disabled": "Disabled",
+  "blood-n-guts.violence-levels.choices.Shrieker": "Shrieker - least blood effects",
+  "blood-n-guts.violence-levels.choices.Kobold": "Kobold",
+  "blood-n-guts.violence-levels.choices.Ogre": "Ogre",
+  "blood-n-guts.violence-levels.choices.Dracolich": "Dracolich",
+  "blood-n-guts.violence-levels.choices.Hecatoncheires": "Hecatoncheires - most blood effects",
+  "blood-n-guts.violence-levels.choices.New": "New..."
+}
