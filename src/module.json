@@ -3,7 +3,7 @@
 	"title": "Blood 'n Guts",
 	"description": "Blood 'n Guts creates blood spray and splatter when tokens recieve damage, drawing to the floor and tokens, and drawing trails of blood after tokens who have taken damage. Many options are configurable.",
 	"author": "edzillion",
-	"version": "0.8.4",
+	"version": "0.8.5",
 	"minimumCoreVersion": "0.6.0",
 	"compatibleCoreVersion": "0.7.9",
 	"esmodules": [
@@ -16,8 +16,8 @@
 	],
 	"url": "https://github.com/edzillion/blood-n-guts",
 	"manifest": "https://raw.githubusercontent.com/edzillion/blood-n-guts/master/src/module.json",
-	"download": "https://github.com/edzillion/blood-n-guts/releases/download/v0.8.4/blood-n-guts-v0.8.4.zip",
-	"changelog": "https://github.com/edzillion/blood-n-guts/blob/v0.8.4/changelog.md",
+	"download": "https://github.com/edzillion/blood-n-guts/releases/download/v0.8.5/blood-n-guts-v0.8.5.zip",
+	"changelog": "https://github.com/edzillion/blood-n-guts/blob/v0.8.5/changelog.md",
 	"bugs": "https://github.com/edzillion/blood-n-guts/issues",
 	"allowBugReporter": true
 }
