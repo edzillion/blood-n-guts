@@ -240,7 +240,7 @@ export default {
   // WIP - not fully functional
   gurps4e: {
     id: 'gurps4e',
-    // no actorType so no supportedTypes either !
+    supportedTypes: ['minchar'], // only minchar?
     currentHP: (token: Token): number => token.actor.data.data.tracked.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.tracked.hp.max,
     currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.tracked?.hp?.value,
