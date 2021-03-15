@@ -1,49 +1,35 @@
-import { getMergedViolenceLevels } from '../module/settings';
 import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
-
-export default class ViolenceConfig extends FormApplication {
+export default class ViolenceConfig2 extends FormApplication {
   dataObject: Record<string, unknown>;
-  violenceLevels: Record<string, ViolenceLevel | Partial<ViolenceLevel>>;
-  currentViolenceSettings: ViolenceLevel | any;
-  selectedLevel: string;
-  inputMode: boolean;
+  allViolenceLevels: Record<string, ViolenceLevel>;
+  newViolenceLevel: Partial<ViolenceLevel>;
+  currentLevel: string;
+  newLevelMode: boolean;
+  defaultLevel: true;
 
-  constructor(object: Record<string, unknown>, options?: FormApplicationOptions) {
-    super(object, options);
+  constructor(violenceLevel?: string, options?: FormApplicationOptions) {
+    super(violenceLevel, options);
 
-    this.violenceLevels = duplicate(violenceLevelSettings.defaults);
-    this.inputMode = false;
+    this.allViolenceLevels = game.settings.get(MODULE_ID, 'violenceLevels');
 
-    const preset = game.settings.get(MODULE_ID, 'violenceLevel');
-    if (preset === 'Disabled') this.selectedLevel === 'Kobold';
-    else this.selectedLevel = preset;
-
-    this.dataObject = {
-      preset: this.selectedLevel,
-      choices: {
-        Shrieker: 'blood-n-guts.violence-levels.choices.Shrieker',
-        Kobold: 'blood-n-guts.violence-levels.choices.Kobold',
-        Ogre: 'blood-n-guts.violence-levels.choices.Ogre',
-        Dracolich: 'blood-n-guts.violence-levels.choices.Dracolich',
-        Hecatoncheires: 'blood-n-guts.violence-levels.choices.Hecatoncheires',
-        New: 'blood-n-guts.violence-levels.choices.New',
-      },
-      button1: 'blood-n-guts.violence-config.button.Update',
-      button1Disabled: 'disabled',
-      button2: 'blood-n-guts.violence-config.button.Reset',
-      button2Disabled: 'disabled',
-      button3: 'blood-n-guts.violence-config.button.Submit',
-      violence: {},
-    };
+    if (violenceLevel === 'New') {
+      this.currentLevel = '';
+      this.newLevelMode = true;
+      this.newViolenceLevel = {};
+    } else {
+      this.currentLevel = game.settings.get(MODULE_ID, 'violenceLevel');
+      this.newLevelMode = false;
+      if (violenceLevelSettings.defaults[this.currentLevel] != null) this.defaultLevel = true;
+    }
   }
 
   static get defaultOptions(): FormApplicationOptions {
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
-      closeOnSubmit: false,
+      closeOnSubmit: true,
       submitOnChange: false,
-      submitOnClose: true,
+      submitOnClose: false,
       popOut: true,
       editable: game.user.isGM,
       width: 350,
@@ -66,22 +52,22 @@ export default class ViolenceConfig extends FormApplication {
    */
   async getData(): Promise<Record<string, unknown>> {
     // Return data to the template
-
-    if (this.inputMode) {
-      this.currentViolenceSettings = this.violenceLevels['New'] ? this.violenceLevels['New'] : {};
-      this.dataObject.button1 = 'blood-n-guts.violence-config.button.Save';
-      this.dataObject.button2 = 'blood-n-guts.violence-config.button.Delete';
-      this.dataObject.nameInputDisabled = '';
-      this.dataObject.name = '';
+    let violenceLevel, nameInputDisabled;
+    if (this.newLevelMode) {
+      violenceLevel = {};
+      nameInputDisabled = '';
     } else {
-      this.dataObject.button1 = 'blood-n-guts.violence-config.button.Update';
-      this.dataObject.button2 = 'blood-n-guts.violence-config.button.Reset';
-      this.dataObject.nameInputDisabled = 'disabled';
-      this.dataObject.name = this.selectedLevel;
+      violenceLevel = game.settings.get(MODULE_ID, 'violenceLevels')[this.currentLevel];
+      nameInputDisabled = 'disabled';
     }
 
-    this.dataObject.preset = this.selectedLevel;
-    this.dataObject.violence = this.currentViolenceSettings;
+    this.dataObject = {
+      name: this.currentLevel,
+      violenceLevel: violenceLevel,
+      nameInputDisabled: nameInputDisabled,
+      notNewLevelMode: !this.newLevelMode,
+      defaultLevel: this.defaultLevel,
+    };
     return this.dataObject;
   }
 
@@ -100,94 +86,31 @@ export default class ViolenceConfig extends FormApplication {
   activateListeners(html: JQuery): void {
     super.activateListeners(html);
 
-    const form: HTMLFormElement = document.querySelector('form#violenceConfigForm');
-    const nameInput = html.find('input#name');
-    const presetSelect = html.find('select#preset');
     const formFields = html.find('input[type=number]');
-
-    const button1 = html.find('button#button1');
-    const button2 = html.find('button#button2');
-
-    // // add change handlers to detect changes from base violence Level
-    // const settingsFields = html.find('input[type=number]');
-    presetSelect.on('change', async (event: JQuery.ChangeEvent) => {
-      this.selectedLevel = event.target.value;
-      this.currentViolenceSettings = duplicate(this.violenceLevels[this.selectedLevel]);
-
-      // compare these settings to defaults
-      if (
-        JSON.stringify(this.currentViolenceSettings) !==
-        JSON.stringify(violenceLevelSettings.defaults[this.selectedLevel])
-      )
-        this.dataObject.button2Disabled = '';
-      else this.dataObject.button2Disabled = 'disabled';
-
-      this.inputMode = event.target.value === 'New';
-
-      this.render();
-    });
+    const cancelButton = html.find('button#cancelButton');
+    const resetButton = html.find('button#resetButton');
+    const deleteButton = html.find('button#deleteButton');
 
     formFields.on('change', (event: JQuery.ChangeEvent) => {
-      // if (!this.violenceLevels[this.selectedLevel]) this.violenceLevels[this.selectedLevel] = {};
-      // this.violenceLevels[this.selectedLevel][event.target.id] = Number(event.target.value);
-
-      this.currentViolenceSettings[event.target.id] = Number(event.target.value);
-
-      // if current settings are unchanged from default
-      if (
-        JSON.stringify(this.currentViolenceSettings) ===
-        JSON.stringify(violenceLevelSettings.defaults[this.selectedLevel])
-      ) {
-        // make the save and reset button disabled
-        button1.prop('disabled', true);
-        button2.prop('disabled', true);
-      } else if (form.checkValidity()) {
-        button1.prop('disabled', false);
-        button2.prop('disabled', false);
-      }
-      // this.currentViolenceSettings[event.target.id] = event.target.value;
-      // if (this.selectedLevel !== 'New')
-      //   if (JSON.stringify(this.violenceLevels[this.selectedLevel]) === JSON.stringify(this.currentViolenceSettings))
-      //     button1.prop('disabled', true);
-      //   else button1.prop('disabled', false);
+      if (!this.newLevelMode)
+        return canvas.scene.setFlag(MODULE_ID, 'violenceLevels.' + event.target.id, event.target.id);
     });
 
-    button1.click((e) => {
-      //save to flags
-      // for (const key in this.violenceLevels[this.selectedLevel]) {
-      //   game.settings.set(MODULE_ID, key, this.currentViolenceSettings[key]);
-      // }
-      if (!form.checkValidity()) return;
-      const customLevelName = nameInput.val() as string;
-      //Add to levels
-      this.violenceLevels[customLevelName] = this.currentViolenceSettings;
-      //set current level
-      this.selectedLevel = customLevelName;
-
-      // need to make the reset button active
-      button2.prop('disabled', false);
-      // render
-      //this.render();
+    cancelButton.on('click', () => {
+      this.close();
     });
 
-    // reset or delete button
-    button2.click((e) => {
-      if (!this.inputMode) this.currentViolenceSettings = duplicate(violenceLevelSettings.defaults[this.selectedLevel]);
-      else {
-        this.selectedLevel = 'Shrieker';
-        this.currentViolenceSettings = this.violenceLevels[this.selectedLevel];
-        this.inputMode = false;
-      }
+    resetButton.on('click', () => {
+      this.allViolenceLevels[this.currentLevel] = duplicate(violenceLevelSettings.defaults[this.currentLevel]);
+      game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
       this.render();
     });
 
-    // resetButton.click(() => {
-    //   Object.keys(canvas.blood.brushSettings).forEach(async (name: string) => {
-    //     await canvas.scene.unsetFlag(MODULE_ID, name);
-    //     canvas.blood.brushSettings = duplicate(canvas.blood.DEFAULTS_BRUSHSETTINGS);
-    //   });
-    //   this.render();
-    // });
+    deleteButton.on('click', () => {
+      delete this.allViolenceLevels[this.currentLevel];
+      game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
+      this.close();
+    });
   }
 
   /**
@@ -200,8 +123,10 @@ export default class ViolenceConfig extends FormApplication {
    * @override
    * @see {FormApplication#_updateObject}
    */
-  async _updateObject(event: SubmitEvent, formData: BrushSettings): Promise<void> {
-    debugger;
-    return;
+  async _updateObject(event: SubmitEvent, formData: ViolenceLevel): Promise<void> {
+    const name = formData.name;
+    delete formData.name;
+    this.allViolenceLevels[name] = formData;
+    return game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
   }
 }
