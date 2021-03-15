@@ -52,7 +52,7 @@ export const registerSettings = (): void => {
     default: false,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: halfHealthBloodied set to ' + value);
-      game.settings.set(MODULE_ID, 'healthThreshold', 0.51);
+      game.settings.set(MODULE_ID, 'healthThreshold', 0.5);
       game.settings.set(MODULE_ID, 'damageThreshold', 0);
       if (!canvas.scene.active)
         ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
@@ -75,6 +75,15 @@ export const registerSettings = (): void => {
     icon: 'fas fa-desktop',
     type: AdvancedConfig,
     restricted: true,
+  });
+
+  game.settings.register(MODULE_ID, 'violenceLevels', {
+    scope: 'world',
+    config: false,
+    default: violenceLevelSettings.defaults,
+    onChange: (value) => {
+      log(LogLevel.DEBUG, 'Settings: floorSplatFont set to ' + value);
+    },
   });
 
   game.settings.register(MODULE_ID, 'floorSplatFont', {
@@ -411,13 +420,13 @@ export const mergeSettingsFiles = async (dataSource: string): Promise<void> => {
     const response = await fetch(MODULE_ID + '/customViolenceLevelSettings.json');
     try {
       const customViolenceLevelSettings = await response.json();
-      const mergedViolenceLevelSettings = Object.assign(violenceLevelSettings.levels, customViolenceLevelSettings);
+      const mergedViolenceLevelSettings = Object.assign(violenceLevelSettings.defaults, customViolenceLevelSettings);
       violenceLevelSettingsResolved(mergedViolenceLevelSettings);
     } catch (err) {
       log(LogLevel.ERROR, 'mergeSettingsFiles', err);
     }
   } else {
-    violenceLevelSettingsResolved(violenceLevelSettings.levels);
+    violenceLevelSettingsResolved(violenceLevelSettings.defaults);
   }
 };
 

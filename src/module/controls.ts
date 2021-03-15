@@ -1,6 +1,6 @@
 import { MODULE_TITLE } from '../constants';
 import BrushConfig from '../classes/BrushConfig';
-import ViolenceConfig from '../classes/ViolenceConfig';
+import ViolenceConfig2 from '../classes/ViolenceConfig2';
 
 /**
  * Add control buttons
@@ -49,8 +49,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
           icon: 'fas fa-plus-circle',
           visible: game.user.isGM,
           onClick: () => {
-            // @ts-expect-error defintions wrong
-            new ViolenceConfig().render(true);
+            new ViolenceConfig2('New').render(true);
           },
           button: true,
         },

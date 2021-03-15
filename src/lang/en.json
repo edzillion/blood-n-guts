@@ -2,7 +2,9 @@
   "blood-n-guts.settings.blah": "You have gone over the maximum points allowed for Point Buy",
   "blood-n-guts.options.blah": "translation",
   "blood-n-guts.violence-config.preset.label": "Preset",
-  "blood-n-guts.violence-config.name.label": "Name",
+
+  "blood-n-guts.violence-config.currentLevel.label": "Current Level",
+
   "blood-n-guts.violence-config.floorSplatSize.label": "Floor Splat Size",
   "blood-n-guts.violence-config.floorSplatSize.hint": "This will increase the size of floor splats",
   
@@ -25,7 +27,7 @@
   "blood-n-guts.violence-config.splatSpread.hint": "This will increase the spread of splats",
 
   "blood-n-guts.violence-config.healthThreshold.label": "Health Threshold",
-  "blood-n-guts.violence-config.healthThreshold.hint": "he % of max health to start showing splats e.g. 1.0 will show splats all the time, 0.25 will show splats when HP is 25% or less.",
+  "blood-n-guts.violence-config.healthThreshold.hint": "The % of max health to start showing splats e.g. 1.0 will show splats all the time, 0.25 will show splats when HP is 25% or less.",
 
   "blood-n-guts.violence-config.damageThreshold.label": "Damage Threshold",
   "blood-n-guts.violence-config.damageThreshold.hint": "The % of max damage to show splats. e.g. 0 will never show splats, 0.25 will show them on a hit that reduces health by 25%.",
@@ -40,6 +42,8 @@
   "blood-n-guts.violence-config.button.Reset": "Reset",
   "blood-n-guts.violence-config.button.Submit": "Submit",
   "blood-n-guts.violence-config.button.Save": "Save",
+  "blood-n-guts.violence-config.button.Delete": "Delete",
+  "blood-n-guts.violence-config.button.Cancel": "Cancel",
 
   "blood-n-guts.violence-levels.choices.Disabled": "Disabled",
   "blood-n-guts.violence-levels.choices.Shrieker": "Shrieker - least blood effects",
