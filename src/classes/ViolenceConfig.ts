@@ -139,6 +139,13 @@ export default class ViolenceConfig2 extends FormApplication {
     const name = formData.name || this.currentLevel;
     delete formData.name;
     this.allViolenceLevels[name] = formData;
+
+    // render the SettingsConfig if it is currently open to update changes
+    Object.values(ui.windows).forEach((app) => {
+      if (app instanceof SettingsConfig) app.render();
+    });
+
+    await game.settings.set(MODULE_ID, 'violenceLevel', name);
     return game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
   }
 }

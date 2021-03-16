@@ -20,6 +20,7 @@ import SplatToken from './classes/SplatToken';
 import BloodLayer from './classes/BloodLayer';
 import * as splatFonts from './data/splatFonts';
 import Systems from './data/systems';
+import ViolenceConfig from './classes/ViolenceConfig';
 
 //CONFIG.debug.hooks = true;
 CONFIG[MODULE_ID] = { logLevel: 3 };
@@ -367,6 +368,44 @@ export class BloodNGuts {
   }
 
   /**
+   * Handler called when token configuration window is opened. Injects custom form html and deals
+   * with updating token.
+   * @category GMOnly
+   * @function
+   * @param {TokenConfig} tokenConfig
+   * @param {JQuery} html
+   */
+  static renderSettingsConfigHandler(settingsConfig, html): void {
+    if (!canvas.scene || !isFirstActiveGM() || BloodNGuts.disabled) return;
+
+    const formGroup = html.find('select[name="blood-n-guts.violenceLevel"]').parents('.form-group');
+
+    const htmlStub = `<div class="form-group">
+        <label>Edit Violence Levels</label> 
+        <button id="editButton" type="button">
+          <i class="fas fa-pen-square"></i>
+          <label>${game.i18n.localize('blood-n-guts.button.Edit')}</label>
+        </button>
+        <button id="newButton" type="button"> 
+          <i class="fas fa-plus-square"></i>
+          <label>${game.i18n.localize('blood-n-guts.button.New')}</label>
+        </button>        
+        <p class="notes"> ${game.i18n.localize('blood-n-guts.violence-config.sceneSplatPoolSize.hint')} </p>
+      </div>`;
+
+    $(htmlStub).insertAfter(formGroup);
+    const editButton = html.find('button#editButton');
+    const newButton = html.find('button#newButton');
+
+    editButton.on('click', () => {
+      new ViolenceConfig().render(true);
+    });
+    newButton.on('click', () => {
+      new ViolenceConfig('New').render(true);
+    });
+  }
+
+  /**
    * Handler called when user logs in/out. Used to make sure there is a GM online and disable if not.
    * @category GMOnly
    * @function
@@ -480,6 +519,7 @@ Hooks.on('updateActor', (actor, changes) => {
 
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
+Hooks.on('renderSettingsConfig', BloodNGuts.renderSettingsConfigHandler);
 Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
 
 Hooks.on('chatMessage', (_chatTab, commandString) => {

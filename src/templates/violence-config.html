@@ -60,14 +60,14 @@
     </div>
 
     <footer class="sheet-footer flexrow">
-        <button id="cancelButton" type="button">{{ localize 'blood-n-guts.violence-config.button.Cancel' }}</button>        
+        <button id="cancelButton" type="button">{{ localize 'blood-n-guts.button.Cancel' }}</button>        
         {{#if notNewLevelMode}}
             {{#if defaultLevel}}
-                <button id="resetButton" type="button" {{resetButtonDisabled}}>{{ localize 'blood-n-guts.violence-config.button.Reset' }}</button> 
+                <button id="resetButton" type="button" {{resetButtonDisabled}}>{{ localize 'blood-n-guts.button.Reset' }}</button> 
             {{else}}
-                <button id="deleteButton" type="button">{{ localize 'blood-n-guts.violence-config.button.Delete' }}</button> 
+                <button id="deleteButton" type="button">{{ localize 'blood-n-guts.button.Delete' }}</button> 
             {{/if}}
         {{/if}}
-        <button id="submitButton" type="submit">{{ localize 'blood-n-guts.violence-config.button.Submit' }}</button>    
+        <button id="submitButton" type="submit">{{ localize 'blood-n-guts.button.Submit' }}</button>    
     </footer>
 </form>
