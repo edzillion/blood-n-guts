@@ -1,7 +1,6 @@
 import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 export default class ViolenceConfig2 extends FormApplication {
-  dataObject: Record<string, unknown>;
   allViolenceLevels: Record<string, ViolenceLevel>;
   newViolenceLevel: Partial<ViolenceLevel>;
   currentLevel: string;
@@ -20,6 +19,7 @@ export default class ViolenceConfig2 extends FormApplication {
     } else {
       this.currentLevel = game.settings.get(MODULE_ID, 'violenceLevel');
       this.newLevelMode = false;
+      this.newViolenceLevel = duplicate(violenceLevelSettings.defaults[this.currentLevel]);
       if (violenceLevelSettings.defaults[this.currentLevel] != null) this.defaultLevel = true;
     }
   }
@@ -52,7 +52,7 @@ export default class ViolenceConfig2 extends FormApplication {
    */
   async getData(): Promise<Record<string, unknown>> {
     // Return data to the template
-    let violenceLevel, nameInputDisabled;
+    let violenceLevel, nameInputDisabled, resetButtonDisabled;
     if (this.newLevelMode) {
       violenceLevel = {};
       nameInputDisabled = '';
@@ -61,14 +61,19 @@ export default class ViolenceConfig2 extends FormApplication {
       nameInputDisabled = 'disabled';
     }
 
-    this.dataObject = {
+    if (this.defaultLevel)
+      if (isObjectEmpty(diffObject(violenceLevel, violenceLevelSettings.defaults[this.currentLevel])))
+        resetButtonDisabled = 'disabled';
+      else resetButtonDisabled = '';
+
+    return {
       name: this.currentLevel,
       violenceLevel: violenceLevel,
       nameInputDisabled: nameInputDisabled,
       notNewLevelMode: !this.newLevelMode,
       defaultLevel: this.defaultLevel,
+      resetButtonDisabled: resetButtonDisabled,
     };
-    return this.dataObject;
   }
 
   /* -------------------------------------------- */
@@ -92,17 +97,24 @@ export default class ViolenceConfig2 extends FormApplication {
     const deleteButton = html.find('button#deleteButton');
 
     formFields.on('change', (event: JQuery.ChangeEvent) => {
-      if (!this.newLevelMode)
-        return canvas.scene.setFlag(MODULE_ID, 'violenceLevels.' + event.target.id, event.target.id);
+      const val = Number(event.target.value);
+      this.newViolenceLevel[event.target.id] = val;
+      if (!this.newLevelMode) {
+        const diff = diffObject(this.newViolenceLevel, violenceLevelSettings.defaults[this.currentLevel]);
+        if (isObjectEmpty(diff)) resetButton.prop('disabled', true);
+        else resetButton.prop('disabled', false);
+        return canvas.scene.setFlag(MODULE_ID, 'violenceLevels.' + event.target.id, val);
+      }
     });
 
     cancelButton.on('click', () => {
       this.close();
     });
 
-    resetButton.on('click', () => {
+    resetButton.on('click', async () => {
       this.allViolenceLevels[this.currentLevel] = duplicate(violenceLevelSettings.defaults[this.currentLevel]);
-      game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
+      this.newViolenceLevel = duplicate(violenceLevelSettings.defaults[this.currentLevel]);
+      await game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
       this.render();
     });
 
@@ -124,7 +136,7 @@ export default class ViolenceConfig2 extends FormApplication {
    * @see {FormApplication#_updateObject}
    */
   async _updateObject(event: SubmitEvent, formData: ViolenceLevel): Promise<void> {
-    const name = formData.name;
+    const name = formData.name || this.currentLevel;
     delete formData.name;
     this.allViolenceLevels[name] = formData;
     return game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);

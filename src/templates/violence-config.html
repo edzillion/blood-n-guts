@@ -63,7 +63,7 @@
         <button id="cancelButton" type="button">{{ localize 'blood-n-guts.violence-config.button.Cancel' }}</button>        
         {{#if notNewLevelMode}}
             {{#if defaultLevel}}
-                <button id="resetButton" type="button">{{ localize 'blood-n-guts.violence-config.button.Reset' }}</button> 
+                <button id="resetButton" type="button" {{resetButtonDisabled}}>{{ localize 'blood-n-guts.violence-config.button.Reset' }}</button> 
             {{else}}
                 <button id="deleteButton" type="button">{{ localize 'blood-n-guts.violence-config.button.Delete' }}</button> 
             {{/if}}
