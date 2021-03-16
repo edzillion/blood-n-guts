@@ -1,6 +1,5 @@
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
-import { getMergedBloodColorSettings } from './settings';
 import { BloodNGuts } from '../blood-n-guts';
 
 /**
@@ -158,6 +157,17 @@ export const drawDebugRect2 = (x, y, w, h, width = 2, color = 0xff0000): void =>
   canvas.drawings.addChild(rect);
 };
 
+export function replaceSelectChoices(select, choices): void {
+  select.empty();
+  for (const [key, value] of Object.entries(choices)) {
+    select.append(
+      $('<option></option>')
+        .attr('value', key)
+        .text(value as string),
+    );
+  }
+}
+
 // MATHS
 
 /**
@@ -290,8 +300,8 @@ export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   } // if useBloodColor is disabled or we haven't yet set a system then all blood is blood red
   else if (!bloodColorEnabled || !BloodNGuts.system) return getHexColor('blood');
 
-  const mergedBloodColorSettings = await getMergedBloodColorSettings;
-  const creatureType = await BloodNGuts.system.creatureType(token, mergedBloodColorSettings);
+  const bloodColors = game.settings.get(MODULE_ID, 'bloodColors');
+  const creatureType = await BloodNGuts.system.creatureType(token, bloodColors);
   if (!creatureType) {
     log(LogLevel.WARN, 'lookupTokenBloodColor missing creatureType for token:', token.data.name);
     return getHexColor('blood');
@@ -299,7 +309,7 @@ export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
 
   // bloodColorSettings can return either a hex string, a color string or 'name' which looks up the
   // color based on it's name. e.g. 'Purple Ooze'
-  const bloodColor = mergedBloodColorSettings[creatureType.toLowerCase()];
+  const bloodColor = bloodColors[creatureType.toLowerCase()];
   if (!bloodColor) {
     log(LogLevel.INFO, 'No custom color defined for:', creatureType);
     return getHexColor('blood');

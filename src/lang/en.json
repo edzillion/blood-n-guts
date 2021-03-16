@@ -53,5 +53,13 @@
   "blood-n-guts.violence-levels.choices.Ogre": "Ogre",
   "blood-n-guts.violence-levels.choices.Dracolich": "Dracolich",
   "blood-n-guts.violence-levels.choices.Hecatoncheires": "Hecatoncheires - most blood effects",
-  "blood-n-guts.violence-levels.choices.New": "New..."
+  "blood-n-guts.violence-levels.choices.New": "New...",
+
+  "blood-n-guts.advanced-config.title": "Blood n Guts - Advanced Configuration",
+  "blood-n-guts.advanced-config.floorSplatFont.label": "Floor Splat Font",
+  "blood-n-guts.advanced-config.floorSplatFont.hint": "Select the font to use for blood splatter on the floor",
+  "blood-n-guts.advanced-config.tokenSplatFont.label": "Token Splat Font",
+  "blood-n-guts.advanced-config.tokenSplatFont.hint": "Select the font to use for token blood splatter",
+  "blood-n-guts.advanced-config.trailSplatFont.label": "Trail Splat Font",
+  "blood-n-guts.advanced-config.trailSplatFont.hint": "Select the font to use for blood trails"
 }

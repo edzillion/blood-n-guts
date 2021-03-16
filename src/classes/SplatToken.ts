@@ -10,7 +10,7 @@ import {
   distanceBetween,
   lookupTokenBloodColor,
 } from '../module/helpers';
-import { getBaseTokenSettings, getMergedViolenceLevels } from '../module/settings';
+import { getBaseTokenSettings } from '../module/settings';
 
 /**
  * Extends `Token` and adds a layer to display token splats.
@@ -76,14 +76,22 @@ export default class SplatToken {
    */
   public async create(): Promise<SplatToken> {
     log(LogLevel.DEBUG, 'creating SplatToken');
-    this.violenceLevels = await getMergedViolenceLevels;
+    this.violenceLevels = game.settings.get(MODULE_ID, 'violenceLevels');
     this.defaultBloodColor = await lookupTokenBloodColor(this.token);
     const baseTokenSettings = await getBaseTokenSettings(this.token);
 
     const tokenSettingsHandler = {
       get: (target, property) => {
         if (property === 'bloodColor') return target[property] || this.defaultBloodColor;
-        else return target[property] || game.settings.get(MODULE_ID, property);
+        else if (['tokenSplatFont', 'floorSplatFont', 'trailSplatFont'].includes(property))
+          return target[property] || game.settings.get(MODULE_ID, property);
+        else
+          return (
+            target[property] ||
+            game.settings.get(MODULE_ID, 'violenceLevels')[game.settings.get(MODULE_ID, 'currentViolenceLevel')][
+              property
+            ]
+          );
       },
       set: (target, property, value) => {
         target[property] = value;
@@ -564,7 +572,7 @@ export default class SplatToken {
     promises.push(this.token.unsetFlag(MODULE_ID, 'trailSplatFont'));
     promises.push(this.token.unsetFlag(MODULE_ID, 'tokenSplatFont'));
     promises.push(this.token.unsetFlag(MODULE_ID, 'bloodColor'));
-    promises.push(this.token.unsetFlag(MODULE_ID, 'violenceLevel'));
+    promises.push(this.token.unsetFlag(MODULE_ID, 'currentViolenceLevel'));
     return Promise.all(promises);
   }
 

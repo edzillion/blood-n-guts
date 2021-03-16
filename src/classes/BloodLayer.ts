@@ -669,7 +669,9 @@ export default class BloodLayer extends TilesLayer {
     if (this.lock) return;
     this.lock = true;
     let history = canvas.scene.getFlag(MODULE_ID, 'history');
-    const maxPoolSize = game.settings.get(MODULE_ID, 'sceneSplatPoolSize');
+    const maxPoolSize = game.settings.get(MODULE_ID, 'violenceLevels')[
+      game.settings.get(MODULE_ID, 'currentViolenceLevel')
+    ]['sceneSplatPoolSize'];
     // If history storage doesnt exist, create it
     if (!history) {
       history = {

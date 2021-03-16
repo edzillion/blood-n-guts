@@ -1,5 +1,6 @@
 import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
+import { BnGAdvancedConfig } from './BnGAdvancedConfig';
 export default class ViolenceConfig2 extends FormApplication {
   allViolenceLevels: Record<string, ViolenceLevel>;
   newViolenceLevel: Partial<ViolenceLevel>;
@@ -17,9 +18,9 @@ export default class ViolenceConfig2 extends FormApplication {
       this.newLevelMode = true;
       this.newViolenceLevel = {};
     } else {
-      this.currentLevel = game.settings.get(MODULE_ID, 'violenceLevel');
+      this.currentLevel = game.settings.get(MODULE_ID, 'currentViolenceLevel');
       this.newLevelMode = false;
-      this.newViolenceLevel = duplicate(violenceLevelSettings.defaults[this.currentLevel]);
+      this.newViolenceLevel = duplicate(this.allViolenceLevels[this.currentLevel]);
       if (violenceLevelSettings.defaults[this.currentLevel] != null) this.defaultLevel = true;
     }
   }
@@ -57,7 +58,8 @@ export default class ViolenceConfig2 extends FormApplication {
       violenceLevel = {};
       nameInputDisabled = '';
     } else {
-      violenceLevel = game.settings.get(MODULE_ID, 'violenceLevels')[this.currentLevel];
+      this.allViolenceLevels = game.settings.get(MODULE_ID, 'violenceLevels');
+      violenceLevel = this.allViolenceLevels[this.currentLevel];
       nameInputDisabled = 'disabled';
     }
 
@@ -118,9 +120,15 @@ export default class ViolenceConfig2 extends FormApplication {
       this.render();
     });
 
-    deleteButton.on('click', () => {
+    deleteButton.on('click', async () => {
       delete this.allViolenceLevels[this.currentLevel];
-      game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
+      await game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
+      await game.settings.set(MODULE_ID, 'currentViolenceLevel', 'Shrieker');
+
+      // render the SettingsConfig/BnGAdvancedConfig if it is currently open to update changes
+      Object.values(ui.windows).forEach((app) => {
+        if (app instanceof SettingsConfig || app instanceof BnGAdvancedConfig) app.render();
+      });
       this.close();
     });
   }
@@ -140,12 +148,13 @@ export default class ViolenceConfig2 extends FormApplication {
     delete formData.name;
     this.allViolenceLevels[name] = formData;
 
-    // render the SettingsConfig if it is currently open to update changes
-    Object.values(ui.windows).forEach((app) => {
-      if (app instanceof SettingsConfig) app.render();
-    });
+    await game.settings.set(MODULE_ID, 'currentViolenceLevel', name);
+    await game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
 
-    await game.settings.set(MODULE_ID, 'violenceLevel', name);
-    return game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
+    // render the SettingsConfig/BnGAdvancedConfig if it is currently open to update changes
+    Object.values(ui.windows).forEach((app) => {
+      if (app instanceof SettingsConfig || app instanceof BnGAdvancedConfig) app.render();
+    });
+    return;
   }
 }
