@@ -93,3 +93,10 @@
 #brush-controls .left-label {
   left: 0;
 }
+
+#violence-config input[type=number] {
+  max-width: 50px;
+}
+#violence-config input[type=text] {
+  max-width: 150px;
+}

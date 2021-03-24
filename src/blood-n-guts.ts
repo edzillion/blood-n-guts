@@ -6,15 +6,15 @@
  * @author [edzillion]{@link https://github.com/edzillion}
  */
 
-import {
-  mergeSettingsFiles,
-  registerSettings,
-  getCustomSplatFonts,
-  settingsReady,
-  getMergedViolenceLevels,
-} from './module/settings';
+import { registerSettings, violenceLevelChoices } from './module/settings';
 import { log, LogLevel } from './module/logging';
-import { getRandomGlyph, lookupTokenBloodColor, isFirstActiveGM, generateCustomSystem } from './module/helpers';
+import {
+  getRandomGlyph,
+  lookupTokenBloodColor,
+  isFirstActiveGM,
+  generateCustomSystem,
+  replaceSelectChoices,
+} from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
 import BloodLayer from './classes/BloodLayer';
@@ -30,7 +30,7 @@ CONFIG[MODULE_ID] = { logLevel: 3 };
  */
 export class BloodNGuts {
   public static allFontsReady: Promise<boolean>;
-  public static allFonts: SplatFont[];
+  public static allFonts: Record<string, SplatFont>;
   public static splatTokens: Record<string, SplatToken>;
   public static disabled: boolean;
   public static getLatestActorHP: any;
@@ -248,8 +248,8 @@ export class BloodNGuts {
     const actorType = tokenConfig.object.actor.data.type.toLowerCase();
     const imageTab = html.find('.tab[data-tab="image"]');
     const choices = { '': '' };
-    const violenceLevels: Record<string, ViolenceLevel> = await getMergedViolenceLevels;
-    for (const levelName in violenceLevels) {
+
+    for (const levelName in game.settings.get(MODULE_ID, 'violenceLevels')) {
       choices[levelName] = levelName;
     }
 
@@ -281,13 +281,13 @@ export class BloodNGuts {
       levelNames: choices,
       fonts: BloodNGuts.allFonts,
       selectedColor: tokenConfig.object.getFlag(MODULE_ID, 'bloodColor'),
-      currentLevel: tokenConfig.object.getFlag(MODULE_ID, 'violenceLevel'),
+      currentLevel: tokenConfig.object.getFlag(MODULE_ID, 'currentViolenceLevel'),
       floorSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'floorSplatFont'),
       tokenSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'tokenSplatFont'),
       trailSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'trailSplatFont'),
     };
     // add blank entry for empty font settings.
-    data.fonts[''] = '';
+    data.fonts[''] = { name: '', availableGlyphs: [] };
 
     const insertHTML = await renderTemplate('modules/' + MODULE_ID + '/templates/token-config.html', data);
     imageTab.append(insertHTML);
@@ -309,7 +309,7 @@ export class BloodNGuts {
       customBloodPanel.hide();
     }
 
-    if (tokenConfig.object.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
+    if (tokenConfig.object.getFlag(MODULE_ID, 'currentViolenceLevel') === 'Disabled') {
       bloodColorPicker.prop('disabled', true);
     }
 
@@ -367,6 +367,20 @@ export class BloodNGuts {
   }
 
   /**
+   * Handler called when token Settings window is opened. Injects custom form html and deals
+   * with updating token.
+   * @category GMOnly
+   * @function
+   * @param {SettingsConfig} settingsConfig
+   * @param {JQuery} html
+   */
+  static renderSettingsConfigHandler(settingsConfig: SettingsConfig, html: JQuery): void {
+    const selectViolenceLevel = html.find('select[name="blood-n-guts.currentViolenceLevel"]');
+    replaceSelectChoices(selectViolenceLevel, violenceLevelChoices(game.settings.get(MODULE_ID, 'violenceLevels')));
+    selectViolenceLevel.val(game.settings.get(MODULE_ID, 'currentViolenceLevel'));
+  }
+
+  /**
    * Handler called when user logs in/out. Used to make sure there is a GM online and disable if not.
    * @category GMOnly
    * @function
@@ -382,7 +396,7 @@ export class BloodNGuts {
       ui.notifications.notify(`GM Present: Blood 'n Guts is now functional`, 'info');
 
       // user may have disabled BnG in settings, if not then enable.
-      if (game.settings.get(MODULE_ID, 'violenceLevel') !== 'Disabled') {
+      if (game.settings.get(MODULE_ID, 'currentViolenceLevel') !== 'Disabled') {
         BloodNGuts.disabled = false;
       }
     }
@@ -402,19 +416,7 @@ Hooks.once('init', () => {
     log(LogLevel.INFO, 'loaded system', game.system.id);
   }
 
-  // check whether we are on ForgeVTT to decide where to load data from.
-  let dataSource = 'data';
-  try {
-    // @ts-expect-error - ForgeVTT is not a global object
-    dataSource = typeof ForgeVTT !== undefined && ForgeVTT.usingTheForge ? 'forgevtt' : 'data';
-    log(LogLevel.INFO, 'setting forgevtt as custom data source');
-  } catch (error) {
-    log(LogLevel.INFO, 'setting data as custom data source');
-    // todo: why the fuck is this happening?
-  }
-
   // Register custom module settings
-  mergeSettingsFiles(dataSource);
   registerSettings();
 
   for (const fontName in splatFonts.fonts) {
@@ -422,22 +424,8 @@ Hooks.once('init', () => {
     (document as any).fonts.load(shorthand);
   }
 
-  getCustomSplatFonts.then((customSplatFonts: { fonts: SplatFont[] }) => {
-    if (customSplatFonts) {
-      for (const fontName in customSplatFonts.fonts) {
-        const shorthand = '12px ' + fontName;
-        (document as any).fonts.load(shorthand);
-      }
-    } else customSplatFonts = { fonts: [] };
-    BloodNGuts.allFonts = Object.assign(splatFonts.fonts, customSplatFonts.fonts);
-  });
+  BloodNGuts.allFonts = splatFonts.fonts;
   BloodNGuts.allFontsReady = (document as any).fonts.ready;
-
-  // hack to get 'Custom' added as a settings option on load
-  settingsReady.then(() => {
-    if (game.settings.get(MODULE_ID, 'violenceLevel') === 'Custom')
-      game.settings.set(MODULE_ID, 'violenceLevel', 'Custom');
-  });
 });
 
 Hooks.once('ready', () => {
@@ -480,6 +468,7 @@ Hooks.on('updateActor', (actor, changes) => {
 
 Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
 Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
+Hooks.on('renderSettingsConfig', BloodNGuts.renderSettingsConfigHandler);
 Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
 
 Hooks.on('chatMessage', (_chatTab, commandString) => {
