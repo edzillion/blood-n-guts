@@ -1,4 +1,4 @@
-export const levels = {
+export const defaults = {
   Disabled: {
     trailSplatDensity: 0,
     floorSplatDensity: 0,

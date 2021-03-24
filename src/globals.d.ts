@@ -8,6 +8,7 @@ interface SplatFont {
 }
 
 interface ViolenceLevel {
+  name?: string;
   trailSplatDensity: number;
   floorSplatDensity: number;
   tokenSplatDensity: number;

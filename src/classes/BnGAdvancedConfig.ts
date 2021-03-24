@@ -2,20 +2,17 @@ import { log, LogLevel } from '../module/logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
 import { getHexColor } from '../module/helpers';
-import { getMergedViolenceLevels } from '../module/settings';
+import ViolenceConfig from './ViolenceConfig';
 
 /**
  * FormApplication window for advanced configuration options.
  * @class
  * @extends FormApplication
  */
-export class AdvancedConfig extends FormApplication {
+export class BnGAdvancedConfig extends FormApplication {
   font: SplatFont;
   allAsciiCharacters: string;
-  mergedViolenceLevels: Record<string, ViolenceLevel>;
-  baseViolenceLevel: string;
   dataObject: Record<string, unknown>;
-  violenceLevelHTML: JQuery;
 
   constructor(object: Record<string, unknown>, options?: FormApplicationOptions) {
     super(object, options);
@@ -46,18 +43,17 @@ export class AdvancedConfig extends FormApplication {
    * @see {FormApplication#getData}
    */
   async getData(): Promise<Record<string, unknown>> {
-    this.dataObject['violenceLevel'] = this.baseViolenceLevel = game.settings.get(MODULE_ID, 'violenceLevel');
-    this.mergedViolenceLevels = await getMergedViolenceLevels;
-    // we use 'Disabled' here only to iterate the obj keys
-    for (const key in this.mergedViolenceLevels['Disabled']) {
-      this.dataObject[key] = game.settings.get(MODULE_ID, key);
-    }
     this.dataObject['fonts'] = BloodNGuts.allFonts;
     this.dataObject['floorSplatFont'] = game.settings.get(MODULE_ID, 'floorSplatFont');
     this.dataObject['tokenSplatFont'] = game.settings.get(MODULE_ID, 'tokenSplatFont');
     this.dataObject['trailSplatFont'] = game.settings.get(MODULE_ID, 'trailSplatFont');
+    this.dataObject['currentLevel'] = game.settings.get(MODULE_ID, 'currentViolenceLevel');
 
-    if (this.baseViolenceLevel === 'Custom') this.dataObject['sceneName'] = '{' + canvas.scene.name + '}';
+    const violenceLevelChoices = {};
+    for (const level in game.settings.get(MODULE_ID, 'violenceLevels')) {
+      violenceLevelChoices[level] = level;
+    }
+    this.dataObject['levels'] = violenceLevelChoices;
     return this.dataObject;
   }
 
@@ -71,7 +67,7 @@ export class AdvancedConfig extends FormApplication {
    * @override
    * @see {FormApplication#render}
    */
-  render(force: boolean, context = {}): Application {
+  public render(force?: boolean, context = {}): Application {
     return super.render(force, context);
   }
 
@@ -108,14 +104,20 @@ export class AdvancedConfig extends FormApplication {
       );
     });
 
-    this.violenceLevelHTML = html.find('#violenceLevel');
+    const editButton = html.find('button#editButton');
+    const newButton = html.find('button#newButton');
 
-    // add change handlers to detect changes from base violence Level
-    const settingsFields = html.find('input[type=number]');
-    settingsFields.on('input', (event: JQuery.ChangeEvent) => {
-      this.dataObject[event.target.name] = event.target.value;
-      this.dataObject['violenceLevel'] = 'Custom';
-      this.violenceLevelHTML.text('Violence Level: Custom {' + canvas.scene.name + '}');
+    editButton.on('click', () => {
+      new ViolenceConfig().render(true);
+    });
+    newButton.on('click', () => {
+      new ViolenceConfig('New').render(true);
+    });
+
+    const violenceSelect = html.find('select#currentLevel');
+
+    violenceSelect.on('change', (event: JQuery.ChangeEvent) => {
+      game.settings.set(MODULE_ID, 'currentViolenceLevel', event.target.value);
     });
   }
 
@@ -130,10 +132,10 @@ export class AdvancedConfig extends FormApplication {
    * @see {FormApplication#_updateObject}
    */
   async _updateObject(_event: Event, formData: Record<string, unknown>): Promise<void> {
+    delete formData.currentLevel;
     for (const setting in formData) {
       game.settings.set(MODULE_ID, setting, formData[setting]);
     }
-    game.settings.set(MODULE_ID, 'violenceLevel', this.dataObject['violenceLevel']);
     if (!canvas.scene.active)
       ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
   }

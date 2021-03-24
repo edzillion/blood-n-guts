@@ -1,0 +1,73 @@
+<form id="violenceConfigForm">
+    <div class="form-group">
+        <label for="name"> {{ localize 'blood-n-guts.violence-config.currentLevel.label' }} </label>
+        <input id="name" pattern="^[a-zA-Z][a-zA-Z0-9]{3,}$" title="4+ chars starting with a letter, no spaces or symbols" name="name" type="text" value="{{ name }}" {{nameInputDisabled}} required >
+    </div>
+    <div class="form-group">
+        <label for="floorSplatSize"> {{ localize 'blood-n-guts.violence-config.floorSplatSize.label' }} </label>
+        <input id="floorSplatSize" class="violence-config-number" name="floorSplatSize" type="number"  min="0" value="{{ violenceLevel.floorSplatSize }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.floorSplatSize.hint' }} </p>
+    </div>
+    <div class="form-group">
+        <label for="floorSplatDensity"> {{ localize 'blood-n-guts.violence-config.floorSplatDensity.label' }} </label>
+        <input id="floorSplatDensity" class="violence-config-number" name="floorSplatDensity" type="number" min="0" value="{{ violenceLevel.floorSplatDensity }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.floorSplatDensity.hint' }} </p>
+    </div>
+    <div class="form-group">
+        <label for="tokenSplatSize"> {{ localize 'blood-n-guts.violence-config.tokenSplatSize.label' }} </label>
+        <input id="tokenSplatSize" class="violence-config-number" name="tokenSplatSize" type="number" min="0" value="{{ violenceLevel.tokenSplatSize }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.tokenSplatSize.hint' }} </p>
+    </div>
+    <div class="form-group">
+        <label for="tokenSplatDensity"> {{ localize 'blood-n-guts.violence-config.tokenSplatDensity.label' }} </label>
+        <input id="tokenSplatDensity" class="violence-config-number" name="tokenSplatDensity" type="number" min="0" value="{{ violenceLevel.tokenSplatDensity }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.tokenSplatDensity.hint' }} </p>
+    </div>
+    <div class="form-group">
+        <label for="trailSplatSize"> {{ localize 'blood-n-guts.violence-config.trailSplatSize.label' }} </label>
+        <input id="trailSplatSize" class="violence-config-number" name="trailSplatSize" type="number" min="0" value="{{ violenceLevel.trailSplatSize }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.trailSplatSize.hint' }} </p>
+    </div>
+    <div class="form-group">
+        <label for="trailSplatDensity"> {{ localize 'blood-n-guts.violence-config.trailSplatDensity.label' }} </label>
+        <input id="trailSplatDensity" class="violence-config-number" name="trailSplatDensity" type="number" min="0" step="0.1" value="{{ violenceLevel.trailSplatDensity }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.trailSplatDensity.hint' }} </p>
+    </div>
+    <div class="form-group">
+        <label for="splatSpread"> {{ localize 'blood-n-guts.violence-config.splatSpread.label' }} </label>
+        <input id="splatSpread" class="violence-config-number" name="splatSpread" type="number" step="0.1" min="0" value="{{ violenceLevel.splatSpread }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.splatSpread.hint' }} </p>
+    </div>
+    <div class="form-group">
+        <label for="healthThreshold"> {{ localize 'blood-n-guts.violence-config.healthThreshold.label' }} </label>
+        <input id="healthThreshold" class="violence-config-number" name="healthThreshold" type="number" step="0.01" min="0" max="1" value="{{ violenceLevel.healthThreshold }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.healthThreshold.hint' }} </p>
+    </div>
+    <div class="form-group">
+        <label for="damageThreshold"> {{ localize 'blood-n-guts.violence-config.damageThreshold.label' }} </label>
+        <input id="damageThreshold" class="violence-config-number" name="damageThreshold" type="number" step="0.01" min="0" max="1" value="{{ violenceLevel.damageThreshold }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.damageThreshold.hint' }} </p>
+    </div>
+    <div class="form-group" >
+        <label for="deathMultiplier"> {{ localize 'blood-n-guts.violence-config.deathMultiplier.label' }} </label>
+        <input id="deathMultiplier" class="violence-config-number" name="deathMultiplier" type="number" step="0.01" min="0" value="{{ violenceLevel.deathMultiplier }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.deathMultiplier.hint' }} </p>
+    </div>
+    <div class="form-group">
+        <label for="sceneSplatPoolSize"> {{ localize 'blood-n-guts.violence-config.sceneSplatPoolSize.label' }} </label>
+        <input id="sceneSplatPoolSize" class="violence-config-number" name="sceneSplatPoolSize" type="number" data-dtype="Number" min="0" value="{{ violenceLevel.sceneSplatPoolSize }}" required >
+        <p class="notes"> {{ localize 'blood-n-guts.violence-config.sceneSplatPoolSize.hint' }} </p>
+    </div>
+
+    <footer class="sheet-footer flexrow">
+        <button id="cancelButton" type="button">{{ localize 'blood-n-guts.button.Cancel' }}</button>        
+        {{#if notNewLevelMode}}
+            {{#if defaultLevel}}
+                <button id="resetButton" type="button" {{resetButtonDisabled}}>{{ localize 'blood-n-guts.button.Reset' }}</button> 
+            {{else}}
+                <button id="deleteButton" type="button">{{ localize 'blood-n-guts.button.Delete' }}</button> 
+            {{/if}}
+        {{/if}}
+        <button id="submitButton" type="submit">{{ localize 'blood-n-guts.button.Submit' }}</button>    
+    </footer>
+</form>
