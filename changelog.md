@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## [0.8.6]
+
+### FEATURES
+
+- Redesigned Violence Level Settings, removed old file-based system.
+- Removed file-based custom color sytem, while it is redesigned.
+- Started on i18n support. Translations not complete
+
 
 ## [0.8.5]
 
