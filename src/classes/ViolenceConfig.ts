@@ -1,7 +1,7 @@
 import { MODULE_ID } from '../constants';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import { BnGAdvancedConfig } from './BnGAdvancedConfig';
-export default class ViolenceConfig2 extends FormApplication {
+export default class ViolenceConfig extends FormApplication {
   allViolenceLevels: Record<string, ViolenceLevel>;
   newViolenceLevel: Partial<ViolenceLevel>;
   currentLevel: string;
@@ -47,7 +47,7 @@ export default class ViolenceConfig2 extends FormApplication {
    * @category Foundry
    * @function
    * @async
-   * @returns {BrushSettings} - The data provided to the template when rendering the form
+   * @returns {Promise<Record<string, unknown>>} - The data provided to the template when rendering the form
    * @override
    * @see {FormApplication#getData}
    */
@@ -139,7 +139,7 @@ export default class ViolenceConfig2 extends FormApplication {
    * @function
    * @async
    * @param {SubmitEvent} event - The initial triggering submission event
-   * @param {BrushSettings} formData - The object of validated form data with which to update the object
+   * @param {ViolenceLevel} formData - The object of validated form data with which to update the object
    * @override
    * @see {FormApplication#_updateObject}
    */

@@ -367,14 +367,14 @@ export class BloodNGuts {
   }
 
   /**
-   * Handler called when token configuration window is opened. Injects custom form html and deals
+   * Handler called when token Settings window is opened. Injects custom form html and deals
    * with updating token.
    * @category GMOnly
    * @function
-   * @param {TokenConfig} tokenConfig
+   * @param {SettingsConfig} settingsConfig
    * @param {JQuery} html
    */
-  static renderSettingsConfigHandler(settingsConfig, html): void {
+  static renderSettingsConfigHandler(settingsConfig: SettingsConfig, html: JQuery): void {
     const selectViolenceLevel = html.find('select[name="blood-n-guts.currentViolenceLevel"]');
     replaceSelectChoices(selectViolenceLevel, violenceLevelChoices(game.settings.get(MODULE_ID, 'violenceLevels')));
     selectViolenceLevel.val(game.settings.get(MODULE_ID, 'currentViolenceLevel'));
