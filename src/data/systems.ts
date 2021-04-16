@@ -77,10 +77,10 @@ export default {
       let creatureType: string;
       if (actorType === 'character') {
         // @ts-expect-error bad definition
-        creatureType = token.actor.data.items.find((i) => i.type === 'race').name;
+        creatureType = token.actor.data.items.find((i) => i.type === 'race')?.name ?? '';
       } else if (actorType === 'npc') {
         // @ts-expect-error bad definition
-        creatureType = token.actor.data.items.find((i) => i.type === 'class').name;
+        creatureType = token.actor.data.items.find((i) => i.type === 'class')?.name ?? '';
       }
 
       log(LogLevel.DEBUG, 'creatureType pf1: ', token.name, actorType, creatureType);
