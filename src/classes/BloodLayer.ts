@@ -177,7 +177,7 @@ export default class BloodLayer extends TilesLayer {
       log(LogLevel.WARN, 'createObject: TileSplat already present!', data.id);
       return;
     }
-    // if (alreadyAdded) debugger;
+
     const obj = new TileSplat(data);
     if (data.zIndex == null) {
       log(LogLevel.ERROR, 'createObject missing zIndex property!');
@@ -216,7 +216,7 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Deactivate blood layer, called by Foundry when nagivating away from blood layer.
+   * Deactivate blood layer, called by Foundry when nagivating away from blood layer. Also called when initialising layers on load.
    * @category Foundry
    * @function
    * @returns {BloodLayer}
@@ -225,10 +225,14 @@ export default class BloodLayer extends TilesLayer {
    */
   deactivate(): BloodLayer {
     CanvasLayer.prototype.deactivate.apply(this);
-    if (this.objects) this.objects.visible = true;
-    //@ts-expect-error definition missing
-    this.releaseAll();
-    this.objects.children.forEach((t: TileSplat) => t.refresh());
+
+    // if GM is not present objects will be empty
+    if (this.objects) {
+      this.objects.visible = true;
+      //@ts-expect-error definition missing
+      this.releaseAll();
+      this.objects.children.forEach((t: TileSplat) => t.refresh());
+    }
     if (this.preview) this.preview.removeChildren();
     return this;
   }

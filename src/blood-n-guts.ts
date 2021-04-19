@@ -204,8 +204,8 @@ export class BloodNGuts {
   public static canvasReadyHandler(canvas: any): void {
     if (!canvas.scene.active || BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
-    if (!isFirstActiveGM()) {
-      ui.notifications.notify(`Note: Blood 'n Guts requires the first GM to be online to function!`, 'warning');
+    const gmPresent = game.users.find((u) => u.isGM && u.active);
+    if (!gmPresent) {
       BloodNGuts.disabled = true;
     } else {
       for (const tokenId in BloodNGuts.splatTokens) {
@@ -367,8 +367,7 @@ export class BloodNGuts {
   }
 
   /**
-   * Handler called when token Settings window is opened. Injects custom form html and deals
-   * with updating token.
+   * Handler called when Game Settings window is opened. Injects custom form html.
    * @category GMOnly
    * @function
    * @param {SettingsConfig} settingsConfig
@@ -378,6 +377,21 @@ export class BloodNGuts {
     const selectViolenceLevel = html.find('select[name="blood-n-guts.currentViolenceLevel"]');
     replaceSelectChoices(selectViolenceLevel, violenceLevelChoices(game.settings.get(MODULE_ID, 'violenceLevels')));
     selectViolenceLevel.val(game.settings.get(MODULE_ID, 'currentViolenceLevel'));
+
+    // inject warning message if relevant
+    if (!isFirstActiveGM() || !canvas.scene.active) {
+      const moduleHeader = html.find('.module-header:contains("Blood \'n Guts")');
+      if (!canvas.scene.active) {
+        $('<p style="color:red">Warning: Blood \'n Guts does not work on non-active scenes!</p>').insertAfter(
+          moduleHeader,
+        );
+      }
+      if (!isFirstActiveGM()) {
+        $('<p style="color:red">Warning: Blood \'n Guts requires a GM to be online to function!</p>').insertAfter(
+          moduleHeader,
+        );
+      }
+    }
   }
 
   /**
@@ -387,14 +401,10 @@ export class BloodNGuts {
    */
   public static getUserContextOptionsHandler(): void {
     log(LogLevel.DEBUG, 'getUserContextOptions');
-
     const gm = game.users.find((e) => e.isGM && e.active);
     if (!gm) {
-      ui.notifications.notify(`Note: Blood 'n Guts requires a GM to be online to function!`, 'warning');
       BloodNGuts.disabled = true;
     } else if (BloodNGuts.disabled) {
-      ui.notifications.notify(`GM Present: Blood 'n Guts is now functional`, 'info');
-
       // user may have disabled BnG in settings, if not then enable.
       if (game.settings.get(MODULE_ID, 'currentViolenceLevel') !== 'Disabled') {
         BloodNGuts.disabled = false;
@@ -434,25 +444,27 @@ Hooks.once('ready', () => {
 });
 
 Hooks.once('canvasInit', () => {
-  // load custom system from settings if possible
-  if (BloodNGuts.system == null) {
-    const sys = game.settings.get(MODULE_ID, 'system');
-    if (sys) {
-      log(LogLevel.INFO, 'custom system found');
-      if (sys.id !== game.system.id)
-        log(LogLevel.ERROR, 'saved custom system does not match current system!', sys.id, game.system.id);
-      else if (sys.supportedTypes == null || sys.supportedTypes.length === 0)
-        log(LogLevel.WARN, 'saved custom system has no supportedTypes!', sys);
-      else {
-        BloodNGuts.system = generateCustomSystem(sys.id, sys.supportedTypes, sys.customAttributePaths);
-        ui.notifications.notify(`Blood 'n Guts - loaded custom system: ${game.system.id}`, 'info');
-        log(LogLevel.INFO, 'loaded custom system', game.system.id);
-        return;
+  if (isFirstActiveGM()) {
+    // load custom system from settings if possible
+    if (BloodNGuts.system == null) {
+      const sys = game.settings.get(MODULE_ID, 'system');
+      if (sys) {
+        log(LogLevel.INFO, 'custom system found');
+        if (sys.id !== game.system.id)
+          log(LogLevel.ERROR, 'saved custom system does not match current system!', sys.id, game.system.id);
+        else if (sys.supportedTypes == null || sys.supportedTypes.length === 0)
+          log(LogLevel.WARN, 'saved custom system has no supportedTypes!', sys);
+        else {
+          BloodNGuts.system = generateCustomSystem(sys.id, sys.supportedTypes, sys.customAttributePaths);
+          ui.notifications.notify(`Blood 'n Guts - loaded custom system: ${game.system.id}`, 'info');
+          log(LogLevel.INFO, 'loaded custom system', game.system.id);
+          return;
+        }
       }
-    }
-    ui.notifications.notify(`Blood 'n Guts - no compatible system: ${game.system.id}`, 'warning');
-    log(LogLevel.WARN, 'no compatible system found', game.system.id);
-  } else ui.notifications.notify(`Blood 'n Guts - loaded compatible system: ${game.system.id}`, 'info');
+      ui.notifications.notify(`Blood 'n Guts - no compatible system: ${game.system.id}`, 'warning');
+      log(LogLevel.WARN, 'no compatible system found', game.system.id);
+    } else ui.notifications.notify(`Blood 'n Guts - loaded compatible system: ${game.system.id}`, 'info');
+  }
 });
 
 Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
