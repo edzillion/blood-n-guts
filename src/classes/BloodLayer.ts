@@ -177,7 +177,7 @@ export default class BloodLayer extends TilesLayer {
       log(LogLevel.WARN, 'createObject: TileSplat already present!', data.id);
       return;
     }
-    // if (alreadyAdded) debugger;
+
     const obj = new TileSplat(data);
     if (data.zIndex == null) {
       log(LogLevel.ERROR, 'createObject missing zIndex property!');

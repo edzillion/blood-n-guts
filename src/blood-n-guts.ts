@@ -401,14 +401,10 @@ export class BloodNGuts {
    */
   public static getUserContextOptionsHandler(): void {
     log(LogLevel.DEBUG, 'getUserContextOptions');
-    debugger;
     const gm = game.users.find((e) => e.isGM && e.active);
     if (!gm) {
-      // ui.notifications.notify(`Note: Blood 'n Guts requires a GM to be online to function!`, 'warning');
       BloodNGuts.disabled = true;
     } else if (BloodNGuts.disabled) {
-      // ui.notifications.notify(`GM Present: Blood 'n Guts is now functional`, 'info');
-
       // user may have disabled BnG in settings, if not then enable.
       if (game.settings.get(MODULE_ID, 'currentViolenceLevel') !== 'Disabled') {
         BloodNGuts.disabled = false;
