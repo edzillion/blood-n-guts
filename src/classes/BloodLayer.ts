@@ -225,6 +225,11 @@ export default class BloodLayer extends TilesLayer {
    */
   deactivate(): BloodLayer {
     CanvasLayer.prototype.deactivate.apply(this);
+
+    // if gm is not present
+    const gmPresent = game.users.find((u) => u.isGM && u.active);
+    if (!gmPresent) return;
+
     if (this.objects) this.objects.visible = true;
     //@ts-expect-error definition missing
     this.releaseAll();
