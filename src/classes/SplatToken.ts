@@ -249,9 +249,9 @@ export default class SplatToken {
   private getUpdatedDamage(changes): number {
     // todo: perhaps a system based guard here?
     if (changes.actorData === undefined) return;
-    const currentHP =
-      BloodNGuts.system.currentHPChange(changes, this.actorType) ||
-      BloodNGuts.system.currentHP(this.token, this.actorType);
+    const currHPChange = BloodNGuts.system.currentHPChange(changes, this.actorType);
+    const currHP = BloodNGuts.system.currentHP(this.token, this.actorType);
+    const currentHP = currHPChange != undefined ? currHPChange : currHP;
     const lastHP = this.hp;
     const maxHP = this.maxHP;
     const severity = this.getDamageSeverity(currentHP, lastHP, maxHP);
