@@ -1,11 +1,12 @@
 import { MODULE_TITLE } from '../constants';
 import BrushConfig from '../classes/BrushConfig';
+import { isFirstActiveGM } from './helpers';
 
 /**
  * Add control buttons
  */
-Hooks.on('getSceneControlButtons', (controls) => {
-  if (game.user.isGM) {
+function handleGetSceneControlButtons(controls) {
+  if (isFirstActiveGM() && canvas?.scene?.active) {
     controls.push({
       name: 'blood',
       title: MODULE_TITLE,
@@ -71,13 +72,13 @@ Hooks.on('getSceneControlButtons', (controls) => {
       activeTool: 'brush',
     });
   }
-});
+}
 
 /**
  * Handles adding the custom brush controls pallet
  * and switching active brush flag
  */
-Hooks.on('renderSceneControls', (controls) => {
+function handleRenderSceneControls(controls) {
   // Switching to layer
   if (controls.activeControl === 'blood') {
     // Open brush tools if not already open
@@ -92,12 +93,25 @@ Hooks.on('renderSceneControls', (controls) => {
     const bco = $('#brush-config');
     if (bco) bco.remove();
   }
-});
+}
 
 /**
  * Sets Y position of the brush controls to account for scene navigation buttons
  */
-function setBrushControlPos() {
+function updateBrushControls() {
+  // if scene has just been activated and blood control not present
+  // @ts-expect-error defintions wrong
+  const isBloodControlPresent = ui.controls.controls.find((control) => control.name === 'blood');
+
+  // then add the blood control, for the case when a user has navigated to an inactive scene
+  // and then activated it
+  if (canvas?.scene?.active && !isBloodControlPresent) {
+    // @ts-expect-error defintions wrong
+    handleGetSceneControlButtons(ui.controls.controls);
+    // @ts-expect-error defintions wrong
+    ui.controls.render(true);
+  }
+
   const bc = $('#brush-controls');
   if (bc) {
     const h = $('#navigation').height();
@@ -105,6 +119,9 @@ function setBrushControlPos() {
   }
 }
 
+Hooks.on('getSceneControlButtons', handleGetSceneControlButtons);
+Hooks.on('renderSceneControls', handleRenderSceneControls);
+
 // Reset position when brush controls are rendered or sceneNavigation changes
-Hooks.on('renderBrushControls', setBrushControlPos);
-Hooks.on('renderSceneNavigation', setBrushControlPos);
+Hooks.on('renderBrushControls', updateBrushControls);
+Hooks.on('renderSceneNavigation', updateBrushControls);
