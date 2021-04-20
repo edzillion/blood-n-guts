@@ -401,4 +401,25 @@ export default {
       if (creatureType) return creatureType.toLowerCase();
     },
   },
+  morkborg: {
+    id: 'morkborg',
+    supportedTypes: ['character', 'creature', 'follower'],
+    currentHP: (token: Token): number => token.actor.data.data.hp.value,
+    maxHP: (token: Token): number => token.actor.data.data.hp.max,
+    currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.attributes?.hp?.value,
+    maxHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.attributes?.hp?.max,
+    creatureType: (token: Token): string | void => {
+      const actorType = token.actor.data.type.toLowerCase();
+      let creatureType;
+      if (actorType === 'character') {
+        // @ts-expect-error bad definition
+        creatureType = token.actor.data.items.find((i) => i.type === 'class').name;
+      } else if (actorType === 'creature' || actorType === 'follower') {
+        // name is currently the best we've got for a creatureType
+        creatureType = token.actor.data.name;
+      }
+      log(LogLevel.DEBUG, 'creatureType morkborg: ', token.name, actorType, creatureType);
+      if (creatureType) return creatureType.toLowerCase();
+    },
+  },
 };
