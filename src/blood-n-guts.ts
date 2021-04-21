@@ -14,6 +14,7 @@ import {
   isFirstActiveGM,
   generateCustomSystem,
   replaceSelectChoices,
+  isBnGUpdate,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
@@ -69,8 +70,7 @@ export class BloodNGuts {
       ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
       return;
     }
-    await canvas.blood.wipeLayer(true);
-    BloodNGuts.wipeTokenSplats();
+    await canvas.blood.wipeBlood(true);
   }
 
   /**
@@ -84,12 +84,12 @@ export class BloodNGuts {
       ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
       return;
     }
-    canvas.blood.wipeLayer();
-    BloodNGuts.wipeTokenSplats();
+    await canvas.blood.wipeBlood();
+    //BloodNGuts.wipeTokenSplats();
   }
 
   /**
-   * Wipes all token splats from the current scene.
+   * Wipes all token splats from the current scene. Does not update flags.
    * @category GMandPC
    * @function
    */
@@ -189,7 +189,7 @@ export class BloodNGuts {
     if (isFirstActiveGM()) {
       const type = game.actors.get(tokenData.actorId).data.type.toLowerCase();
       if (BloodNGuts.system.supportedTypes.includes(type)) {
-        splatToken.updateChanges(changes);
+        splatToken.trackChanges(changes);
       }
     }
   }
@@ -357,7 +357,7 @@ export class BloodNGuts {
       await game.settings.set(MODULE_ID, 'system', BloodNGuts.system);
 
       // wipe layer and history as it will conflict with new data
-      await canvas.blood.wipeLayer(true);
+      await canvas.blood.wipeBlood(true);
       // then redraw the canvas to create SplatTokens
       await canvas.draw();
     });

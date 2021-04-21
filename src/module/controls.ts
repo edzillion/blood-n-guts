@@ -45,17 +45,17 @@ function handleGetSceneControlButtons(controls) {
         },
         {
           name: 'wipe',
-          title: 'Wipe blood layer.',
+          title: 'Wipe blood',
           icon: 'fas fa-trash',
           onClick: () => {
             const dg = new Dialog({
-              title: 'Wipe Blood Layer',
-              content: 'Are you sure? All blood layer splats will be deleted.',
+              title: 'Wipe Blood',
+              content: 'Are you sure? All blood splats will be deleted.',
               buttons: {
                 blank: {
                   icon: '<i class="fas fa-trash"></i>',
                   label: 'Wipe',
-                  callback: () => canvas.blood.wipeLayer(true),
+                  callback: () => canvas.blood.wipeBlood(true),
                 },
                 cancel: {
                   icon: '<i class="fas fa-times"></i>',

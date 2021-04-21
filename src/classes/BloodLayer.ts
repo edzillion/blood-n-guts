@@ -629,13 +629,12 @@ export default class BloodLayer extends TilesLayer {
 
     // If history is blank, do nothing
     if (history === undefined) return;
-    // If history is zero, reset scene fog
-    if (history.events.length === 0) this.wipeLayer(false);
     if (start === undefined) start = 0;
     if (stop === undefined) stop = history.events.length;
     // If pointer preceeds the stop, reset and start from 0
     if (stop <= start) {
-      this.wipeLayer(false);
+      this.wipeBlood(false);
+      BloodNGuts.wipeTokenSplats();
       start = 0;
     }
 
@@ -768,14 +767,14 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Wipes all blood splats from blood layer.
+   * Wipes all blood splats from scene.
    * @category GMOnly
    * @function
    * @async
    * @param {boolean} save - If true, also wipes the layer history
    */
-  async wipeLayer(save: boolean): Promise<void> {
-    log(LogLevel.INFO, 'wipeLayer: wipe history', save);
+  async wipeBlood(save: boolean): Promise<void> {
+    log(LogLevel.INFO, 'wipeBlood: wipe history', save);
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     if (save) {
