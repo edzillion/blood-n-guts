@@ -36,7 +36,6 @@ export default class BloodLayer extends TilesLayer {
       brushSize: 50,
       brushSpread: 1.0,
       previewAlpha: 0.4,
-      visible: true,
     };
 
     this.brushSettings = duplicate(this.DEFAULTS_BRUSHSETTINGS);
@@ -76,6 +75,8 @@ export default class BloodLayer extends TilesLayer {
    */
   initialize(): void {
     log(LogLevel.INFO, 'Initializing Blood Layer');
+
+    this.visible = canvas.scene.getFlag(MODULE_ID, 'visible');
 
     // Create objects container which can be sorted
     const objCont = new PIXI.Container();
@@ -145,6 +146,8 @@ export default class BloodLayer extends TilesLayer {
     }
     // it seems that we need to initialize every time we draw()
     this.initialize();
+    if (!this.visible) return;
+
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     // Create and draw objects
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
@@ -157,7 +160,6 @@ export default class BloodLayer extends TilesLayer {
     });
 
     // Wait for all objects to draw
-    this.visible = true;
     await Promise.all(promises);
     this.pointer = history.events.length;
     return this;
@@ -193,9 +195,8 @@ export default class BloodLayer extends TilesLayer {
    * @function
    */
   toggle(): void {
-    const v = this.getSetting(false, 'visible');
-    this.visible = !v;
-    this.setSetting(true, 'visible', !v);
+    this.visible = !this.visible;
+    canvas.scene.setFlag(MODULE_ID, 'visible', this.visible);
   }
 
   /**
@@ -971,15 +972,19 @@ export default class BloodLayer extends TilesLayer {
    */
   updateSceneHandler(scene: Scene, data: Record<string, unknown>): void {
     log(LogLevel.DEBUG, 'updateSceneHandler', data);
+
     // Check if update applies to current viewed scene
     // @ts-expect-error missing definition
     if (!scene._view) return;
+
     // React to visibility change
+    let rerender = false;
     if (hasProperty(data, `flags.${MODULE_ID}.visible`)) {
       this.visible = data.flags[MODULE_ID].visible;
+      if (this.visible) rerender = true;
     }
     // React to composite history change
-    if (hasProperty(data, `flags.${MODULE_ID}.history`)) {
+    if (hasProperty(data, `flags.${MODULE_ID}.history`) || rerender) {
       this.renderHistory(data.flags[MODULE_ID].history);
     }
   }

@@ -69,7 +69,6 @@ interface BrushSettings {
   brushSize: number;
   brushSpread: number;
   previewAlpha: number;
-  visible: boolean;
 }
 
 interface SubmitEvent extends Event {
