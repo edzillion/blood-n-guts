@@ -168,15 +168,14 @@ export class BloodNGuts {
     changes: Record<string, unknown>,
   ): void {
     // @ts-expect-error missing definition
-    if (!scene.active || BloodNGuts.disabled) return;
+    if (!scene.active || BloodNGuts.disabled || !isBnGUpdate(changes)) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler', changes);
-
-    // if the update is a flag but not from our module then return
-    const entries = Object.entries(changes);
-    if (entries.length === 2 && entries[0][0] === 'flags' && entries[0][1][MODULE_ID] == null) return;
 
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
+
+    //update rotation of tokenSplats
+    if (changes.rotation != null) splatToken.updateRotation(changes);
 
     // remove custom settings from a SplatToken when unchecked
     if (changes.flags && changes.flags[MODULE_ID]?.customBloodChecked != null) {

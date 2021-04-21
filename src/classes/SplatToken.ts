@@ -183,8 +183,8 @@ export default class SplatToken {
    * @function
    * @returns {boolean} - whether there have been changes to the scene or not
    */
-  public updateChanges(changes: Record<string, any>): boolean {
-    log(LogLevel.DEBUG, 'updateChanges');
+  public trackChanges(changes: Record<string, any>): boolean {
+    log(LogLevel.DEBUG, 'trackChanges');
     if (changes.flags) {
       // we only care about bleedingSeverity flag in SplatToken constructor
       if (changes.flags[MODULE_ID]?.bleedingSeverity != null) {
@@ -230,8 +230,6 @@ export default class SplatToken {
     }
 
     const bloodTrail = this.direction && this.bleedingSeverity ? this.bleedTrail() : false;
-
-    this.updateRotation(changes);
 
     this.saveState(this.token, newBleedingSeverity, changes);
     canvas.blood.commitHistory();
@@ -282,11 +280,11 @@ export default class SplatToken {
 
   /**
    * Updates splat container rotation.
-   * @category GMOnly
+   * @category GMandPC
    * @function
    * @param changes - the latest token changes.
    */
-  private updateRotation(changes): void {
+  public updateRotation(changes): void {
     if (changes.rotation === undefined) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler updating rotation', changes.rotation);
     this.container.angle = changes.rotation;
