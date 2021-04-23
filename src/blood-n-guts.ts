@@ -547,3 +547,22 @@ Token.prototype.draw = (function () {
     }
   };
 })();
+
+Hooks.on('deleteActiveEffect', async (actor, effect) => {
+  if (effect.flags.core.statusId !== 'bleeding') return;
+  const splatToken = getSplatTokenByActorId(actor.data._id);
+  return await splatToken.token.setFlag(MODULE_ID, 'bleedingSeverity', 0);
+});
+
+Hooks.on('createActiveEffect', async (actor, effect) => {
+  if (effect.flags.core.statusId !== 'bleeding') return;
+  const splatToken = getSplatTokenByActorId(actor.data._id);
+
+  const currentHP = splatToken.hp;
+  const lastHP = BloodNGuts.system.ascendingDamage ? 0 : splatToken.maxHP;
+  const maxHP = splatToken.maxHP;
+
+  const initSeverity = splatToken.getDamageSeverity(currentHP, lastHP, maxHP);
+
+  return await splatToken.token.setFlag(MODULE_ID, 'bleedingSeverity', initSeverity);
+});

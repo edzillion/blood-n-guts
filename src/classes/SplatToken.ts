@@ -35,6 +35,7 @@ export default class SplatToken {
   public token: Token;
   private bleedingDistance: number;
   public lastEndPoint: PIXI.Point | null;
+  private bleedingActiveEffect: ActiveEffect;
 
   // todo: typing a Proxy is complicated
   public tokenSettings: any;
@@ -50,8 +51,13 @@ export default class SplatToken {
     this.token = token;
     this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
     this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
+    this.lastEndPoint = null;
+
     this.saveState(token);
+
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
+    // @ts-expect-error bad defs
+    this.bleedingActiveEffect = CONFIG.statusEffects.find((e: ActiveEffect) => e.id === 'bleeding');
     this.bleedingDistance = 0;
     this.disabled = false;
   }
@@ -162,7 +168,7 @@ export default class SplatToken {
    * @category GMandPC
    * @function
    */
-  public preSplat(): void {
+  public async preSplat(): Promise<void> {
     if (this.tokenSplats.length === 0) {
       const currentHP = this.hp;
       const lastHP = BloodNGuts.system.ascendingDamage ? 0 : this.maxHP;
@@ -173,6 +179,10 @@ export default class SplatToken {
       log(LogLevel.DEBUG, 'preSplat', this.token.data.name);
       this.bleedingSeverity = initSeverity;
       this.bleedToken(initSeverity);
+
+      await this.token.setFlag(MODULE_ID, 'bleedingSeverity', this.bleedingSeverity);
+      // // @ts-expect-error bad defs
+      // this.token.toggleEffect(this.bleedingActiveEffect, { active: this.bleedingSeverity !== 0 });
     }
   }
 
@@ -186,15 +196,13 @@ export default class SplatToken {
    */
   public trackChanges(changes: Record<string, any>): boolean {
     log(LogLevel.DEBUG, 'trackChanges');
-    if (changes.flags) {
-      // we only care about bleedingSeverity flag in SplatToken constructor
-      if (changes.flags[MODULE_ID]?.bleedingSeverity != null) {
-        if (Object.entries(changes.flags[MODULE_ID]).length === 1) return false;
-      }
-      for (const setting in changes.flags[MODULE_ID]) {
-        this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
-      }
-    }
+
+    if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
+      this.disabled = true;
+      return false;
+    } else this.disabled = false;
+
+    if (changes.effects != null || changes.rotation != null) return false;
 
     if (changes.hidden != null) {
       log(LogLevel.DEBUG, 'hidden', changes.hidden);
@@ -203,19 +211,33 @@ export default class SplatToken {
       return false;
     }
 
-    if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
-      this.disabled = true;
-    } else this.disabled = false;
+    if (hasProperty(changes, `flags.${MODULE_ID}.bleedingSeverity`)) {
+      this.bleedingSeverity = changes.flags[MODULE_ID].bleedingSeverity;
 
-    if (this.disabled)
-      // todo: perhaps a system-based check for hp here?
-      // ||
-      //   (changes.rotation === undefined &&
-      //     changes.x === undefined &&
-      //     changes.y === undefined &&
-      //     changes.actorData?.data?.attributes?.hp === undefined)
-      // )
-      return false;
+      // @ts-expect-error bad defs
+      const bleedingActiveEffectPresent = this.token.actor.effects.entries.find(
+        // @ts-expect-error bad defs
+        (ae) => ae.data.icon === this.bleedingActiveEffect.icon,
+      );
+
+      // if we toggle to false when the icon is not present we'll hit the deleteActiveEffect hook and cause an
+      // infinite loop
+      if (
+        (this.bleedingSeverity === 0 && bleedingActiveEffectPresent) ||
+        (this.bleedingSeverity !== 0 && !bleedingActiveEffectPresent)
+      )
+        // @ts-expect-error bad defs
+        this.token.toggleEffect(this.bleedingActiveEffect, { active: this.bleedingSeverity !== 0 });
+    }
+    //if settings change
+    // if (changes.flags) {
+    //   if ( != null) {
+
+    //   }
+    //   for (const setting in changes.flags[MODULE_ID]) {
+    //     this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
+    //   }
+    // }
 
     let newBleedingSeverity;
     const hitSeverity = this.getUpdatedDamage(changes);
@@ -332,7 +354,7 @@ export default class SplatToken {
   private bleedTrail(): boolean {
     if (this.tokenSettings.trailSplatDensity === 0 || this.token.data.hidden) return false;
 
-    const amount = Math.round(this.tokenSettings.trailSplatDensity * this.bleedingSeverity);
+    const amount = this.tokenSettings.trailSplatDensity * this.bleedingSeverity;
 
     const distTravelled = distanceBetween(new PIXI.Point(), this.movePos) + this.bleedingDistance;
     this.bleedingDistance = Math.round((1 / amount) * canvas.grid.size);
@@ -494,7 +516,7 @@ export default class SplatToken {
    * @param {ascending=false} ascending - does damage count up or down?
    * @returns {number} - the damage severity.
    */
-  private getDamageSeverity(currentHP, lastHP, maxHP, ascending = false): number {
+  public getDamageSeverity(currentHP, lastHP, maxHP, ascending = false): number {
     log(LogLevel.DEBUG, 'getDamageSeverity');
 
     if (ascending || BloodNGuts.system.ascendingDamage) {
