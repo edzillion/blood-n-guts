@@ -21,12 +21,14 @@ export default class BloodLayer extends TilesLayer {
   lock: boolean;
   commitTimer: NodeJS.Timeout;
   zOrderCounter: number;
+  lastEndPoint: PIXI.Point | null;
   constructor() {
     super();
 
     this.zOrderCounter = 0;
     this.pointer = 0;
     this.historyBuffer = [];
+    this.lastEndPoint = null;
 
     this.DEFAULTS_BRUSHSETTINGS = {
       brushColor: '#8A0707',
@@ -457,7 +459,7 @@ export default class BloodLayer extends TilesLayer {
     };
     const tileSplatData: TileSplatData = this.getNewSplatData(amount, font, origin, spread, styleData);
     tileSplatData.name = 'Floor Splat';
-    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
+    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer: ', tileSplatData);
     this.historyBuffer.push(tileSplatData);
   }
 
@@ -496,15 +498,27 @@ export default class BloodLayer extends TilesLayer {
       distances.push(i);
     }
 
+    const tokenCenter = splatToken.getCenter();
+
     const randSpread = getRandomBoxMuller() * spread - spread / 2;
-    const start = new PIXI.Point(-splatToken.movePos.x / 2, -splatToken.movePos.y / 2);
+    let start;
+    if (this.lastEndPoint != null) {
+      // convert lastEndPoint to tileSplat-relative coords
+      this.lastEndPoint.x -= tokenCenter.x - splatToken.movePos.x / 2;
+      this.lastEndPoint.y -= tokenCenter.y - splatToken.movePos.y / 2;
+      start = this.lastEndPoint;
+    } else {
+      start = new PIXI.Point(-splatToken.movePos.x / 2, -splatToken.movePos.y / 2);
+    }
     const control = new PIXI.Point(splatToken.direction.y * randSpread, splatToken.direction.x * randSpread);
     const end = new PIXI.Point(splatToken.movePos.x / 2, splatToken.movePos.y / 2);
+
+    log(LogLevel.WARN, 'points', splatToken.movePos, start, control, end);
 
     // randomise endPt of curve
     const forwardOffset = Math.abs(getRandomBoxMuller() * canvas.grid.size - canvas.grid.size / 2);
     const lateralOffset = getRandomBoxMuller() * forwardOffset - forwardOffset / 2;
-    if (splatToken.direction.x === 0 || splatToken.direction.y == 0) {
+    if (splatToken.direction.x === 0 || splatToken.direction.y === 0) {
       end.x += lateralOffset * splatToken.direction.y;
       end.y += lateralOffset * splatToken.direction.x;
     } else {
@@ -533,7 +547,6 @@ export default class BloodLayer extends TilesLayer {
     }
     log(LogLevel.DEBUG, 'generateTrailSplats tileSplatData.drips', tileSplatData.drips);
 
-    const tokenCenter = splatToken.getCenter();
     tileSplatData.offset = new PIXI.Point(0);
     tileSplatData.x = tokenCenter.x - splatToken.movePos.x / 2;
     tileSplatData.y = tokenCenter.y - splatToken.movePos.y / 2;
@@ -543,8 +556,10 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.alpha = 0.75;
     tileSplatData.id = getUID();
 
+    this.lastEndPoint = new PIXI.Point(tileSplatData.x + end.x, tileSplatData.y + end.y);
+
     tileSplatData.name = 'Trail Splat';
-    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
+    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer: ', tileSplatData);
     this.historyBuffer.push(tileSplatData as TileSplatData);
   }
 
@@ -608,6 +623,7 @@ export default class BloodLayer extends TilesLayer {
    */
   renderTileSplat(data: TileSplatData, save = true): void {
     log(LogLevel.DEBUG, 'renderTileSplat creating id:', data.id);
+    console.warn('createObject', data);
     this.createObject(data).draw();
     if (save) this.historyBuffer.push(data);
   }
@@ -667,6 +683,7 @@ export default class BloodLayer extends TilesLayer {
    * @async
    */
   async commitHistory(): Promise<void> {
+    console.warn(this.historyBuffer);
     log(LogLevel.DEBUG, `commitHistory: buffer size ${this.historyBuffer.length}.`);
     // Do nothing if no history to be committed, otherwise get history
     if (this.historyBuffer.length === 0) return;
