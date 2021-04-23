@@ -21,14 +21,12 @@ export default class BloodLayer extends TilesLayer {
   lock: boolean;
   commitTimer: NodeJS.Timeout;
   zOrderCounter: number;
-  lastEndPoint: PIXI.Point | null;
   constructor() {
     super();
 
     this.zOrderCounter = 0;
     this.pointer = 0;
     this.historyBuffer = [];
-    this.lastEndPoint = null;
 
     this.DEFAULTS_BRUSHSETTINGS = {
       brushColor: '#8A0707',
@@ -502,11 +500,11 @@ export default class BloodLayer extends TilesLayer {
 
     const randSpread = getRandomBoxMuller() * spread - spread / 2;
     let start;
-    if (this.lastEndPoint != null) {
+    if (splatToken.lastEndPoint != null) {
       // convert lastEndPoint to tileSplat-relative coords
-      this.lastEndPoint.x -= tokenCenter.x - splatToken.movePos.x / 2;
-      this.lastEndPoint.y -= tokenCenter.y - splatToken.movePos.y / 2;
-      start = this.lastEndPoint;
+      splatToken.lastEndPoint.x -= tokenCenter.x - splatToken.movePos.x / 2;
+      splatToken.lastEndPoint.y -= tokenCenter.y - splatToken.movePos.y / 2;
+      start = splatToken.lastEndPoint;
     } else {
       start = new PIXI.Point(-splatToken.movePos.x / 2, -splatToken.movePos.y / 2);
     }
@@ -556,7 +554,7 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.alpha = 0.75;
     tileSplatData.id = getUID();
 
-    this.lastEndPoint = new PIXI.Point(tileSplatData.x + end.x, tileSplatData.y + end.y);
+    splatToken.lastEndPoint = new PIXI.Point(tileSplatData.x + end.x, tileSplatData.y + end.y);
 
     tileSplatData.name = 'Trail Splat';
     log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer: ', tileSplatData);

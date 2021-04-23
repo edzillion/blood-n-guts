@@ -34,6 +34,7 @@ export default class SplatToken {
 
   public token: Token;
   private bleedingDistance: number;
+  public lastEndPoint: PIXI.Point | null;
 
   // todo: typing a Proxy is complicated
   public tokenSettings: any;
