@@ -1,6 +1,7 @@
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
+import SplatToken from '../classes/SplatToken';
 
 /**
  * Helper functions.
@@ -96,6 +97,11 @@ export const getUID = (typeCode?: string): string => {
   const prefix = 'bng';
 
   return [prefix, typeCode, d, r].join('_');
+};
+
+export const getSplatTokenByActorId = (id: string): SplatToken => {
+  const token = canvas.tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === id);
+  return BloodNGuts.splatTokens[token.id];
 };
 
 /**
