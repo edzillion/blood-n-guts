@@ -137,11 +137,12 @@ export const registerSettings = (): void => {
 };
 
 // Custom Settings
+
 /**
- * Promise resolving after custom splat fonts are loaded from disk.
+ * Promise resolving after base token settings are generated
  * @function
  * @category GMOnly
- * @returns {Promise<any>} - promise resolving to only the custom splat fonts.
+ * @returns {Promise<any>} - promise resolving to token settings
  */
 export const getBaseTokenSettings = async (token: Token): Promise<TokenSettings> => {
   let baseSettings: Partial<TokenSettings> = {};

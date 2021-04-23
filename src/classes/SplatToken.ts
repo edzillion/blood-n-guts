@@ -109,7 +109,7 @@ export default class SplatToken {
 
     this.tokenSettings = new Proxy(baseTokenSettings, tokenSettingsHandler);
 
-    if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
+    if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.currentViolenceLevel === 'Disabled') {
       this.disabled = true;
       return this;
     }
@@ -197,18 +197,33 @@ export default class SplatToken {
   public trackChanges(changes: Record<string, any>): boolean {
     log(LogLevel.DEBUG, 'trackChanges');
 
-    if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
-      this.disabled = true;
-      return false;
-    } else this.disabled = false;
-
+    // early returns
+    if (this.disabled) return false;
     if (changes.effects != null || changes.rotation != null) return false;
-
     if (changes.hidden != null) {
       log(LogLevel.DEBUG, 'hidden', changes.hidden);
       // need to redraw to update alpha levels on TokenSplats
       this.draw();
       return false;
+    }
+    // customBloodChecked is only for UI
+    if (hasProperty(changes, `flags.${MODULE_ID}.customBloodChecked`)) return false;
+
+    // deal with settings changes first
+    if (hasProperty(changes, `flags.${MODULE_ID}`)) {
+      const settingsUpdates = Object.keys(changes.flags[MODULE_ID]).filter((key) =>
+        ['bloodColor', 'floorSplatFont', 'trailSplatFont', 'tokenSplatFont', 'currentViolenceLevel'].includes(key),
+      );
+      if (settingsUpdates.length) {
+        for (const setting of settingsUpdates) {
+          this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
+        }
+
+        if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.currentViolenceLevel === 'Disabled')
+          this.disabled = true;
+        else this.disabled = false;
+        return false;
+      }
     }
 
     if (hasProperty(changes, `flags.${MODULE_ID}.bleedingSeverity`)) {
@@ -229,15 +244,6 @@ export default class SplatToken {
         // @ts-expect-error bad defs
         this.token.toggleEffect(this.bleedingActiveEffect, { active: this.bleedingSeverity !== 0 });
     }
-    //if settings change
-    // if (changes.flags) {
-    //   if ( != null) {
-
-    //   }
-    //   for (const setting in changes.flags[MODULE_ID]) {
-    //     this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
-    //   }
-    // }
 
     let newBleedingSeverity;
     const hitSeverity = this.getUpdatedDamage(changes);
@@ -587,14 +593,21 @@ export default class SplatToken {
    * @category GMOnly
    * @function
    */
-  public async wipeCustomSettings(): Promise<Entity[]> {
-    const promises: Promise<Entity>[] = [];
-    promises.push(this.token.unsetFlag(MODULE_ID, 'floorSplatFont'));
-    promises.push(this.token.unsetFlag(MODULE_ID, 'trailSplatFont'));
-    promises.push(this.token.unsetFlag(MODULE_ID, 'tokenSplatFont'));
-    promises.push(this.token.unsetFlag(MODULE_ID, 'bloodColor'));
-    promises.push(this.token.unsetFlag(MODULE_ID, 'currentViolenceLevel'));
-    return Promise.all(promises);
+  public async wipeCustomSettings(): Promise<PlaceableObject> {
+    return this.token.update({
+      floorSplatFont: null,
+      trailSplatFont: null,
+      tokenSplatFont: null,
+      bloodColor: null,
+      currentViolenceLevel: null,
+    });
+
+    // promises.push(this.token.unsetFlag(MODULE_ID, 'floorSplatFont'));
+    // promises.push(this.token.unsetFlag(MODULE_ID, 'trailSplatFont'));
+    // promises.push(this.token.unsetFlag(MODULE_ID, 'tokenSplatFont'));
+    // promises.push(this.token.unsetFlag(MODULE_ID, 'bloodColor'));
+    // promises.push(this.token.unsetFlag(MODULE_ID, 'currentViolenceLevel'));
+    // return Promise.all(promises);
   }
 
   /**

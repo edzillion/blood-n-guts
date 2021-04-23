@@ -178,6 +178,7 @@ export class BloodNGuts {
     //update rotation of tokenSplats
     if (changes.rotation != null) splatToken.updateRotation(changes);
 
+    // todo: move this into splatToken trackChanges?
     // remove custom settings from a SplatToken when unchecked
     if (changes.flags && changes.flags[MODULE_ID]?.customBloodChecked != null) {
       if (!changes.flags[MODULE_ID].customBloodChecked) {
