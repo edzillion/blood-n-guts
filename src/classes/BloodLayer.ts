@@ -153,6 +153,8 @@ export default class BloodLayer extends TilesLayer {
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
     log(LogLevel.INFO, 'BloodLayer draw: history size ' + history?.events?.length);
     if (!history || history.events.length === 0) return;
+
+    // todo: comment this
     const promises = history.events.map((data) => {
       if (data.tokenId) return;
       const obj = this.createObject(data);
@@ -166,7 +168,7 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Draw a single TileSplat
+   * Create and return single TileSplat
    * @category GMandPC
    * @function
    * @param {TileSplatData} data
