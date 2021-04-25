@@ -150,7 +150,7 @@ export default class SplatToken {
       (this.token.data.width * canvas.grid.size) / 2,
       (this.token.data.height * canvas.grid.size) / 2,
     );
-    this.container.angle = this.token.data.rotation;
+    this.container.angle = this.token.data.lockRotation ? 0 : this.token.data.rotation;
   }
 
   /**
