@@ -511,7 +511,7 @@ export default class BloodLayer extends TilesLayer {
     const control = new PIXI.Point(splatToken.direction.y * randSpread, splatToken.direction.x * randSpread);
     const end = new PIXI.Point(splatToken.movePos.x / 2, splatToken.movePos.y / 2);
 
-    log(LogLevel.WARN, 'points', splatToken.movePos, start, control, end);
+    log(LogLevel.DEBUG, 'points', splatToken.movePos, start, control, end);
 
     // randomise endPt of curve
     const forwardOffset = Math.abs(getRandomBoxMuller() * canvas.grid.size - canvas.grid.size / 2);
@@ -621,7 +621,6 @@ export default class BloodLayer extends TilesLayer {
    */
   renderTileSplat(data: TileSplatData, save = true): void {
     log(LogLevel.DEBUG, 'renderTileSplat creating id:', data.id);
-    console.warn('createObject', data);
     this.createObject(data).draw();
     if (save) this.historyBuffer.push(data);
   }
@@ -681,7 +680,6 @@ export default class BloodLayer extends TilesLayer {
    * @async
    */
   async commitHistory(): Promise<void> {
-    console.warn(this.historyBuffer);
     log(LogLevel.DEBUG, `commitHistory: buffer size ${this.historyBuffer.length}.`);
     // Do nothing if no history to be committed, otherwise get history
     if (this.historyBuffer.length === 0) return;

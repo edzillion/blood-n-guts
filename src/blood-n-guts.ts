@@ -24,7 +24,7 @@ import * as splatFonts from './data/splatFonts';
 import Systems from './data/systems';
 
 //CONFIG.debug.hooks = true;
-CONFIG[MODULE_ID] = { logLevel: 3 };
+CONFIG[MODULE_ID] = { logLevel: 2 };
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -35,9 +35,6 @@ export class BloodNGuts {
   public static allFonts: Record<string, SplatFont>;
   public static splatTokens: Record<string, SplatToken>;
   public static disabled: boolean;
-  public static getLatestActorHP: any;
-  public static getLatestActorMaxHP: any;
-  public static lookupCreatureType: any;
   public static system: System;
 
   public static initialize(): void {
