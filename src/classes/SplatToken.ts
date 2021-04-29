@@ -331,7 +331,7 @@ export default class SplatToken {
   private bleedTrail(): boolean {
     if (this.tokenSettings.trailSplatDensity === 0 || this.token.data.hidden) return false;
 
-    const amount = Math.round(this.tokenSettings.trailSplatDensity * this.bleedingSeverity);
+    const amount = this.tokenSettings.trailSplatDensity * this.bleedingSeverity;
 
     const distTravelled = distanceBetween(new PIXI.Point(), this.movePos) + this.bleedingDistance;
     this.bleedingDistance = Math.round((1 / amount) * canvas.grid.size);

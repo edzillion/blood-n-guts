@@ -6,7 +6,7 @@ import { isFirstActiveGM } from './helpers';
  * Add control buttons
  */
 function handleGetSceneControlButtons(controls) {
-  if (isFirstActiveGM() && canvas?.scene?.active) {
+  if (isFirstActiveGM()) {
     controls.push({
       name: 'blood',
       title: MODULE_TITLE,
@@ -100,17 +100,17 @@ function handleRenderSceneControls(controls) {
  */
 function updateBrushControls() {
   // if scene has just been activated and blood control not present
-  // @ts-expect-error defintions wrong
-  const isBloodControlPresent = ui.controls.controls.find((control) => control.name === 'blood');
+  // // @ts-expect-error defintions wrong
+  // const isBloodControlPresent = ui.controls.controls.find((control) => control.name === 'blood');
 
   // then add the blood control, for the case when a user has navigated to an inactive scene
   // and then activated it
-  if (canvas?.scene?.active && !isBloodControlPresent) {
-    // @ts-expect-error defintions wrong
-    handleGetSceneControlButtons(ui.controls.controls);
-    // @ts-expect-error defintions wrong
-    ui.controls.render(true);
-  }
+  // if (canvas?.scene?.active && !isBloodControlPresent) {
+  //   // @ts-expect-error defintions wrong
+  //   handleGetSceneControlButtons(ui.controls.controls);
+  //   // @ts-expect-error defintions wrong
+  //   ui.controls.render(true);
+  // }
 
   const bc = $('#brush-controls');
   if (bc) {

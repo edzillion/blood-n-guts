@@ -82,14 +82,13 @@ export class BnGAdvancedConfig extends FormApplication {
   activateListeners(html: JQuery): void {
     super.activateListeners(html);
     const wipeButton = html.find('.advanced-config-wipe-scene-splats');
-    if (canvas.scene.active) {
-      wipeButton.click(() => {
-        log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeAllFlags()');
-        BloodNGuts.wipeAllFlags();
-        // this will wipe any DOM splats created by splatButton
-        $('.splat-container').remove();
-      });
-    } else wipeButton.attr('disabled', 'true');
+
+    wipeButton.click(() => {
+      log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeAllFlags()');
+      BloodNGuts.wipeAllFlags();
+      // this will wipe any DOM splats created by splatButton
+      $('.splat-container').remove();
+    });
 
     const splatButton = html.find('.advanced-config-splat-window');
     const appWindow = html.closest('.app.window-app.form#blood-n-guts');
@@ -136,7 +135,5 @@ export class BnGAdvancedConfig extends FormApplication {
     for (const setting in formData) {
       game.settings.set(MODULE_ID, setting, formData[setting]);
     }
-    if (!canvas.scene.active)
-      ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
   }
 }

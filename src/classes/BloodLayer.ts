@@ -1,7 +1,14 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import TileSplat from './TileSplat';
-import { getPointOnCurve, getRandomBoxMuller, getRandomGlyph, getHexColor, getUID } from '../module/helpers';
+import {
+  getPointOnCurve,
+  getRandomBoxMuller,
+  getRandomGlyph,
+  getHexColor,
+  getUID,
+  isFirstActiveGM,
+} from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BrushControls from './BrushControls';
@@ -21,8 +28,11 @@ export default class BloodLayer extends TilesLayer {
   lock: boolean;
   commitTimer: NodeJS.Timeout;
   zOrderCounter: number;
+  disabled: boolean;
   constructor() {
     super();
+
+    this.disabled = false;
 
     this.zOrderCounter = 0;
     this.pointer = 0;
@@ -141,9 +151,12 @@ export default class BloodLayer extends TilesLayer {
    * @see {PlaceablesLayer#draw}
    */
   async draw(): Promise<BloodLayer> {
-    if (BloodNGuts.disabled) {
-      return;
-    }
+    this.disabled =
+      (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'currentViolenceLevel') === 'Disabled') ||
+      canvas.scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled'
+        ? true
+        : false;
+    if (this.disabled) return;
     // it seems that we need to initialize every time we draw()
     this.initialize();
     if (!this.visible) return;
