@@ -6,18 +6,18 @@
 </div>
 <div id="customBloodPanel">
   <div class="form-group">
-    <label>Blood Color:</label>
-    <div class="form-fields">    
-      <input type="text" id="bloodColorText" name="flags.blood-n-guts.bloodColor" value="{{selectedColor}}" data-dtype="String" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="color" id="bloodColorPicker" value="{{defaultColor}}" data-edit="flags.blood-n-guts.bloodColor" />
-    </div>
-  </div>
-  <div class="form-group">
     <label>Violence Level:</label>
     <div class="form-fields">
       <select name="flags.blood-n-guts.violenceLevel" class="token-config-select-violence-level" data-dtype="String"/>
         {{ selectOptions levelNames selected=currentLevel localize=false }}
       </select>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Blood Color:</label>
+    <div class="form-fields">    
+      <input type="text" id="bloodColorText" name="flags.blood-n-guts.bloodColor" value="{{selectedColor}}" data-dtype="String" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="color" id="bloodColorPicker" value="{{defaultColor}}" data-edit="flags.blood-n-guts.bloodColor" />
     </div>
   </div>
   <div class="form-group">

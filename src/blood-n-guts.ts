@@ -281,6 +281,7 @@ export class BloodNGuts {
     const bloodColorPicker = imageTab.find('#bloodColorPicker');
     const bloodColorText = imageTab.find('#bloodColorText');
     const bloodAttribute = imageTab.find('#bloodAttribute');
+    const fontSelects = imageTab.find('.advanced-config-select-font');
 
     // if any custom settings are set on the token
     if (data.selectedColor || data.currentLevel || data.floorSplatFont || data.tokenSplatFont || data.trailSplatFont) {
@@ -302,13 +303,15 @@ export class BloodNGuts {
     });
 
     selectViolenceLevel.on('change', (event: JQuery.ChangeEvent) => {
-      if (event.target.value === 'Disabled' && !bloodColorPicker.prop('disabled')) {
+      if (event.target.value === 'Disabled') {
         bloodColorPicker.prop('disabled', true);
         bloodColorText.prop('disabled', true);
         bloodColorText.val('');
-      } else if (bloodColorPicker.prop('disabled')) {
+        fontSelects.prop('disabled', true);
+      } else {
         bloodColorPicker.prop('disabled', false);
         bloodColorText.prop('disabled', false);
+        fontSelects.prop('disabled', false);
         if (data.selectedColor !== 'none') {
           bloodColorText.val(data.selectedColor);
         }
