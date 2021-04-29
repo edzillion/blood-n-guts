@@ -158,7 +158,7 @@ export default class SplatToken {
   /**
    * Run once after constructor and createMask() to add blood to tokens on a newly loaded scene.
    * Calls `bleedToken()` which adds to `historyBuffer` so `commitHistory()` should be run afterward.
-   * @category GMandPC
+   * @category GMOnly
    * @function
    */
   public preSplat(): void {

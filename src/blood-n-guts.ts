@@ -209,7 +209,7 @@ export class BloodNGuts {
     const gmPresent = game.users.find((u) => u.isGM && u.active);
     if (!gmPresent) {
       BloodNGuts.disabled = true;
-    } else {
+    } else if (isFirstActiveGM()) {
       for (const tokenId in BloodNGuts.splatTokens) {
         BloodNGuts.splatTokens[tokenId].preSplat();
       }
@@ -546,7 +546,7 @@ Token.prototype.draw = (function () {
       BloodNGuts.splatTokens[this.id] = splatToken;
       // if BnG is loading then we can presplat every TokenSplat in one go on canvasReady
       // otherwise it is an new token so we do it now.
-      if (window.BloodNGuts != null) {
+      if (isFirstActiveGM() && window.BloodNGuts != null) {
         splatToken.preSplat();
         canvas.blood.commitHistory();
       }
