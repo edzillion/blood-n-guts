@@ -1,7 +1,6 @@
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
-import SplatToken from '../classes/SplatToken';
 
 /**
  * Helper functions.
@@ -97,11 +96,6 @@ export const getUID = (typeCode?: string): string => {
   const prefix = 'bng';
 
   return [prefix, typeCode, d, r].join('_');
-};
-
-export const getSplatTokenByActorId = (id: string): SplatToken => {
-  const token = canvas.tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === id);
-  return BloodNGuts.splatTokens[token.id];
 };
 
 /**
@@ -316,11 +310,12 @@ export function getHexColor(colorName: string): string {
  * is set to true. If the token is a PC then look up race, if it's an NPC then look up type for it's
  * associated color which is read from `data/bloodColorSettings.js` and `Data/blood-n-guts/customBloodColorSettings`.
  * @function
+ * @async
  * @category helpers
  * @param {Token} token - the token to lookup color for.
  * @returns {Promise<string>} - color in hex format.
  */
-export const lookupTokenBloodColor = (token: Token): string => {
+export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
   if (!token.actor || !token.actor.data) {
     log(LogLevel.WARN, 'lookupTokenBloodColor missing actor data for token!', token);
@@ -329,7 +324,7 @@ export const lookupTokenBloodColor = (token: Token): string => {
   else if (!bloodColorEnabled || !BloodNGuts.system) return getHexColor('blood');
 
   const bloodColors = game.settings.get(MODULE_ID, 'bloodColors');
-  const creatureType = BloodNGuts.system.creatureType(token, bloodColors);
+  const creatureType = await BloodNGuts.system.creatureType(token, bloodColors);
   if (!creatureType) {
     log(LogLevel.WARN, 'lookupTokenBloodColor missing creatureType for token:', token.data.name);
     return getHexColor('blood');

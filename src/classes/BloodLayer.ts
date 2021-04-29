@@ -166,8 +166,6 @@ export default class BloodLayer extends TilesLayer {
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
     log(LogLevel.INFO, 'BloodLayer draw: history size ' + history?.events?.length);
     if (!history || history.events.length === 0) return;
-
-    // todo: comment this
     const promises = history.events.map((data) => {
       if (data.tokenId) return;
       const obj = this.createObject(data);
@@ -181,7 +179,7 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Create and return single TileSplat
+   * Draw a single TileSplat
    * @category GMandPC
    * @function
    * @param {TileSplatData} data
@@ -472,7 +470,7 @@ export default class BloodLayer extends TilesLayer {
     };
     const tileSplatData: TileSplatData = this.getNewSplatData(amount, font, origin, spread, styleData);
     tileSplatData.name = 'Floor Splat';
-    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer: ', tileSplatData);
+    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
     this.historyBuffer.push(tileSplatData);
   }
 
@@ -511,27 +509,15 @@ export default class BloodLayer extends TilesLayer {
       distances.push(i);
     }
 
-    const tokenCenter = splatToken.getCenter();
-
     const randSpread = getRandomBoxMuller() * spread - spread / 2;
-    let start;
-    if (splatToken.lastEndPoint != null) {
-      // convert lastEndPoint to tileSplat-relative coords
-      splatToken.lastEndPoint.x -= tokenCenter.x - splatToken.movePos.x / 2;
-      splatToken.lastEndPoint.y -= tokenCenter.y - splatToken.movePos.y / 2;
-      start = splatToken.lastEndPoint;
-    } else {
-      start = new PIXI.Point(-splatToken.movePos.x / 2, -splatToken.movePos.y / 2);
-    }
+    const start = new PIXI.Point(-splatToken.movePos.x / 2, -splatToken.movePos.y / 2);
     const control = new PIXI.Point(splatToken.direction.y * randSpread, splatToken.direction.x * randSpread);
     const end = new PIXI.Point(splatToken.movePos.x / 2, splatToken.movePos.y / 2);
-
-    log(LogLevel.DEBUG, 'points', splatToken.movePos, start, control, end);
 
     // randomise endPt of curve
     const forwardOffset = Math.abs(getRandomBoxMuller() * canvas.grid.size - canvas.grid.size / 2);
     const lateralOffset = getRandomBoxMuller() * forwardOffset - forwardOffset / 2;
-    if (splatToken.direction.x === 0 || splatToken.direction.y === 0) {
+    if (splatToken.direction.x === 0 || splatToken.direction.y == 0) {
       end.x += lateralOffset * splatToken.direction.y;
       end.y += lateralOffset * splatToken.direction.x;
     } else {
@@ -560,6 +546,7 @@ export default class BloodLayer extends TilesLayer {
     }
     log(LogLevel.DEBUG, 'generateTrailSplats tileSplatData.drips', tileSplatData.drips);
 
+    const tokenCenter = splatToken.getCenter();
     tileSplatData.offset = new PIXI.Point(0);
     tileSplatData.x = tokenCenter.x - splatToken.movePos.x / 2;
     tileSplatData.y = tokenCenter.y - splatToken.movePos.y / 2;
@@ -569,10 +556,8 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.alpha = 0.75;
     tileSplatData.id = getUID();
 
-    splatToken.lastEndPoint = new PIXI.Point(tileSplatData.x + end.x, tileSplatData.y + end.y);
-
     tileSplatData.name = 'Trail Splat';
-    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer: ', tileSplatData);
+    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
     this.historyBuffer.push(tileSplatData as TileSplatData);
   }
 
