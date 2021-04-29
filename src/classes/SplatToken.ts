@@ -34,6 +34,8 @@ export default class SplatToken {
 
   public token: Token;
   private bleedingDistance: number;
+  public lastEndPoint: PIXI.Point | null;
+  private bleedingActiveEffect: ActiveEffect;
 
   // todo: typing a Proxy is complicated
   public tokenSettings: any;
@@ -53,6 +55,7 @@ export default class SplatToken {
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
     this.bleedingDistance = 0;
     this.disabled = false;
+    this.lastEndPoint = null;
   }
 
   /**

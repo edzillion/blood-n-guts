@@ -15,6 +15,7 @@ import {
   generateCustomSystem,
   replaceSelectChoices,
   isBnGUpdate,
+  getSplatTokenByActorId,
   isGMPresent,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
@@ -69,6 +70,16 @@ export class BloodNGuts {
   public static async wipeScene(save): Promise<void> {
     log(LogLevel.INFO, 'wipeScene');
     await canvas.blood.wipeBlood(save);
+  }
+
+  /**
+   * Wipes all token splats from the current scene. Does not update flags.
+   * @category GMandPC
+   * @function
+   */
+  public static wipeTokenSplats(): void {
+    log(LogLevel.INFO, 'wipeTokenSplats');
+    for (const tokenId in BloodNGuts.splatTokens) BloodNGuts.splatTokens[tokenId].wipeSplats();
   }
 
   /**
@@ -480,6 +491,25 @@ Hooks.on('chatMessage', (_chatTab, commandString) => {
       log(LogLevel.ERROR, 'chatMessage, unknown command ' + commands[1]);
       return false;
   }
+});
+
+Hooks.on('deleteActiveEffect', async (actor, effect) => {
+  if (effect.flags.core.statusId !== 'bleeding') return;
+  const splatToken = getSplatTokenByActorId(actor.data._id);
+  return await splatToken.token.setFlag(MODULE_ID, 'bleedingSeverity', 0);
+});
+
+Hooks.on('createActiveEffect', async (actor, effect) => {
+  if (effect.flags.core.statusId !== 'bleeding') return;
+  const splatToken = getSplatTokenByActorId(actor.data._id);
+  if (splatToken.disabled) return;
+
+  const currentHP = splatToken.hp;
+  const lastHP = BloodNGuts.system.ascendingDamage ? 0 : splatToken.maxHP;
+  const maxHP = splatToken.maxHP;
+  const initSeverity = splatToken.getDamageSeverity(currentHP, lastHP, maxHP);
+
+  return await splatToken.token.setFlag(MODULE_ID, 'bleedingSeverity', initSeverity);
 });
 
 // TOKEN PROTOTYPE
