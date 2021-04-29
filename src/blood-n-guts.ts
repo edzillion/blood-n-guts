@@ -16,6 +16,7 @@ import {
   replaceSelectChoices,
   isBnGUpdate,
   getSplatTokenByActorId,
+  isGMPresent,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
@@ -58,42 +59,14 @@ export class BloodNGuts {
   }
 
   /**
-   * Wipes all scene and token flags.
-   * @category GMOnly
-   * @function
-   */
-  public static async wipeAllFlags(): Promise<void> {
-    log(LogLevel.INFO, 'wipeAllFlags');
-    if (!canvas.scene.active) {
-      ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
-      return;
-    }
-    await canvas.blood.wipeBlood(true);
-  }
-
-  /**
-   * Wipes all scene and token splats.
-   * @category GMOnly
-   * @function
-   */
-  public static async wipeAllSplats(): Promise<void> {
-    log(LogLevel.INFO, 'wipeAllSplats');
-    if (!canvas.scene.active) {
-      ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
-      return;
-    }
-    await canvas.blood.wipeBlood();
-    //BloodNGuts.wipeTokenSplats();
-  }
-
-  /**
-   * Wipes all token splats from the current scene. Does not update flags.
+   * Wipes all scene and token splats. Optionally wipes flags too.
    * @category GMandPC
+   * @param {boolean} save - whether to also wipe the scene flags
    * @function
    */
-  public static wipeTokenSplats(): void {
-    log(LogLevel.INFO, 'wipeTokenSplats');
-    for (const tokenId in BloodNGuts.splatTokens) BloodNGuts.splatTokens[tokenId].wipeSplats();
+  public static async wipeScene(save): Promise<void> {
+    log(LogLevel.INFO, 'wipeScene');
+    await canvas.blood.wipeBlood(save);
   }
 
   /**
@@ -165,8 +138,9 @@ export class BloodNGuts {
     tokenData: Record<string, any>,
     changes: Record<string, unknown>,
   ): void {
-    // @ts-expect-error missing definition
-    if (!scene.active || BloodNGuts.disabled || !isBnGUpdate(changes)) return;
+    // // @ts-expect-error missing definition
+    const fromDisabledScene = scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled';
+    if (fromDisabledScene || !isBnGUpdate(changes)) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler', changes);
 
     const tokenId = tokenData._id || tokenData.data._id;
@@ -198,11 +172,19 @@ export class BloodNGuts {
    * @param canvas - reference to the canvas
    */
   public static canvasReadyHandler(canvas: any): void {
-    if (!canvas.scene.active || BloodNGuts.disabled) return;
+    // sync system violence level with scene
+    if (isFirstActiveGM()) {
+      const violenceLvl = canvas.scene.getFlag(MODULE_ID, 'violenceLevel');
+      log(LogLevel.DEBUG, 'canvasReadyHandler, violence Level:', violenceLvl);
+      if (violenceLvl != null) {
+        BloodNGuts.disabled = violenceLvl === 'Disabled' ? true : false;
+        game.settings.set(MODULE_ID, 'currentViolenceLevel', violenceLvl);
+      }
+    }
+
+    if (BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
-    const gmPresent = game.users.find((u) => u.isGM && u.active);
-    if (!gmPresent) {
-      // todo: set error message in settings here?
+    if (!isGMPresent()) {
       BloodNGuts.disabled = true;
     } else if (isFirstActiveGM()) {
       for (const tokenId in BloodNGuts.splatTokens) {
@@ -221,8 +203,7 @@ export class BloodNGuts {
    * @param {Token} token - reference to deleted token
    */
   public static deleteTokenHandler(scene: Scene, token: Token): void {
-    //@ts-expect-error missing definition
-    if (!scene.active || !isFirstActiveGM()) return;
+    if (!isFirstActiveGM()) return;
     //@ts-expect-error missing definition
     log(LogLevel.INFO, 'deleteTokenHandler', token._id);
     //@ts-expect-error missing definition
@@ -297,6 +278,7 @@ export class BloodNGuts {
     const bloodColorPicker = imageTab.find('#bloodColorPicker');
     const bloodColorText = imageTab.find('#bloodColorText');
     const bloodAttribute = imageTab.find('#bloodAttribute');
+    const fontSelects = imageTab.find('.advanced-config-select-font');
 
     // if any custom settings are set on the token
     if (data.selectedColor || data.currentLevel || data.floorSplatFont || data.tokenSplatFont || data.trailSplatFont) {
@@ -318,13 +300,15 @@ export class BloodNGuts {
     });
 
     selectViolenceLevel.on('change', (event: JQuery.ChangeEvent) => {
-      if (event.target.value === 'Disabled' && !bloodColorPicker.prop('disabled')) {
+      if (event.target.value === 'Disabled') {
         bloodColorPicker.prop('disabled', true);
         bloodColorText.prop('disabled', true);
         bloodColorText.val('');
-      } else if (bloodColorPicker.prop('disabled')) {
+        fontSelects.prop('disabled', true);
+      } else {
         bloodColorPicker.prop('disabled', false);
         bloodColorText.prop('disabled', false);
+        fontSelects.prop('disabled', false);
         if (data.selectedColor !== 'none') {
           bloodColorText.val(data.selectedColor);
         }
@@ -373,23 +357,25 @@ export class BloodNGuts {
    */
   static renderSettingsConfigHandler(settingsConfig: SettingsConfig, html: JQuery): void {
     const selectViolenceLevel = html.find('select[name="blood-n-guts.currentViolenceLevel"]');
+
     replaceSelectChoices(selectViolenceLevel, violenceLevelChoices(game.settings.get(MODULE_ID, 'violenceLevels')));
-    selectViolenceLevel.val(game.settings.get(MODULE_ID, 'currentViolenceLevel'));
+
+    // if GM has set this scene's violence level to Disabled then only show that
+    // option to players
+    if (!isFirstActiveGM() && canvas.scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
+      selectViolenceLevel.val('Disabled');
+      selectViolenceLevel.attr('disabled', 'disabled');
+    } else {
+      selectViolenceLevel.val(game.settings.get(MODULE_ID, 'currentViolenceLevel'));
+    }
 
     // inject warning message if relevant
-    // if (!isFirstActiveGM() || !canvas.scene.active) {
-    //   const moduleHeader = html.find('.module-header:contains("Blood \'n Guts")');
-    //   if (!canvas.scene.active) {
-    //     $('<p style="color:red">Warning: Blood \'n Guts does not work on non-active scenes!</p>').insertAfter(
-    //       moduleHeader,
-    //     );
-    //   }
-    //   if (!isFirstActiveGM()) {
-    //     $('<p style="color:red">Warning: Blood \'n Guts requires a GM to be online to function!</p>').insertAfter(
-    //       moduleHeader,
-    //     );
-    //   }
-    // }
+    if (!isGMPresent()) {
+      const moduleHeader = html.find('.module-header:contains("Blood \'n Guts")');
+      $('<p style="color:red">Warning: Blood \'n Guts requires a GM to be active to function!</p>').insertAfter(
+        moduleHeader,
+      );
+    }
   }
 
   /**
@@ -399,8 +385,7 @@ export class BloodNGuts {
    */
   public static getUserContextOptionsHandler(): void {
     log(LogLevel.DEBUG, 'getUserContextOptions');
-    const gm = game.users.find((e) => e.isGM && e.active);
-    if (!gm) {
+    if (!isGMPresent()) {
       BloodNGuts.disabled = true;
     } else if (BloodNGuts.disabled) {
       // user may have disabled BnG in settings, if not then enable.
@@ -469,7 +454,7 @@ Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
 Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
 Hooks.on('updateActor', (actor, changes) => {
   //changes.token are changes to the prototype?
-  if (!canvas.scene.active || changes.token || changes.sort) return;
+  if (changes.token || changes.sort) return;
   // convert into same structure as token changes.
   if (changes.data) changes.actorData = { data: changes.data };
   const token = canvas.tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === actor.id);
@@ -486,8 +471,7 @@ Hooks.on('chatMessage', (_chatTab, commandString) => {
   if (commands[0] != '/blood') return;
   switch (commands[1]) {
     case 'clear':
-      if (isFirstActiveGM()) BloodNGuts.wipeAllFlags();
-      else BloodNGuts.wipeAllSplats();
+      BloodNGuts.wipeScene(isFirstActiveGM());
       return false;
     default:
       log(LogLevel.ERROR, 'chatMessage, unknown command ' + commands[1]);
@@ -523,8 +507,9 @@ Token.prototype.draw = (function () {
     await cached.apply(this);
 
     if (
-      !canvas.scene.active ||
-      BloodNGuts.disabled ||
+      // BloodNGuts.disabled ||
+      (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'currentViolenceLevel') === 'Disabled') ||
+      canvas.scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled' ||
       !this.icon ||
       // this._original?.data?._id ||
       !this.actor ||
@@ -538,6 +523,13 @@ Token.prototype.draw = (function () {
 
     if (BloodNGuts.splatTokens[this.id]) {
       splatToken = BloodNGuts.splatTokens[this.id];
+      // if for some reason our mask is missing then recreate it
+      // @ts-expect-error todo: find out why container is being destroyed
+      if (splatToken.container._destroyed || splatToken.container.children.length === 0) {
+        log(LogLevel.WARN, 'recreating container');
+        splatToken.container = new PIXI.Container();
+        await BloodNGuts.splatTokens[this.id].createMask();
+      }
     } else {
       splatToken = await new SplatToken(this).create();
       BloodNGuts.splatTokens[this.id] = splatToken;

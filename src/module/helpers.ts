@@ -119,6 +119,16 @@ export const isFirstActiveGM = (): boolean => {
 };
 
 /**
+ * Checks to see if a GM is active.
+ * @category helpers
+ * @function
+ * @returns {Boolean} - whether the GM is active.
+ */
+export const isGMPresent = (): boolean => {
+  return !!game.users.find((u) => u.isGM && u.active);
+};
+
+/**
  * Checks to see if this update is from Blood 'n Guts or not. Will return true for core updates. Only
  * foreign module flag updates should return false.
  * @category helpers
