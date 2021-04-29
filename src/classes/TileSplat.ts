@@ -315,8 +315,6 @@ export default class TileSplat extends Tile {
       }
       return { _id: c._original.id, x: dest.x, y: dest.y, rotation: c.data.rotation };
     });
-
-    // todo: this should be async
     this.update(updates);
     return true;
   }

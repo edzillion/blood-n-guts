@@ -34,8 +34,6 @@ export default class SplatToken {
 
   public token: Token;
   private bleedingDistance: number;
-  public lastEndPoint: PIXI.Point | null;
-  private bleedingActiveEffect: ActiveEffect;
 
   // todo: typing a Proxy is complicated
   public tokenSettings: any;
@@ -45,18 +43,28 @@ export default class SplatToken {
 
   constructor(token: Token) {
     if (!token.id) log(LogLevel.ERROR, 'SplatToken constructor() missing token.id');
-
     this.id = token.id;
+    this.actorType = token.actor.data.type.toLowerCase();
+    log(LogLevel.DEBUG, 'SplatToken constructor for ' + this.id);
     this.token = token;
-    this.actorType = this.token.actor.data.type.toLowerCase();
-    this.defaultBloodColor = lookupTokenBloodColor(token);
+    this.spriteWidth = token.data.width * canvas.grid.size * token.data.scale;
+    this.spriteHeight = token.data.height * canvas.grid.size * token.data.scale;
+    this.saveState(token);
+    this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
+    this.bleedingDistance = 0;
+    this.disabled = false;
+  }
 
-    this.disabled =
-      !BloodNGuts.system.supportedTypes.includes(this.actorType) ||
-      token.getFlag(MODULE_ID, 'currentViolenceLevel') === 'Disabled' ||
-      this.defaultBloodColor === 'none';
-
-    log(LogLevel.DEBUG, 'SplatToken constructor for ' + this.token.data.name + ', disabled:' + this.disabled);
+  /**
+   * Get all TokenSplats owned by this SplatToken from history.
+   * @category GMandPC
+   * @function
+   * @returns {Array<TokenSplatData>}
+   */
+  public get tokenSplats(): Array<TokenSplatData> {
+    const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    if (!history) return [];
+    else return history.events.filter((e) => e.tokenId === this.id);
   }
 
   /**
@@ -67,27 +75,15 @@ export default class SplatToken {
    * @returns {Promise<SplatToken>} - the created SplatToken.
    */
   public async create(): Promise<SplatToken> {
-    if (this.disabled) return this;
-    log(LogLevel.DEBUG, 'creating SplatToken for', this.token.data.name);
-    this.spriteWidth = this.token.data.width * canvas.grid.size * this.token.data.scale;
-    this.spriteHeight = this.token.data.height * canvas.grid.size * this.token.data.scale;
-    this.lastEndPoint = null;
-
-    this.saveState(this.token);
-
-    this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
-    // @ts-expect-error bad defs
-    this.bleedingActiveEffect = CONFIG.statusEffects.find((e: ActiveEffect) => e.id === 'bleeding');
-    this.bleedingDistance = 0;
-
+    log(LogLevel.DEBUG, 'creating SplatToken');
     this.violenceLevels = game.settings.get(MODULE_ID, 'violenceLevels');
-    this.defaultBloodColor = lookupTokenBloodColor(this.token);
+    this.defaultBloodColor = await lookupTokenBloodColor(this.token);
     const baseTokenSettings = await getBaseTokenSettings(this.token);
 
     const tokenSettingsHandler = {
       get: (target, property) => {
         if (property === 'bloodColor') return target[property] || this.defaultBloodColor;
-        else if (['tokenSplatFont', 'floorSplatFont', 'trailSplatFont', 'currentViolenceLevel'].includes(property))
+        else if (['tokenSplatFont', 'floorSplatFont', 'trailSplatFont'].includes(property))
           return target[property] || game.settings.get(MODULE_ID, property);
         else
           return (
@@ -99,12 +95,17 @@ export default class SplatToken {
       },
       set: (target, property, value) => {
         target[property] = value;
-        if (property === 'currentViolenceLevel' && value) target = Object.assign(target, this.violenceLevels[value]);
+        if (property === 'violenceLevel' && value) target = Object.assign(target, this.violenceLevels[value]);
         return true;
       },
     };
 
     this.tokenSettings = new Proxy(baseTokenSettings, tokenSettingsHandler);
+
+    if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
+      this.disabled = true;
+      return this;
+    }
 
     this.container = new PIXI.Container();
     this.container.name = 'TokenSplats Container';
@@ -118,7 +119,8 @@ export default class SplatToken {
    * @function
    * @async
    */
-  private async createMask(): Promise<void> {
+  public async createMask(): Promise<void> {
+    if (this.disabled) return;
     // @ts-expect-error missing definition
     const maskTexture = await loadTexture(this.token.data.img, { fallback: CONST.DEFAULT_TOKEN });
     const maskSprite = PIXI.Sprite.from(maskTexture);
@@ -150,19 +152,7 @@ export default class SplatToken {
       (this.token.data.width * canvas.grid.size) / 2,
       (this.token.data.height * canvas.grid.size) / 2,
     );
-    this.container.angle = this.token.data.lockRotation ? 0 : this.token.data.rotation;
-  }
-
-  /**
-   * Get all TokenSplats owned by this SplatToken from history.
-   * @category GMandPC
-   * @function
-   * @returns {Array<TokenSplatData>}
-   */
-  public get tokenSplats(): Array<TokenSplatData> {
-    const history = canvas.scene.getFlag(MODULE_ID, 'history');
-    if (!history) return [];
-    else return history.events.filter((e) => e.tokenId === this.id);
+    this.container.angle = this.token.data.rotation;
   }
 
   /**
@@ -171,20 +161,18 @@ export default class SplatToken {
    * @category GMOnly
    * @function
    */
-  public async preSplat(): Promise<PlaceableObject> {
-    if (this.tokenSplats.length !== 0) return;
+  public preSplat(): void {
+    if (this.tokenSplats.length === 0) {
+      const currentHP = this.hp;
+      const lastHP = BloodNGuts.system.ascendingDamage ? 0 : this.maxHP;
+      const maxHP = this.maxHP;
 
-    const currentHP = this.hp;
-    const lastHP = BloodNGuts.system.ascendingDamage ? 0 : this.maxHP;
-    const maxHP = this.maxHP;
-
-    const initSeverity = this.getDamageSeverity(currentHP, lastHP, maxHP);
-    if (initSeverity <= 0) return;
-    log(LogLevel.DEBUG, 'preSplat', this.token.data.name);
-    this.bleedingSeverity = initSeverity;
-    this.bleedToken(initSeverity);
-
-    return this.token.setFlag(MODULE_ID, 'bleedingSeverity', this.bleedingSeverity);
+      const initSeverity = this.getDamageSeverity(currentHP, lastHP, maxHP);
+      if (initSeverity <= 0) return;
+      log(LogLevel.DEBUG, 'preSplat', this.token.data.name);
+      this.bleedingSeverity = initSeverity;
+      this.bleedToken(initSeverity);
+    }
   }
 
   /**
@@ -197,45 +185,36 @@ export default class SplatToken {
    */
   public trackChanges(changes: Record<string, any>): boolean {
     log(LogLevel.DEBUG, 'trackChanges');
+    if (changes.flags) {
+      // we only care about bleedingSeverity flag in SplatToken constructor
+      if (changes.flags[MODULE_ID]?.bleedingSeverity != null) {
+        if (Object.entries(changes.flags[MODULE_ID]).length === 1) return false;
+      }
+      for (const setting in changes.flags[MODULE_ID]) {
+        this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
+      }
+    }
 
-    // early returns
-    if (changes.effects != null) return false;
     if (changes.hidden != null) {
       log(LogLevel.DEBUG, 'hidden', changes.hidden);
       // need to redraw to update alpha levels on TokenSplats
       this.draw();
       return false;
     }
-    if (changes.rotation != null || changes.lockRotation != null) {
-      this.updateRotation(changes);
+
+    if (this.tokenSettings.bloodColor === 'none' || this.tokenSettings.violenceLevel === 'Disabled') {
+      this.disabled = true;
+    } else this.disabled = false;
+
+    if (this.disabled)
+      // todo: perhaps a system-based check for hp here?
+      // ||
+      //   (changes.rotation === undefined &&
+      //     changes.x === undefined &&
+      //     changes.y === undefined &&
+      //     changes.actorData?.data?.attributes?.hp === undefined)
+      // )
       return false;
-    }
-
-    // remove custom settings from a SplatToken when unchecked
-    if (hasProperty(changes, `flags.${MODULE_ID}.customBloodChecked`)) {
-      if (!changes.flags[MODULE_ID].customBloodChecked) {
-        this.wipeCustomSettings().then(() => {
-          return;
-        });
-      }
-    }
-
-    // deal with settings changes first
-    if (hasProperty(changes, `flags.${MODULE_ID}`)) {
-      const settingsUpdates = Object.keys(changes.flags[MODULE_ID]).filter((key) =>
-        ['bloodColor', 'floorSplatFont', 'trailSplatFont', 'tokenSplatFont', 'currentViolenceLevel'].includes(key),
-      );
-      if (settingsUpdates.length) {
-        for (const setting of settingsUpdates) {
-          this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
-        }
-      }
-    }
-
-    if (hasProperty(changes, `flags.${MODULE_ID}.bleedingSeverity`)) {
-      this.bleedingSeverity = changes.flags[MODULE_ID].bleedingSeverity;
-      this.safeToggleBleedingEffect(this.bleedingSeverity !== 0);
-    }
 
     let newBleedingSeverity;
     const hitSeverity = this.getUpdatedDamage(changes);
@@ -306,15 +285,9 @@ export default class SplatToken {
    * @param changes - the latest token changes.
    */
   public updateRotation(changes): void {
-    let newRotation;
-    if (hasProperty(changes, 'rotation')) {
-      if (this.token.data.lockRotation) return;
-      else newRotation = changes.rotation;
-    }
-    if (hasProperty(changes, 'lockRotation')) newRotation = changes.lockRotation ? 0 : this.token.data.rotation;
-
-    log(LogLevel.DEBUG, 'updateRotation', newRotation);
-    this.container.angle = newRotation;
+    if (changes.rotation === undefined) return;
+    log(LogLevel.DEBUG, 'updateTokenOrActorHandler updating rotation', changes.rotation);
+    this.container.angle = changes.rotation;
   }
 
   /**
@@ -520,7 +493,7 @@ export default class SplatToken {
    * @param {ascending=false} ascending - does damage count up or down?
    * @returns {number} - the damage severity.
    */
-  public getDamageSeverity(currentHP, lastHP, maxHP, ascending = false): number {
+  private getDamageSeverity(currentHP, lastHP, maxHP, ascending = false): number {
     log(LogLevel.DEBUG, 'getDamageSeverity');
 
     if (ascending || BloodNGuts.system.ascendingDamage) {
@@ -586,82 +559,19 @@ export default class SplatToken {
   }
 
   /**
-   * Wipes splatToken custom flags which are set in TokenSettings.
+   * Wipes all splat tokens and token data. There are issues with running this on multiple
+   * tokens, see https://github.com/edzillion/blood-n-guts/issues/153 - instead use `token.update(updatesArray)`
    * @category GMOnly
    * @function
    */
-  public async wipeCustomSettings(): Promise<PlaceableObject> {
-    return this.token.update({
-      floorSplatFont: null,
-      trailSplatFont: null,
-      tokenSplatFont: null,
-      bloodColor: null,
-      currentViolenceLevel: null,
-    });
-  }
-
-  /**
-   * Wipes tracking flags.
-   * @category GMOnly
-   * @function
-   */
-  public async resetFlags(): Promise<PlaceableObject> {
-    return this.token.update({
-      [`flags.${MODULE_ID}.bleedingSeverity`]: 0,
-      [`flags.${MODULE_ID}.floorSplatFont`]: null,
-      [`flags.${MODULE_ID}.trailSplatFont`]: null,
-      [`flags.${MODULE_ID}.tokenSplatFont`]: null,
-      [`flags.${MODULE_ID}.bloodColor`]: null,
-      [`flags.${MODULE_ID}.customBloodChecked`]: null,
-    });
-  }
-
-  private safeToggleBleedingEffect(active) {
-    // @ts-expect-error bad defs
-    const bleedingActiveEffectPresent = this.token.actor.effects.entries.find(
-      // @ts-expect-error bad defs
-      (ae) => ae.data.icon === this.bleedingActiveEffect.icon,
-    );
-
-    // if we toggle to false when the icon is not present we'll hit the deleteActiveEffect hook and cause an
-    // infinite loop
-    if ((!active && bleedingActiveEffectPresent) || (active && !bleedingActiveEffectPresent))
-      // todo: toggleEffect is async should we wait
-      // @ts-expect-error bad defs
-      this.token.toggleEffect(this.bleedingActiveEffect, { active: active });
-  }
-
-  public async enable(): Promise<void> {
-    log(LogLevel.INFO, this.token.data.name, 'enabled');
-    this.disabled = false;
-    // wipe tokenSplats
-    this.wipeSplats();
-    // wipe history
-    await this.create();
-    await this.preSplat();
-
-    // @ts-expect-error bad def
-    const splatContainerZIndex = this.token.children.findIndex((child) => child === this.token.icon) + 1;
-    if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
-    else {
-      this.token.addChildAt(this.container, splatContainerZIndex);
-    }
-
-    await canvas.blood.commitHistory();
-  }
-
-  public async disable(): Promise<void> {
-    log(LogLevel.INFO, this.token.data.name, 'disabled');
-    // wipe tokenSplats
-    this.wipeSplats();
-    // reset flags
-    await this.resetFlags();
-    // wipe history
-    const idsToDelete = this.tokenSplats.map((t) => t.tokenId);
-    canvas.blood.deleteFromHistory(idsToDelete);
-    // this will also set bleedingSeverity = 0;
-    //this.safeToggleBleedingEffect(false);
-    this.disabled = true;
+  public async wipeCustomSettings(): Promise<Entity[]> {
+    const promises: Promise<Entity>[] = [];
+    promises.push(this.token.unsetFlag(MODULE_ID, 'floorSplatFont'));
+    promises.push(this.token.unsetFlag(MODULE_ID, 'trailSplatFont'));
+    promises.push(this.token.unsetFlag(MODULE_ID, 'tokenSplatFont'));
+    promises.push(this.token.unsetFlag(MODULE_ID, 'bloodColor'));
+    promises.push(this.token.unsetFlag(MODULE_ID, 'currentViolenceLevel'));
+    return Promise.all(promises);
   }
 
   /**
