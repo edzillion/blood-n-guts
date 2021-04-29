@@ -377,18 +377,16 @@ export class BloodNGuts {
   static renderSettingsConfigHandler(settingsConfig: SettingsConfig, html: JQuery): void {
     const selectViolenceLevel = html.find('select[name="blood-n-guts.currentViolenceLevel"]');
 
+    replaceSelectChoices(selectViolenceLevel, violenceLevelChoices(game.settings.get(MODULE_ID, 'violenceLevels')));
+
     // if GM has set this scene's violence level to Disabled then only show that
     // option to players
-    const violence =
-      !isFirstActiveGM && canvas.scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled'
-        ? { lvl: 'Disabled', choices: { Disabled: 'Disabled' } }
-        : {
-            lvl: game.settings.get(MODULE_ID, 'currentViolenceLevel'),
-            choices: violenceLevelChoices(game.settings.get(MODULE_ID, 'violenceLevels')),
-          };
-
-    replaceSelectChoices(selectViolenceLevel, violence.choices);
-    selectViolenceLevel.val(violence.lvl);
+    if (!isFirstActiveGM() && canvas.scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
+      selectViolenceLevel.val('Disabled');
+      selectViolenceLevel.attr('disabled', 'disabled');
+    } else {
+      selectViolenceLevel.val(game.settings.get(MODULE_ID, 'currentViolenceLevel'));
+    }
 
     // inject warning message if relevant
     if (!isFirstActiveGM() || !canvas.scene.active) {

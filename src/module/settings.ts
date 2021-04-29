@@ -109,6 +109,7 @@ export const registerSettings = (): void => {
     onChange: (value) => {
       log(LogLevel.DEBUG, 'violenceLevel set to:', value);
       if (isFirstActiveGM()) return canvas.scene.setFlag(MODULE_ID, 'violenceLevel', value);
+      else if (canvas.scene.getFlag(MODULE_ID, 'violenceLevel') != 'Disabled') canvas.draw();
     },
   });
 

@@ -102,7 +102,7 @@ export default class BloodLayer extends TilesLayer {
     this.preview = this.addChild(prevCont);
     this.preview.alpha = this.DEFAULTS_BRUSHSETTINGS.previewAlpha;
 
-    this.cleanHistory();
+    // this.cleanHistory();
   }
 
   /**
