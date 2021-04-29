@@ -60,34 +60,14 @@ export class BloodNGuts {
   }
 
   /**
-   * Wipes all scene and token flags.
-   * @category GMOnly
-   * @function
-   */
-  public static async wipeAllFlags(): Promise<void> {
-    log(LogLevel.INFO, 'wipeAllFlags');
-    await canvas.blood.wipeBlood(true);
-  }
-
-  /**
-   * Wipes all scene and token splats.
-   * @category GMOnly
-   * @function
-   */
-  public static async wipeAllSplats(): Promise<void> {
-    log(LogLevel.INFO, 'wipeAllSplats');
-    await canvas.blood.wipeBlood();
-    //BloodNGuts.wipeTokenSplats();
-  }
-
-  /**
-   * Wipes all token splats from the current scene. Does not update flags.
+   * Wipes all scene and token splats. Optionally wipes flags too.
    * @category GMandPC
+   * @param {boolean} save - whether to also wipe the scene flags
    * @function
    */
-  public static wipeTokenSplats(): void {
-    log(LogLevel.INFO, 'wipeTokenSplats');
-    for (const tokenId in BloodNGuts.splatTokens) BloodNGuts.splatTokens[tokenId].wipeSplats();
+  public static async wipeScene(save): Promise<void> {
+    log(LogLevel.INFO, 'wipeScene');
+    await canvas.blood.wipeBlood(save);
   }
 
   /**
@@ -498,8 +478,7 @@ Hooks.on('chatMessage', (_chatTab, commandString) => {
   if (commands[0] != '/blood') return;
   switch (commands[1]) {
     case 'clear':
-      if (isFirstActiveGM()) BloodNGuts.wipeAllFlags();
-      else BloodNGuts.wipeAllSplats();
+      BloodNGuts.wipeScene(isFirstActiveGM());
       return false;
     default:
       log(LogLevel.ERROR, 'chatMessage, unknown command ' + commands[1]);

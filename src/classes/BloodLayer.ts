@@ -647,7 +647,6 @@ export default class BloodLayer extends TilesLayer {
     // If pointer preceeds the stop, reset and start from 0
     if (stop <= start) {
       this.wipeBlood(false);
-      BloodNGuts.wipeTokenSplats();
       start = 0;
     }
 

@@ -1,7 +1,7 @@
 import { log, LogLevel } from '../module/logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
-import { getHexColor } from '../module/helpers';
+import { getHexColor, isFirstActiveGM } from '../module/helpers';
 import ViolenceConfig from './ViolenceConfig';
 
 /**
@@ -84,8 +84,8 @@ export class BnGAdvancedConfig extends FormApplication {
     const wipeButton = html.find('.advanced-config-wipe-scene-splats');
 
     wipeButton.click(() => {
-      log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeAllFlags()');
-      BloodNGuts.wipeAllFlags();
+      log(LogLevel.DEBUG, 'wipeButton: BloodNGuts.wipeScene()');
+      BloodNGuts.wipeScene(isFirstActiveGM());
       // this will wipe any DOM splats created by splatButton
       $('.splat-container').remove();
     });
