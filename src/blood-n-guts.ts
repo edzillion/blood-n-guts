@@ -370,18 +370,11 @@ export class BloodNGuts {
     }
 
     // inject warning message if relevant
-    if (!isFirstActiveGM() || !canvas.scene.active) {
+    if (!isGMPresent()) {
       const moduleHeader = html.find('.module-header:contains("Blood \'n Guts")');
-      if (!canvas.scene.active) {
-        $('<p style="color:red">Warning: Blood \'n Guts does not work on non-active scenes!</p>').insertAfter(
-          moduleHeader,
-        );
-      }
-      if (!isFirstActiveGM()) {
-        $('<p style="color:red">Warning: Blood \'n Guts requires a GM to be online to function!</p>').insertAfter(
-          moduleHeader,
-        );
-      }
+      $('<p style="color:red">Warning: Blood \'n Guts requires a GM to be active to function!</p>').insertAfter(
+        moduleHeader,
+      );
     }
   }
 
