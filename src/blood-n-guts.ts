@@ -15,6 +15,7 @@ import {
   generateCustomSystem,
   replaceSelectChoices,
   isBnGUpdate,
+  isGMPresent,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
 import SplatToken from './classes/SplatToken';
@@ -186,8 +187,8 @@ export class BloodNGuts {
 
     if (BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
-    const gmPresent = game.users.find((u) => u.isGM && u.active);
-    if (!gmPresent) {
+
+    if (!isGMPresent()) {
       BloodNGuts.disabled = true;
     } else if (isFirstActiveGM()) {
       for (const tokenId in BloodNGuts.splatTokens) {
@@ -391,8 +392,7 @@ export class BloodNGuts {
    */
   public static getUserContextOptionsHandler(): void {
     log(LogLevel.DEBUG, 'getUserContextOptions');
-    const gm = game.users.find((e) => e.isGM && e.active);
-    if (!gm) {
+    if (!isGMPresent()) {
       BloodNGuts.disabled = true;
     } else if (BloodNGuts.disabled) {
       // user may have disabled BnG in settings, if not then enable.
@@ -512,7 +512,7 @@ Token.prototype.draw = (function () {
     if (BloodNGuts.splatTokens[this.id]) {
       splatToken = BloodNGuts.splatTokens[this.id];
       // if for some reason our mask is missing then recreate it
-      // @ts-expect-error todo: find out why this is happening
+      // @ts-expect-error todo: find out why container is being destroyed
       if (splatToken.container._destroyed || splatToken.container.children.length === 0) {
         log(LogLevel.WARN, 'recreating container');
         splatToken.container = new PIXI.Container();
