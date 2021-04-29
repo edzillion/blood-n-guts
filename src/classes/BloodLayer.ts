@@ -989,6 +989,10 @@ export default class BloodLayer extends TilesLayer {
     // @ts-expect-error missing definition
     if (!scene._view) return;
 
+    if (hasProperty(data, `flags.${MODULE_ID}.violenceLevel`)) {
+      canvas.draw();
+    }
+
     // React to visibility change
     let rerender = false;
     if (hasProperty(data, `flags.${MODULE_ID}.visible`)) {
