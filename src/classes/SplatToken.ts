@@ -158,7 +158,7 @@ export default class SplatToken {
   /**
    * Run once after constructor and createMask() to add blood to tokens on a newly loaded scene.
    * Calls `bleedToken()` which adds to `historyBuffer` so `commitHistory()` should be run afterward.
-   * @category GMandPC
+   * @category GMOnly
    * @function
    */
   public preSplat(): void {
@@ -331,7 +331,7 @@ export default class SplatToken {
   private bleedTrail(): boolean {
     if (this.tokenSettings.trailSplatDensity === 0 || this.token.data.hidden) return false;
 
-    const amount = Math.round(this.tokenSettings.trailSplatDensity * this.bleedingSeverity);
+    const amount = this.tokenSettings.trailSplatDensity * this.bleedingSeverity;
 
     const distTravelled = distanceBetween(new PIXI.Point(), this.movePos) + this.bleedingDistance;
     this.bleedingDistance = Math.round((1 / amount) * canvas.grid.size);

@@ -4,6 +4,7 @@ import { log, LogLevel } from './logging';
 
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
+import { isFirstActiveGM } from './helpers.js';
 
 /**
  * Registers settings.
@@ -32,8 +33,6 @@ export const registerSettings = (): void => {
     default: true,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: useBloodColor set to ' + value);
-      if (!canvas.scene.active)
-        ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
     },
   });
 
@@ -48,8 +47,6 @@ export const registerSettings = (): void => {
       log(LogLevel.DEBUG, 'Settings: halfHealthBloodied set to ' + value);
       game.settings.set(MODULE_ID, 'healthThreshold', 0.5);
       game.settings.set(MODULE_ID, 'damageThreshold', 0);
-      if (!canvas.scene.active)
-        ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
     },
   });
 
@@ -110,10 +107,9 @@ export const registerSettings = (): void => {
     choices: violenceLevelChoices(violenceLevelSettings.defaults),
     default: 'Kobold',
     onChange: (value) => {
-      if (!canvas.scene.active) {
-        ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
-        return;
-      }
+      log(LogLevel.DEBUG, 'violenceLevel set to:', value);
+      if (isFirstActiveGM()) return canvas.scene.setFlag(MODULE_ID, 'violenceLevel', value);
+      else if (canvas.scene.getFlag(MODULE_ID, 'violenceLevel') != 'Disabled') canvas.draw();
     },
   });
 
@@ -138,10 +134,10 @@ export const registerSettings = (): void => {
 
 // Custom Settings
 /**
- * Promise resolving after custom splat fonts are loaded from disk.
+ * Promise resolving after base token settings loaded.
  * @function
  * @category GMOnly
- * @returns {Promise<any>} - promise resolving to only the custom splat fonts.
+ * @returns {Promise<TokenSettings>} - promise resolving to TokenSettings.
  */
 export const getBaseTokenSettings = async (token: Token): Promise<TokenSettings> => {
   let baseSettings: Partial<TokenSettings> = {};
