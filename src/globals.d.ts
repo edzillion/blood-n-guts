@@ -26,7 +26,7 @@ interface TokenSettings {
   floorSplatFont: string;
   tokenSplatFont: string;
   trailSplatFont: string;
-  violenceLevel: string;
+  currentViolenceLevel: string;
   bloodColor: string;
 }
 

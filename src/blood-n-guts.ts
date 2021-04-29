@@ -15,6 +15,7 @@ import {
   generateCustomSystem,
   replaceSelectChoices,
   isBnGUpdate,
+  getSplatTokenByActorId,
   isGMPresent,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
@@ -24,7 +25,7 @@ import * as splatFonts from './data/splatFonts';
 import Systems from './data/systems';
 
 //CONFIG.debug.hooks = true;
-CONFIG[MODULE_ID] = { logLevel: 3 };
+CONFIG[MODULE_ID] = { logLevel: 2 };
 
 /**
  * Main class wrapper for all blood-n-guts features.
@@ -35,9 +36,6 @@ export class BloodNGuts {
   public static allFonts: Record<string, SplatFont>;
   public static splatTokens: Record<string, SplatToken>;
   public static disabled: boolean;
-  public static getLatestActorHP: any;
-  public static getLatestActorMaxHP: any;
-  public static lookupCreatureType: any;
   public static system: System;
 
   public static initialize(): void {
@@ -148,21 +146,20 @@ export class BloodNGuts {
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
 
-    //update rotation of tokenSplats
-    if (changes.rotation != null) splatToken.updateRotation(changes);
-
-    // remove custom settings from a SplatToken when unchecked
-    if (changes.flags && changes.flags[MODULE_ID]?.customBloodChecked != null) {
-      if (!changes.flags[MODULE_ID].customBloodChecked) {
-        splatToken.wipeCustomSettings().then(() => {
-          return;
-        });
+    // toggle disabled
+    if (changes.flags && changes.flags[MODULE_ID]?.currentViolenceLevel != null) {
+      if (changes.flags[MODULE_ID].currentViolenceLevel === 'Disabled') {
+        splatToken.disable();
+        return;
+      } else if (splatToken.disabled) {
+        splatToken.enable();
+        return;
       }
     }
 
     if (isFirstActiveGM()) {
-      const type = game.actors.get(tokenData.actorId).data.type.toLowerCase();
-      if (BloodNGuts.system.supportedTypes.includes(type)) {
+      //const type = game.actors.get(tokenData.actorId).data.type.toLowerCase();
+      if (!splatToken.disabled) {
         splatToken.trackChanges(changes);
       }
     }
@@ -187,12 +184,12 @@ export class BloodNGuts {
 
     if (BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
-
     if (!isGMPresent()) {
       BloodNGuts.disabled = true;
     } else if (isFirstActiveGM()) {
       for (const tokenId in BloodNGuts.splatTokens) {
-        BloodNGuts.splatTokens[tokenId].preSplat();
+        const splatToken = BloodNGuts.splatTokens[tokenId];
+        if (!splatToken.disabled) splatToken.preSplat();
       }
       canvas.blood.commitHistory();
     }
@@ -482,6 +479,25 @@ Hooks.on('chatMessage', (_chatTab, commandString) => {
   }
 });
 
+Hooks.on('deleteActiveEffect', async (actor, effect) => {
+  if (effect.flags.core.statusId !== 'bleeding') return;
+  const splatToken = getSplatTokenByActorId(actor.data._id);
+  return await splatToken.token.setFlag(MODULE_ID, 'bleedingSeverity', 0);
+});
+
+Hooks.on('createActiveEffect', async (actor, effect) => {
+  if (effect.flags.core.statusId !== 'bleeding') return;
+  const splatToken = getSplatTokenByActorId(actor.data._id);
+  if (splatToken.disabled) return;
+
+  const currentHP = splatToken.hp;
+  const lastHP = BloodNGuts.system.ascendingDamage ? 0 : splatToken.maxHP;
+  const maxHP = splatToken.maxHP;
+  const initSeverity = splatToken.getDamageSeverity(currentHP, lastHP, maxHP);
+
+  return await splatToken.token.setFlag(MODULE_ID, 'bleedingSeverity', initSeverity);
+});
+
 // TOKEN PROTOTYPE
 
 Token.prototype.draw = (function () {
@@ -495,7 +511,7 @@ Token.prototype.draw = (function () {
       (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'currentViolenceLevel') === 'Disabled') ||
       canvas.scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled' ||
       !this.icon ||
-      this._original?.data?._id ||
+      // this._original?.data?._id ||
       !this.actor ||
       !BloodNGuts.system ||
       !BloodNGuts.system.supportedTypes.includes(this.actor.data.type.toLowerCase())
@@ -519,7 +535,7 @@ Token.prototype.draw = (function () {
       BloodNGuts.splatTokens[this.id] = splatToken;
       // if BnG is loading then we can presplat every TokenSplat in one go on canvasReady
       // otherwise it is an new token so we do it now.
-      if (isFirstActiveGM() && window.BloodNGuts != null) {
+      if (isFirstActiveGM() && window.BloodNGuts != null && !splatToken.disabled) {
         splatToken.preSplat();
         canvas.blood.commitHistory();
       }
