@@ -88,6 +88,7 @@ interface System {
   supportedTypes: Array<string>;
   customAttributePaths?: Array<string>;
   ascendingDamage?: boolean;
+  bleedingActiveEffectId?: string;
   currentHP: (token: Token, actorType?: string) => number;
   maxHP: (token: Token, actorType?: string) => number;
   currentHPChange: (changes: Record<string, any>, actorType?: string) => number | void;

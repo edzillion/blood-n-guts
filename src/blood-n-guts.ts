@@ -494,13 +494,21 @@ Hooks.on('chatMessage', (_chatTab, commandString) => {
 });
 
 Hooks.on('deleteActiveEffect', async (actor, effect) => {
-  if (effect.flags.core.statusId !== 'bleeding') return;
+  if (
+    !hasProperty(BloodNGuts.system, 'bleedingActiveEffectId') ||
+    effect.flags.core.statusId !== BloodNGuts.system.bleedingActiveEffectId
+  )
+    return;
   const splatToken = getSplatTokenByActorId(actor.data._id);
   return await splatToken.token.setFlag(MODULE_ID, 'bleedingSeverity', 0);
 });
 
 Hooks.on('createActiveEffect', async (actor, effect) => {
-  if (effect.flags.core.statusId !== 'bleeding') return;
+  if (
+    !hasProperty(BloodNGuts.system, 'bleedingActiveEffectId') ||
+    effect.flags.core.statusId !== BloodNGuts.system.bleedingActiveEffectId
+  )
+    return;
   const splatToken = getSplatTokenByActorId(actor.data._id);
   if (splatToken.disabled) return;
 

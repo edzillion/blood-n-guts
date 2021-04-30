@@ -75,10 +75,12 @@ export default class SplatToken {
 
     this.saveState(this.token);
 
-    this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
-    // @ts-expect-error bad defs
-    this.bleedingActiveEffect = CONFIG.statusEffects.find((e: ActiveEffect) => e.id === 'bleeding');
     this.bleedingDistance = 0;
+    this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
+
+    if (hasProperty(BloodNGuts.system, 'bleedingActiveEffectId'))
+      // @ts-expect-error bad defs
+      this.bleedingActiveEffect = CONFIG.statusEffects.find((e: ActiveEffect) => e.id === 'bleeding');
 
     this.violenceLevels = game.settings.get(MODULE_ID, 'violenceLevels');
     const baseTokenSettings = await getBaseTokenSettings(this.token);
@@ -234,7 +236,8 @@ export default class SplatToken {
 
     if (hasProperty(changes, `flags.${MODULE_ID}.bleedingSeverity`)) {
       this.bleedingSeverity = changes.flags[MODULE_ID].bleedingSeverity;
-      this.safeToggleBleedingEffect(this.bleedingSeverity !== 0);
+      if (hasProperty(BloodNGuts.system, 'bleedingActiveEffectId'))
+        this.safeToggleBleedingEffect(this.bleedingSeverity !== 0);
     }
 
     let newBleedingSeverity;
