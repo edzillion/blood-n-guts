@@ -549,7 +549,7 @@ Token.prototype.draw = (function () {
       BloodNGuts.splatTokens[this.id] = splatToken;
       // if BnG is loading then we can presplat every TokenSplat in one go on canvasReady
       // otherwise it is an new token so we do it now.
-      if (isFirstActiveGM() && window.BloodNGuts != null) {
+      if (isFirstActiveGM() && window.BloodNGuts != null && !splatToken.disabled) {
         splatToken.preSplat();
         canvas.blood.commitHistory();
       }
