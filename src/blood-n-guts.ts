@@ -69,6 +69,7 @@ export class BloodNGuts {
    */
   public static async wipeScene(save): Promise<void> {
     log(LogLevel.INFO, 'wipeScene');
+    this.wipeTokenSplats();
     await canvas.blood.wipeBlood(save);
   }
 
@@ -79,7 +80,11 @@ export class BloodNGuts {
    */
   public static wipeTokenSplats(): void {
     log(LogLevel.INFO, 'wipeTokenSplats');
-    for (const tokenId in BloodNGuts.splatTokens) BloodNGuts.splatTokens[tokenId].wipeSplats();
+    for (const tokenId in BloodNGuts.splatTokens) {
+      // wipe only tokens on the current scene
+      if (BloodNGuts.splatTokens[tokenId].token.scene.id === canvas.scene.id)
+        BloodNGuts.splatTokens[tokenId].wipeSplats();
+    }
   }
 
   /**
