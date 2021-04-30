@@ -46,6 +46,39 @@ export default {
       if (creatureType) return creatureType.toLowerCase();
     },
   },
+  demonlord: {
+    id: 'demonlord',
+    supportedTypes: ['character', 'creature'],
+    currentHP(token: Token): number {
+      const damage = token.actor.data.data.characteristics.health.value;
+      return this.maxHP(token) - damage;
+    },
+    maxHP(token: Token): number {
+      const max = token.actor.data.data.characteristics.health.max;
+      const healthbonus = token.actor.data.data.characteristics.healthbonus;
+      return max + healthbonus;
+    },
+    currentHPChange(changes: Record<string, any>): number {
+      const damage = changes?.actorData?.data?.characteristics?.health?.value;
+      return this.maxHPChange(changes) - damage;
+    },
+    maxHPChange(changes: Record<string, any>): number {
+      const max = changes?.actorData?.data?.characteristics?.health.max;
+      const healthbonus = changes?.actorData?.data?.characteristics?.healthbonus;
+      return max + healthbonus;
+    },
+    creatureType(token: Token): string | void {
+      const actorType: string = token.actor.data.type.toLowerCase();
+      let creatureType: string;
+      if (actorType === 'character') {
+        creatureType = token.actor.data.data.ancestry;
+      } else if (actorType === 'creature') {
+        creatureType = token.actor.data.data.descriptor;
+      }
+      log(LogLevel.DEBUG, 'creatureType demonlord: ', token.name, actorType, creatureType);
+      if (creatureType) return creatureType.toLowerCase();
+    },
+  },
   dnd5e: {
     id: 'dnd5e',
     supportedTypes: ['character', 'npc'],
