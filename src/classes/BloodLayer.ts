@@ -659,7 +659,7 @@ export default class BloodLayer extends TilesLayer {
     if (stop === undefined) stop = history.events.length;
     // If pointer preceeds the stop, reset and start from 0
     if (stop <= start) {
-      this.wipeBlood(false);
+      BloodNGuts.wipeScene(false);
       start = 0;
     }
 
@@ -722,7 +722,7 @@ export default class BloodLayer extends TilesLayer {
         .forEach((e) => {
           const splatToken = BloodNGuts.splatTokens[e.tokenId];
           // this will wipe all splats on the splatToken but any remaining will be readded on renderHistory()
-          splatToken.wipeSplats();
+          splatToken.wipe();
         });
       // setting the pointer to <= this.pointer will reset the history and render all
       history.pointer = history.events.length;
@@ -846,7 +846,7 @@ export default class BloodLayer extends TilesLayer {
         const splatToken = BloodNGuts.splatTokens[tokenId];
         if (!splatToken) log(LogLevel.ERROR, 'undo() token not found!');
         // wipes all splats on the splatToken, but any remaining in history will be redrawn on next renderHistory()
-        splatToken.wipeSplats();
+        splatToken.wipe();
       }
       history.events = history.events.slice(0, history.pointer);
     }

@@ -64,26 +64,28 @@ export class BloodNGuts {
   /**
    * Wipes all scene and token splats. Optionally wipes flags too.
    * @category GMandPC
-   * @param {boolean} save - whether to also wipe the scene flags
+   * @param {boolean} save - whether to also wipe the scene flags.
+   * @param {boolean} [resetBleedingSeverity=false] - whether to also reset bleeding.
    * @function
    */
-  public static async wipeScene(save): Promise<void> {
+  public static async wipeScene(save, resetBleedingSeverity = false): Promise<void> {
     log(LogLevel.INFO, 'wipeScene');
-    this.wipeTokenSplats();
+    this.wipeTokenSplats(resetBleedingSeverity);
     await canvas.blood.wipeBlood(save);
   }
 
   /**
    * Wipes all token splats from the current scene. Does not update flags.
    * @category GMandPC
+   * @param {boolean} [resetBleedingSeverity=false] - whether to also reset bleeding.
    * @function
    */
-  public static wipeTokenSplats(): void {
+  public static wipeTokenSplats(resetBleedingSeverity = false): void {
     log(LogLevel.INFO, 'wipeTokenSplats');
     for (const tokenId in BloodNGuts.splatTokens) {
       // wipe only tokens on the current scene
       if (BloodNGuts.splatTokens[tokenId].token.scene.id === canvas.scene.id)
-        BloodNGuts.splatTokens[tokenId].wipeSplats();
+        BloodNGuts.splatTokens[tokenId].wipe(resetBleedingSeverity);
     }
   }
 
@@ -164,11 +166,8 @@ export class BloodNGuts {
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
 
-    //update rotation of tokenSplats
-    if (changes.rotation != null) splatToken.updateRotation(changes);
-
     // remove custom settings from a SplatToken when unchecked
-    if (changes.flags && changes.flags[MODULE_ID]?.customBloodChecked != null) {
+    if (hasProperty(changes, `flags.${MODULE_ID}.customBloodChecked`)) {
       if (!changes.flags[MODULE_ID].customBloodChecked) {
         splatToken.wipeCustomSettings().then(() => {
           return;
@@ -176,11 +175,8 @@ export class BloodNGuts {
       }
     }
 
-    if (isFirstActiveGM()) {
-      const type = game.actors.get(tokenData.actorId).data.type.toLowerCase();
-      if (BloodNGuts.system.supportedTypes.includes(type)) {
-        splatToken.trackChanges(changes);
-      }
+    if (isFirstActiveGM() && !splatToken.disabled) {
+      splatToken.trackChanges(changes);
     }
   }
 
@@ -500,6 +496,7 @@ Hooks.on('chatMessage', (_chatTab, commandString) => {
 
 Hooks.on('deleteActiveEffect', async (actor, effect) => {
   if (
+    !isFirstActiveGM() ||
     !hasProperty(BloodNGuts.system, 'bleedingActiveEffectId') ||
     effect.flags.core.statusId !== BloodNGuts.system.bleedingActiveEffectId
   )
@@ -510,6 +507,7 @@ Hooks.on('deleteActiveEffect', async (actor, effect) => {
 
 Hooks.on('createActiveEffect', async (actor, effect) => {
   if (
+    !isFirstActiveGM() ||
     !hasProperty(BloodNGuts.system, 'bleedingActiveEffectId') ||
     effect.flags.core.statusId !== BloodNGuts.system.bleedingActiveEffectId
   )

@@ -1,6 +1,7 @@
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
+import SplatToken from '../classes/SplatToken';
 
 /**
  * Helper functions.
