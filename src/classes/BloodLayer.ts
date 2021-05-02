@@ -86,7 +86,7 @@ export default class BloodLayer extends TilesLayer {
   initialize(): void {
     log(LogLevel.INFO, 'Initializing Blood Layer');
 
-    this.visible = canvas.scene.getFlag(MODULE_ID, 'visible');
+    this.visible = canvas.scene.getFlag(MODULE_ID, 'visible') || true;
 
     // Create objects container which can be sorted
     const objCont = new PIXI.Container();
@@ -1001,7 +1001,7 @@ export default class BloodLayer extends TilesLayer {
     // @ts-expect-error missing definition
     if (!scene._view) return;
 
-    if (hasProperty(data, `flags.${MODULE_ID}.violenceLevel`)) {
+    if (hasProperty(data, 'active') || hasProperty(data, `flags.${MODULE_ID}.violenceLevel`)) {
       canvas.draw();
     }
 
@@ -1011,6 +1011,7 @@ export default class BloodLayer extends TilesLayer {
       this.visible = data.flags[MODULE_ID].visible;
       if (this.visible) rerender = true;
     }
+
     // React to composite history change
     if (hasProperty(data, `flags.${MODULE_ID}.history`) || rerender) {
       this.renderHistory(data.flags[MODULE_ID].history);

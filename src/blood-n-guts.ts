@@ -40,11 +40,13 @@ export class BloodNGuts {
   public static getLatestActorMaxHP: any;
   public static lookupCreatureType: any;
   public static system: System;
+  public static sceneLoading: boolean;
 
   public static initialize(): void {
     log(LogLevel.INFO, `Initializing module ${MODULE_ID}`);
     BloodNGuts.splatTokens = {};
     BloodNGuts.disabled = false;
+    BloodNGuts.sceneLoading = true;
   }
 
   // register this layer with Foundry
@@ -175,7 +177,13 @@ export class BloodNGuts {
       }
     }
 
-    if (isFirstActiveGM() && !splatToken.disabled) {
+    //update rotation here so that splats can rotate on non-active scenes
+    if (hasProperty(changes, 'rotation') || hasProperty(changes, 'lockRotation')) {
+      splatToken.updateRotation(changes);
+    }
+
+    // @ts-expect-error bad defs
+    if (scene.active && isFirstActiveGM() && !splatToken.disabled) {
       splatToken.trackChanges(changes);
     }
   }
@@ -197,14 +205,15 @@ export class BloodNGuts {
       }
     }
 
-    if (BloodNGuts.disabled) return;
+    if (!canvas.scene.active || BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
 
     if (!isGMPresent()) {
       BloodNGuts.disabled = true;
     } else if (isFirstActiveGM()) {
       for (const tokenId in BloodNGuts.splatTokens) {
-        BloodNGuts.splatTokens[tokenId].preSplat();
+        // @ts-expect-error bad def
+        if (BloodNGuts.splatTokens[tokenId].token.scene.active) BloodNGuts.splatTokens[tokenId].preSplat();
       }
       canvas.blood.commitHistory();
     }
@@ -437,6 +446,7 @@ Hooks.once('init', () => {
 });
 
 Hooks.once('ready', () => {
+  BloodNGuts.sceneLoading = false;
   window.BloodNGuts = BloodNGuts;
   Hooks.call('bloodNGutsReady');
 });
@@ -532,7 +542,6 @@ Token.prototype.draw = (function () {
     await cached.apply(this);
 
     if (
-      // BloodNGuts.disabled ||
       (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'currentViolenceLevel') === 'Disabled') ||
       canvas.scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled' ||
       !this.icon ||
@@ -560,7 +569,7 @@ Token.prototype.draw = (function () {
       BloodNGuts.splatTokens[this.id] = splatToken;
       // if BnG is loading then we can presplat every TokenSplat in one go on canvasReady
       // otherwise it is an new token so we do it now.
-      if (isFirstActiveGM() && window.BloodNGuts != null && !splatToken.disabled) {
+      if (this.scene.active && isFirstActiveGM() && !BloodNGuts.sceneLoading && !splatToken.disabled) {
         splatToken.preSplat();
         canvas.blood.commitHistory();
       }

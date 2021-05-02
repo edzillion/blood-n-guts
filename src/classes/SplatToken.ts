@@ -211,10 +211,6 @@ export default class SplatToken {
       this.draw();
       return false;
     }
-    if (changes.rotation != null || changes.lockRotation != null) {
-      this.updateRotation(changes);
-      return false;
-    }
 
     // remove custom settings from a SplatToken when unchecked
     if (hasProperty(changes, `flags.${MODULE_ID}.customBloodChecked`)) {
@@ -631,6 +627,8 @@ export default class SplatToken {
    * @function
    */
   private async safeToggleBleedingEffect(active): Promise<void> {
+    // @ts-expect-error bad defs
+    if (!this.token.scene.active) return;
     // @ts-expect-error bad defs
     const bleedingActiveEffectPresent = this.token.actor.effects.entries.find(
       (ae) => ae.data.icon === this.bleedingActiveEffectData.icon,
