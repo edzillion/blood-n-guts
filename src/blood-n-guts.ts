@@ -25,7 +25,7 @@ import * as splatFonts from './data/splatFonts';
 import Systems from './data/systems';
 
 //CONFIG.debug.hooks = true;
-CONFIG[MODULE_ID] = { logLevel: 3 };
+CONFIG[MODULE_ID] = { logLevel: 2 };
 
 /**
  * Main class wrapper for all blood-n-guts features.
