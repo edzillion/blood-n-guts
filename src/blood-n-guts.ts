@@ -155,11 +155,11 @@ export class BloodNGuts {
    * @param {Record<string, any>} tokenData - tokenData of updated Token/Actor
    * @param {Record<string, unknown>} changes - changes
    */
-  public static updateTokenOrActorHandler(
+  public static async updateTokenOrActorHandler(
     scene: Scene,
     tokenData: Record<string, any>,
     changes: Record<string, unknown>,
-  ): void {
+  ): Promise<void> {
     // // @ts-expect-error missing definition
     const fromDisabledScene = scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled';
     if (fromDisabledScene || !isBnGUpdate(changes)) return;
@@ -173,9 +173,34 @@ export class BloodNGuts {
       splatToken.updateRotation(changes);
     }
 
-    // @ts-expect-error bad defs
-    if (scene.active && isFirstActiveGM() && !splatToken.disabled) {
-      splatToken.trackChanges(changes);
+    if (isFirstActiveGM()) {
+      // remove custom settings from a SplatToken when unchecked
+      if (hasProperty(changes, `flags.${MODULE_ID}.customBloodChecked`)) {
+        if (!changes.flags[MODULE_ID].customBloodChecked) {
+          await splatToken.wipeCustomSettings();
+          return;
+        }
+      }
+
+      // update token violence here to update disabled state
+      if (hasProperty(changes, `flags.${MODULE_ID}.tokenViolenceLevel`)) {
+        // changing away from a disabled state, re-enable SplatToken
+        if (changes.flags[MODULE_ID].tokenViolenceLevel !== 'Disabled' && splatToken.disabled) {
+          splatToken.disabled = false;
+        }
+        // changing to disabled
+        else if (changes.flags[MODULE_ID].tokenViolenceLevel === 'Disabled') {
+          splatToken.tokenSettings.tokenViolenceLevel = 'Disabled';
+          await splatToken.reset();
+          splatToken.disabled = true;
+          return;
+        }
+      }
+
+      // @ts-expect-error bad defs
+      if (scene.active && !splatToken.disabled) {
+        splatToken.trackChanges(changes);
+      }
     }
   }
 

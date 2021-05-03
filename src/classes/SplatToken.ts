@@ -215,38 +215,14 @@ export default class SplatToken {
       return false;
     }
 
-    // remove custom settings from a SplatToken when unchecked
-    if (hasProperty(changes, `flags.${MODULE_ID}.customBloodChecked`)) {
-      if (!changes.flags[MODULE_ID].customBloodChecked) {
-        this.wipeCustomSettings().then(() => {
-          return;
-        });
-      }
-    }
-
     // deal with settings changes first
     if (hasProperty(changes, `flags.${MODULE_ID}`)) {
       const settingsUpdates = Object.keys(changes.flags[MODULE_ID]).filter((key) =>
-        ['bloodColor', 'floorSplatFont', 'trailSplatFont', 'tokenSplatFont', 'tokenViolenceLevel'].includes(key),
+        ['bloodColor', 'floorSplatFont', 'trailSplatFont', 'tokenSplatFont'].includes(key),
       );
       if (settingsUpdates.length) {
-        const prevViolenceLevel = this.tokenSettings['tokenViolenceLevel'];
         for (const setting of settingsUpdates) {
           this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
-        }
-        if (settingsUpdates.includes('tokenViolenceLevel')) {
-          // changing away from a disabled state, re-enable SplatToken
-          if (prevViolenceLevel === 'Disabled') {
-            this.disabled = false;
-            this.preSplat();
-            canvas.blood.commitHistory();
-          }
-          // changing to disabled
-          else if (changes.flags[MODULE_ID]['tokenViolenceLevel'] === 'Disabled') {
-            this.disabled = true;
-            this.wipe(true);
-            return;
-          }
         }
       }
     }
@@ -605,6 +581,15 @@ export default class SplatToken {
       else counter++;
     }
     if (resetBleedingSeverity && isFirstActiveGM()) return this.token.setFlag(MODULE_ID, 'bleedingSeverity', 0);
+  }
+
+  /**
+   * Delete all of the this splattoken's tokensplats in history.
+   * @category GMandPC
+   * @function
+   */
+  public async reset() {
+    return canvas.blood.deleteMany(this.id);
   }
 
   /**

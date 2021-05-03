@@ -105,7 +105,8 @@ export default class ViolenceConfig extends FormApplication {
         const diff = diffObject(this.newViolenceLevel, violenceLevelSettings.defaults[this.currentLevel]);
         if (isObjectEmpty(diff)) resetButton.prop('disabled', true);
         else resetButton.prop('disabled', false);
-        return canvas.scene.setFlag(MODULE_ID, 'violenceLevels.' + event.target.id, val);
+        this.allViolenceLevels[this.currentLevel] = this.newViolenceLevel as ViolenceLevel;
+        return game.settings.set(MODULE_ID, 'violenceLevels', this.allViolenceLevels);
       }
     });
 
