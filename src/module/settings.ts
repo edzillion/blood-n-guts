@@ -143,16 +143,16 @@ export const registerSettings = (): void => {
 export const getBaseTokenSettings = async (token: Token): Promise<TokenSettings> => {
   let baseSettings: Partial<TokenSettings> = {};
 
-  baseSettings.masterViolenceLevel = token.getFlag(MODULE_ID, 'masterViolenceLevel');
-  if (baseSettings.masterViolenceLevel) {
-    if (game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.masterViolenceLevel] == null) {
-      log(LogLevel.WARN, 'getBaseTokenSettings, violenceLevel no longer exists', baseSettings.masterViolenceLevel);
+  baseSettings.tokenViolenceLevel = token.getFlag(MODULE_ID, 'masterViolenceLevel');
+  if (baseSettings.tokenViolenceLevel) {
+    if (game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.tokenViolenceLevel] == null) {
+      log(LogLevel.WARN, 'getBaseTokenSettings, violenceLevel no longer exists', baseSettings.tokenViolenceLevel);
       token.unsetFlag(MODULE_ID, 'tokenViolenceLevel');
-      delete baseSettings.masterViolenceLevel;
+      delete baseSettings.tokenViolenceLevel;
     } else {
       baseSettings = Object.assign(
         baseSettings,
-        game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.masterViolenceLevel],
+        game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.tokenViolenceLevel],
       );
     }
   }

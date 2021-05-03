@@ -759,7 +759,7 @@ export default class BloodLayer extends TilesLayer {
    * @category GMOnly
    * @function
    * @async
-   * @param {string|string[]} data - list of splat ids
+   * @param {string|string[]} data - list of splat or token ids
    */
   async deleteFromHistory(data: string[] | string): Promise<void> {
     // Structure the input data
