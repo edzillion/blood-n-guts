@@ -51,11 +51,12 @@ export default class SplatToken {
     this.id = token.id;
     this.token = token;
     this.actorType = this.token.actor.data.type.toLowerCase();
+    // const creatureType = BloodNGuts.system.creatureType(token);
     this.defaultBloodColor = lookupTokenBloodColor(token);
 
     this.disabled =
       !BloodNGuts.system.supportedTypes.includes(this.actorType) ||
-      token.getFlag(MODULE_ID, 'currentViolenceLevel') === 'Disabled' ||
+      token.getFlag(MODULE_ID, 'tokenViolenceLevel') === 'Disabled' ||
       this.defaultBloodColor === 'none';
 
     log(LogLevel.DEBUG, 'SplatToken constructor for ' + this.token.data.name + ', disabled:' + this.disabled);
@@ -91,19 +92,21 @@ export default class SplatToken {
     const tokenSettingsHandler = {
       get: (target, property) => {
         if (property === 'bloodColor') return target[property] || this.defaultBloodColor;
-        else if (['tokenSplatFont', 'floorSplatFont', 'trailSplatFont', 'currentViolenceLevel'].includes(property))
+        else if (property === 'tokenViolenceLevel')
+          return target[property] || game.settings.get(MODULE_ID, 'masterViolenceLevel');
+        else if (['tokenSplatFont', 'floorSplatFont', 'trailSplatFont'].includes(property))
           return target[property] || game.settings.get(MODULE_ID, property);
         else
           return (
             target[property] ||
-            game.settings.get(MODULE_ID, 'violenceLevels')[game.settings.get(MODULE_ID, 'currentViolenceLevel')][
+            game.settings.get(MODULE_ID, 'violenceLevels')[game.settings.get(MODULE_ID, 'masterViolenceLevel')][
               property
             ]
           );
       },
       set: (target, property, value) => {
         target[property] = value;
-        if (property === 'currentViolenceLevel' && value) target = Object.assign(target, this.violenceLevels[value]);
+        if (property === 'tokenViolenceLevel' && value) target = Object.assign(target, this.violenceLevels[value]);
         return true;
       },
     };
@@ -224,11 +227,26 @@ export default class SplatToken {
     // deal with settings changes first
     if (hasProperty(changes, `flags.${MODULE_ID}`)) {
       const settingsUpdates = Object.keys(changes.flags[MODULE_ID]).filter((key) =>
-        ['bloodColor', 'floorSplatFont', 'trailSplatFont', 'tokenSplatFont', 'currentViolenceLevel'].includes(key),
+        ['bloodColor', 'floorSplatFont', 'trailSplatFont', 'tokenSplatFont', 'tokenViolenceLevel'].includes(key),
       );
       if (settingsUpdates.length) {
+        const prevViolenceLevel = this.tokenSettings['tokenViolenceLevel'];
         for (const setting of settingsUpdates) {
           this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
+        }
+        if (settingsUpdates.includes('tokenViolenceLevel')) {
+          // changing away from a disabled state, re-enable SplatToken
+          if (prevViolenceLevel === 'Disabled') {
+            this.disabled = false;
+            this.preSplat();
+            canvas.blood.commitHistory();
+          }
+          // changing to disabled
+          else if (changes.flags[MODULE_ID]['tokenViolenceLevel'] === 'Disabled') {
+            this.disabled = true;
+            this.wipe(true);
+            return;
+          }
         }
       }
     }
@@ -600,7 +618,7 @@ export default class SplatToken {
       trailSplatFont: null,
       tokenSplatFont: null,
       bloodColor: null,
-      currentViolenceLevel: null,
+      tokenViolenceLevel: null,
     });
   }
 

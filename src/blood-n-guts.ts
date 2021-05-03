@@ -161,21 +161,12 @@ export class BloodNGuts {
     changes: Record<string, unknown>,
   ): void {
     // // @ts-expect-error missing definition
-    const fromDisabledScene = scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled';
+    const fromDisabledScene = scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled';
     if (fromDisabledScene || !isBnGUpdate(changes)) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler', changes);
 
     const tokenId = tokenData._id || tokenData.data._id;
     const splatToken = BloodNGuts.splatTokens[tokenId];
-
-    // remove custom settings from a SplatToken when unchecked
-    if (hasProperty(changes, `flags.${MODULE_ID}.customBloodChecked`)) {
-      if (!changes.flags[MODULE_ID].customBloodChecked) {
-        splatToken.wipeCustomSettings().then(() => {
-          return;
-        });
-      }
-    }
 
     //update rotation here so that splats can rotate on non-active scenes
     if (hasProperty(changes, 'rotation') || hasProperty(changes, 'lockRotation')) {
@@ -197,11 +188,11 @@ export class BloodNGuts {
   public static canvasReadyHandler(canvas: any): void {
     // sync system violence level with scene
     if (isFirstActiveGM()) {
-      const violenceLvl = canvas.scene.getFlag(MODULE_ID, 'violenceLevel');
+      const violenceLvl = canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel');
       log(LogLevel.DEBUG, 'canvasReadyHandler, violence Level:', violenceLvl);
       if (violenceLvl != null) {
         BloodNGuts.disabled = violenceLvl === 'Disabled' ? true : false;
-        game.settings.set(MODULE_ID, 'currentViolenceLevel', violenceLvl);
+        game.settings.set(MODULE_ID, 'masterViolenceLevel', violenceLvl);
       }
     }
 
@@ -284,7 +275,7 @@ export class BloodNGuts {
       levelNames: choices,
       fonts: BloodNGuts.allFonts,
       selectedColor: tokenConfig.object.getFlag(MODULE_ID, 'bloodColor'),
-      currentLevel: tokenConfig.object.getFlag(MODULE_ID, 'currentViolenceLevel'),
+      currentLevel: tokenConfig.object.getFlag(MODULE_ID, 'tokenViolenceLevel'),
       floorSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'floorSplatFont'),
       tokenSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'tokenSplatFont'),
       trailSplatFont: tokenConfig.object.getFlag(MODULE_ID, 'trailSplatFont'),
@@ -313,9 +304,9 @@ export class BloodNGuts {
       customBloodPanel.hide();
     }
 
-    if (tokenConfig.object.getFlag(MODULE_ID, 'currentViolenceLevel') === 'Disabled') {
-      bloodColorPicker.prop('disabled', true);
-    }
+    // if (tokenConfig.object.getFlag(MODULE_ID, 'tokenViolenceLevel') === 'Disabled') {
+    //   bloodColorPicker.prop('disabled', true);
+    // }
 
     customBloodCheckBox.on('click', (event: JQuery.ClickEvent) => {
       if (event.target.checked) customBloodPanel.show();
@@ -380,17 +371,17 @@ export class BloodNGuts {
    * @param {JQuery} html
    */
   static renderSettingsConfigHandler(settingsConfig: SettingsConfig, html: JQuery): void {
-    const selectViolenceLevel = html.find('select[name="blood-n-guts.currentViolenceLevel"]');
+    const selectViolenceLevel = html.find('select[name="blood-n-guts.masterViolenceLevel"]');
 
     replaceSelectChoices(selectViolenceLevel, violenceLevelChoices(game.settings.get(MODULE_ID, 'violenceLevels')));
 
     // if GM has set this scene's violence level to Disabled then only show that
     // option to players
-    if (!isFirstActiveGM() && canvas.scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled') {
+    if (!isFirstActiveGM() && canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled') {
       selectViolenceLevel.val('Disabled');
       selectViolenceLevel.attr('disabled', 'disabled');
     } else {
-      selectViolenceLevel.val(game.settings.get(MODULE_ID, 'currentViolenceLevel'));
+      selectViolenceLevel.val(game.settings.get(MODULE_ID, 'masterViolenceLevel'));
     }
 
     // inject warning message if relevant
@@ -413,7 +404,7 @@ export class BloodNGuts {
       BloodNGuts.disabled = true;
     } else if (BloodNGuts.disabled) {
       // user may have disabled BnG in settings, if not then enable.
-      if (game.settings.get(MODULE_ID, 'currentViolenceLevel') !== 'Disabled') {
+      if (game.settings.get(MODULE_ID, 'masterViolenceLevel') !== 'Disabled') {
         BloodNGuts.disabled = false;
       }
     }
@@ -542,8 +533,8 @@ Token.prototype.draw = (function () {
     await cached.apply(this);
 
     if (
-      (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'currentViolenceLevel') === 'Disabled') ||
-      canvas.scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled' ||
+      (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'masterViolenceLevel') === 'Disabled') ||
+      canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled' ||
       !this.icon ||
       this._original?.data?._id ||
       !this.actor ||
@@ -559,7 +550,7 @@ Token.prototype.draw = (function () {
       splatToken = BloodNGuts.splatTokens[this.id];
       // if for some reason our mask is missing then recreate it
       // @ts-expect-error todo: find out why container is being destroyed
-      if (splatToken.container._destroyed || splatToken.container.children.length === 0) {
+      if (!splatToken.disabled && (splatToken.container._destroyed || splatToken.container.children.length === 0)) {
         log(LogLevel.WARN, 'recreating container');
         splatToken.container = new PIXI.Container();
         await BloodNGuts.splatTokens[this.id].createMask();

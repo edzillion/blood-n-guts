@@ -152,8 +152,8 @@ export default class BloodLayer extends TilesLayer {
    */
   async draw(): Promise<BloodLayer> {
     this.disabled =
-      (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'currentViolenceLevel') === 'Disabled') ||
-      canvas.scene.getFlag(MODULE_ID, 'violenceLevel') === 'Disabled'
+      (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'masterViolenceLevel') === 'Disabled') ||
+      canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled'
         ? true
         : false;
     if (this.disabled) return;
@@ -699,7 +699,7 @@ export default class BloodLayer extends TilesLayer {
     this.lock = true;
     let history = canvas.scene.getFlag(MODULE_ID, 'history');
     const maxPoolSize = game.settings.get(MODULE_ID, 'violenceLevels')[
-      game.settings.get(MODULE_ID, 'currentViolenceLevel')
+      game.settings.get(MODULE_ID, 'masterViolenceLevel')
     ]['sceneSplatPoolSize'];
     // If history storage doesnt exist, create it
     if (!history) {
@@ -1001,7 +1001,7 @@ export default class BloodLayer extends TilesLayer {
     // @ts-expect-error missing definition
     if (!scene._view) return;
 
-    if (hasProperty(data, 'active') || hasProperty(data, `flags.${MODULE_ID}.violenceLevel`)) {
+    if (hasProperty(data, 'active') || hasProperty(data, `flags.${MODULE_ID}.sceneViolenceLevel`)) {
       canvas.draw();
     }
 
