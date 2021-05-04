@@ -156,7 +156,6 @@ export class BloodNGuts {
     tokenData: Record<string, any>,
     changes: Record<string, unknown>,
   ): Promise<void> {
-    // // @ts-expect-error missing definition
     const fromDisabledScene = scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled';
     if (fromDisabledScene || !isBnGUpdate(changes)) return;
     log(LogLevel.DEBUG, 'updateTokenOrActorHandler', changes);
@@ -192,9 +191,8 @@ export class BloodNGuts {
           return;
         }
       }
-
       // @ts-expect-error bad defs
-      if (scene.active && !splatToken.disabled) {
+      if (scene.id === game.scenes.viewed.id && !splatToken.disabled) {
         splatToken.trackChanges(changes);
       }
     }
@@ -217,6 +215,9 @@ export class BloodNGuts {
       }
     }
 
+    // checking for active means that a non-active scene will not be preSplatted on
+    // navigating to it. User can still activate scene to plesplat all tokens, and
+    // tokens will be presplatted when added to the scene, damaged etc.
     if (!canvas.scene.active || BloodNGuts.disabled) return;
     log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
 
@@ -552,7 +553,7 @@ Token.prototype.draw = (function () {
       BloodNGuts.splatTokens[this.id] = splatToken;
       // if BnG is loading then we can presplat every TokenSplat in one go on canvasReady
       // otherwise it is an new token so we do it now.
-      if (this.scene.active && isFirstActiveGM() && !BloodNGuts.sceneLoading && !splatToken.disabled) {
+      if (isFirstActiveGM() && !BloodNGuts.sceneLoading && !splatToken.disabled) {
         splatToken.preSplat();
         canvas.blood.commitHistory();
       }
