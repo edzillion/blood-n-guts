@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [0.8.7]
+
+### FEATURES
+
+- Better handling of active/inactive scenes: GM can now set up blood on an inactive scene before they activate it. Blood effects will only be created on a scene if the GM is viewing it, but all scenes will show (already created blood to all users whether a scene active or not.
+- Limit notifications to GM only.
+- User warnings now shown in Game Settings.
+
+### BUGS
+- Fix crash when players view a scene without GM online.
+- Fix problems with disabling scenes, and updates from those scenes. 
+- Refactor and fix problems with game settings / scene settings / token settings. 
+
 ## [0.8.6]
 
 ### FEATURES
@@ -7,7 +20,6 @@
 - Redesigned Violence Level Settings, removed old file-based system.
 - Removed file-based custom color sytem, while it is redesigned.
 - Started on i18n support. Translations not complete
-
 
 ## [0.8.5]
 
