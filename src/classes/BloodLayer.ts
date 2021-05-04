@@ -1,7 +1,14 @@
 import { BloodNGuts } from '../blood-n-guts';
 import { MODULE_ID } from '../constants';
 import TileSplat from './TileSplat';
-import { getPointOnCurve, getRandomBoxMuller, getRandomGlyph, getHexColor, getUID } from '../module/helpers';
+import {
+  getPointOnCurve,
+  getRandomBoxMuller,
+  getRandomGlyph,
+  getHexColor,
+  getUID,
+  isFirstActiveGM,
+} from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BrushControls from './BrushControls';
@@ -21,8 +28,11 @@ export default class BloodLayer extends TilesLayer {
   lock: boolean;
   commitTimer: NodeJS.Timeout;
   zOrderCounter: number;
+  disabled: boolean;
   constructor() {
     super();
+
+    this.disabled = false;
 
     this.zOrderCounter = 0;
     this.pointer = 0;
@@ -36,7 +46,6 @@ export default class BloodLayer extends TilesLayer {
       brushSize: 50,
       brushSpread: 1.0,
       previewAlpha: 0.4,
-      visible: true,
     };
 
     this.brushSettings = duplicate(this.DEFAULTS_BRUSHSETTINGS);
@@ -77,6 +86,8 @@ export default class BloodLayer extends TilesLayer {
   initialize(): void {
     log(LogLevel.INFO, 'Initializing Blood Layer');
 
+    this.visible = canvas.scene.getFlag(MODULE_ID, 'visible') || true;
+
     // Create objects container which can be sorted
     const objCont = new PIXI.Container();
     objCont.name = 'Object Container';
@@ -91,7 +102,7 @@ export default class BloodLayer extends TilesLayer {
     this.preview = this.addChild(prevCont);
     this.preview.alpha = this.DEFAULTS_BRUSHSETTINGS.previewAlpha;
 
-    this.cleanHistory();
+    // this.cleanHistory();
   }
 
   /**
@@ -140,11 +151,16 @@ export default class BloodLayer extends TilesLayer {
    * @see {PlaceablesLayer#draw}
    */
   async draw(): Promise<BloodLayer> {
-    if (BloodNGuts.disabled) {
-      return;
-    }
+    this.disabled =
+      (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'masterViolenceLevel') === 'Disabled') ||
+      canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled'
+        ? true
+        : false;
+    if (this.disabled) return;
     // it seems that we need to initialize every time we draw()
     this.initialize();
+    if (!this.visible) return;
+
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     // Create and draw objects
     const history = canvas.scene.getFlag(MODULE_ID, 'history');
@@ -157,14 +173,13 @@ export default class BloodLayer extends TilesLayer {
     });
 
     // Wait for all objects to draw
-    this.visible = true;
     await Promise.all(promises);
     this.pointer = history.events.length;
     return this;
   }
 
   /**
-   * Draw a single TileSplat
+   * Create and return single TileSplat
    * @category GMandPC
    * @function
    * @param {TileSplatData} data
@@ -177,7 +192,7 @@ export default class BloodLayer extends TilesLayer {
       log(LogLevel.WARN, 'createObject: TileSplat already present!', data.id);
       return;
     }
-    // if (alreadyAdded) debugger;
+
     const obj = new TileSplat(data);
     if (data.zIndex == null) {
       log(LogLevel.ERROR, 'createObject missing zIndex property!');
@@ -193,9 +208,8 @@ export default class BloodLayer extends TilesLayer {
    * @function
    */
   toggle(): void {
-    const v = this.getSetting(false, 'visible');
-    this.visible = !v;
-    this.setSetting(true, 'visible', !v);
+    this.visible = !this.visible;
+    canvas.scene.setFlag(MODULE_ID, 'visible', this.visible);
   }
 
   /**
@@ -216,7 +230,7 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Deactivate blood layer, called by Foundry when nagivating away from blood layer.
+   * Deactivate blood layer, called by Foundry when nagivating away from blood layer. Also called when initialising layers on load.
    * @category Foundry
    * @function
    * @returns {BloodLayer}
@@ -225,10 +239,14 @@ export default class BloodLayer extends TilesLayer {
    */
   deactivate(): BloodLayer {
     CanvasLayer.prototype.deactivate.apply(this);
-    if (this.objects) this.objects.visible = true;
-    //@ts-expect-error definition missing
-    this.releaseAll();
-    this.objects.children.forEach((t: TileSplat) => t.refresh());
+
+    // if GM is not present objects will be empty
+    if (this.objects) {
+      this.objects.visible = true;
+      //@ts-expect-error definition missing
+      this.releaseAll();
+      this.objects.children.forEach((t: TileSplat) => t.refresh());
+    }
     if (this.preview) this.preview.removeChildren();
     return this;
   }
@@ -452,7 +470,7 @@ export default class BloodLayer extends TilesLayer {
     };
     const tileSplatData: TileSplatData = this.getNewSplatData(amount, font, origin, spread, styleData);
     tileSplatData.name = 'Floor Splat';
-    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
+    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer: ', tileSplatData);
     this.historyBuffer.push(tileSplatData);
   }
 
@@ -491,15 +509,27 @@ export default class BloodLayer extends TilesLayer {
       distances.push(i);
     }
 
+    const tokenCenter = splatToken.getCenter();
+
     const randSpread = getRandomBoxMuller() * spread - spread / 2;
-    const start = new PIXI.Point(-splatToken.movePos.x / 2, -splatToken.movePos.y / 2);
+    let start;
+    if (splatToken.lastEndPoint != null) {
+      // convert lastEndPoint to tileSplat-relative coords
+      splatToken.lastEndPoint.x -= tokenCenter.x - splatToken.movePos.x / 2;
+      splatToken.lastEndPoint.y -= tokenCenter.y - splatToken.movePos.y / 2;
+      start = splatToken.lastEndPoint;
+    } else {
+      start = new PIXI.Point(-splatToken.movePos.x / 2, -splatToken.movePos.y / 2);
+    }
     const control = new PIXI.Point(splatToken.direction.y * randSpread, splatToken.direction.x * randSpread);
     const end = new PIXI.Point(splatToken.movePos.x / 2, splatToken.movePos.y / 2);
+
+    log(LogLevel.DEBUG, 'points', splatToken.movePos, start, control, end);
 
     // randomise endPt of curve
     const forwardOffset = Math.abs(getRandomBoxMuller() * canvas.grid.size - canvas.grid.size / 2);
     const lateralOffset = getRandomBoxMuller() * forwardOffset - forwardOffset / 2;
-    if (splatToken.direction.x === 0 || splatToken.direction.y == 0) {
+    if (splatToken.direction.x === 0 || splatToken.direction.y === 0) {
       end.x += lateralOffset * splatToken.direction.y;
       end.y += lateralOffset * splatToken.direction.x;
     } else {
@@ -528,7 +558,6 @@ export default class BloodLayer extends TilesLayer {
     }
     log(LogLevel.DEBUG, 'generateTrailSplats tileSplatData.drips', tileSplatData.drips);
 
-    const tokenCenter = splatToken.getCenter();
     tileSplatData.offset = new PIXI.Point(0);
     tileSplatData.x = tokenCenter.x - splatToken.movePos.x / 2;
     tileSplatData.y = tokenCenter.y - splatToken.movePos.y / 2;
@@ -538,8 +567,10 @@ export default class BloodLayer extends TilesLayer {
     tileSplatData.alpha = 0.75;
     tileSplatData.id = getUID();
 
+    splatToken.lastEndPoint = new PIXI.Point(tileSplatData.x + end.x, tileSplatData.y + end.y);
+
     tileSplatData.name = 'Trail Splat';
-    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer, id: ', tileSplatData.id);
+    log(LogLevel.DEBUG, 'adding tileSplat to historyBuffer: ', tileSplatData);
     this.historyBuffer.push(tileSplatData as TileSplatData);
   }
 
@@ -624,13 +655,11 @@ export default class BloodLayer extends TilesLayer {
 
     // If history is blank, do nothing
     if (history === undefined) return;
-    // If history is zero, reset scene fog
-    if (history.events.length === 0) this.wipeLayer(false);
     if (start === undefined) start = 0;
     if (stop === undefined) stop = history.events.length;
     // If pointer preceeds the stop, reset and start from 0
     if (stop <= start) {
-      this.wipeLayer(false);
+      BloodNGuts.wipeScene(false);
       start = 0;
     }
 
@@ -670,7 +699,7 @@ export default class BloodLayer extends TilesLayer {
     this.lock = true;
     let history = canvas.scene.getFlag(MODULE_ID, 'history');
     const maxPoolSize = game.settings.get(MODULE_ID, 'violenceLevels')[
-      game.settings.get(MODULE_ID, 'currentViolenceLevel')
+      game.settings.get(MODULE_ID, 'masterViolenceLevel')
     ]['sceneSplatPoolSize'];
     // If history storage doesnt exist, create it
     if (!history) {
@@ -693,7 +722,7 @@ export default class BloodLayer extends TilesLayer {
         .forEach((e) => {
           const splatToken = BloodNGuts.splatTokens[e.tokenId];
           // this will wipe all splats on the splatToken but any remaining will be readded on renderHistory()
-          splatToken.wipeSplats();
+          splatToken.wipe();
         });
       // setting the pointer to <= this.pointer will reset the history and render all
       history.pointer = history.events.length;
@@ -730,7 +759,7 @@ export default class BloodLayer extends TilesLayer {
    * @category GMOnly
    * @function
    * @async
-   * @param {string|string[]} data - list of splat ids
+   * @param {string|string[]} data - list of splat or token ids
    */
   async deleteFromHistory(data: string[] | string): Promise<void> {
     // Structure the input data
@@ -763,14 +792,14 @@ export default class BloodLayer extends TilesLayer {
   }
 
   /**
-   * Wipes all blood splats from blood layer.
+   * Wipes all blood splats from scene.
    * @category GMOnly
    * @function
    * @async
    * @param {boolean} save - If true, also wipes the layer history
    */
-  async wipeLayer(save: boolean): Promise<void> {
-    log(LogLevel.INFO, 'wipeLayer: wipe history', save);
+  async wipeBlood(save: boolean): Promise<void> {
+    log(LogLevel.INFO, 'wipeBlood: wipe history', save);
     this.objects.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     this.preview.removeChildren().forEach((c: PIXI.Container) => c.destroy({ children: true }));
     if (save) {
@@ -817,7 +846,7 @@ export default class BloodLayer extends TilesLayer {
         const splatToken = BloodNGuts.splatTokens[tokenId];
         if (!splatToken) log(LogLevel.ERROR, 'undo() token not found!');
         // wipes all splats on the splatToken, but any remaining in history will be redrawn on next renderHistory()
-        splatToken.wipeSplats();
+        splatToken.wipe();
       }
       history.events = history.events.slice(0, history.pointer);
     }
@@ -967,15 +996,24 @@ export default class BloodLayer extends TilesLayer {
    */
   updateSceneHandler(scene: Scene, data: Record<string, unknown>): void {
     log(LogLevel.DEBUG, 'updateSceneHandler', data);
+
     // Check if update applies to current viewed scene
     // @ts-expect-error missing definition
     if (!scene._view) return;
+
+    if (hasProperty(data, 'active') || hasProperty(data, `flags.${MODULE_ID}.sceneViolenceLevel`)) {
+      canvas.draw();
+    }
+
     // React to visibility change
+    let rerender = false;
     if (hasProperty(data, `flags.${MODULE_ID}.visible`)) {
       this.visible = data.flags[MODULE_ID].visible;
+      if (this.visible) rerender = true;
     }
+
     // React to composite history change
-    if (hasProperty(data, `flags.${MODULE_ID}.history`)) {
+    if (hasProperty(data, `flags.${MODULE_ID}.history`) || rerender) {
       this.renderHistory(data.flags[MODULE_ID].history);
     }
   }

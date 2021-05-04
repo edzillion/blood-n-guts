@@ -26,7 +26,7 @@ interface TokenSettings {
   floorSplatFont: string;
   tokenSplatFont: string;
   trailSplatFont: string;
-  violenceLevel: string;
+  tokenViolenceLevel: string;
   bloodColor: string;
 }
 
@@ -69,7 +69,6 @@ interface BrushSettings {
   brushSize: number;
   brushSpread: number;
   previewAlpha: number;
-  visible: boolean;
 }
 
 interface SubmitEvent extends Event {

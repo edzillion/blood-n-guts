@@ -4,6 +4,7 @@
   "blood-n-guts.violence-config.preset.label": "Preset",
 
   "blood-n-guts.violence-config.currentLevel.label": "Current Level",
+  "blood-n-guts.violence-config.currentLevel.hint": "Blood and gore level. Select a default or create or edit a custom Violence Level",
 
   "blood-n-guts.violence-config.floorSplatSize.label": "Floor Splat Size",
   "blood-n-guts.violence-config.floorSplatSize.hint": "This will increase the size of floor splats",

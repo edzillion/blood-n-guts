@@ -1,8 +1,8 @@
 {
 	"private": true,
 	"name": "blood-n-guts",
-	"changelog": "",
-	"version": "0.8.6",
+	"changelog": "changelog.md",
+	"version": "0.8.7",
 	"description": "Spray your dungeons with blood! A module for FoundryVTT",
 	"author": "edzillion",
 	"license": "GNU GPLv3.0 & 'Commons Clause' License Condition v1.0",

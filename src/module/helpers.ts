@@ -1,6 +1,7 @@
 import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
+import SplatToken from '../classes/SplatToken';
 
 /**
  * Helper functions.
@@ -110,6 +111,29 @@ export const isFirstActiveGM = (): boolean => {
     return true;
   }
   return false;
+};
+
+/**
+ * Checks to see if a GM is active.
+ * @category helpers
+ * @function
+ * @returns {Boolean} - whether the GM is active.
+ */
+export const isGMPresent = (): boolean => {
+  return !!game.users.find((u) => u.isGM && u.active);
+};
+
+/**
+ * Checks to see if this update is from Blood 'n Guts or not. Will return true for core updates. Only
+ * foreign module flag updates should return false.
+ * @category helpers
+ * @function
+ * @returns {Boolean} - whether this is a BnG update
+ */
+export const isBnGUpdate = (changes): boolean => {
+  const entries = Object.entries(changes);
+  if (entries.length === 2 && entries[0][0] === 'flags' && entries[0][1][MODULE_ID] == null) return false;
+  return true;
 };
 
 export const getNestedProp = (theObject: any, path: string, separator?: string): unknown => {
@@ -287,12 +311,11 @@ export function getHexColor(colorName: string): string {
  * is set to true. If the token is a PC then look up race, if it's an NPC then look up type for it's
  * associated color which is read from `data/bloodColorSettings.js` and `Data/blood-n-guts/customBloodColorSettings`.
  * @function
- * @async
  * @category helpers
  * @param {Token} token - the token to lookup color for.
  * @returns {Promise<string>} - color in hex format.
  */
-export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
+export const lookupTokenBloodColor = (token: Token): string => {
   const bloodColorEnabled = game.settings.get(MODULE_ID, 'useBloodColor');
   if (!token.actor || !token.actor.data) {
     log(LogLevel.WARN, 'lookupTokenBloodColor missing actor data for token!', token);
@@ -301,7 +324,7 @@ export const lookupTokenBloodColor = async (token: Token): Promise<string> => {
   else if (!bloodColorEnabled || !BloodNGuts.system) return getHexColor('blood');
 
   const bloodColors = game.settings.get(MODULE_ID, 'bloodColors');
-  const creatureType = await BloodNGuts.system.creatureType(token, bloodColors);
+  const creatureType = BloodNGuts.system.creatureType(token, bloodColors);
   if (!creatureType) {
     log(LogLevel.WARN, 'lookupTokenBloodColor missing creatureType for token:', token.data.name);
     return getHexColor('blood');

@@ -1,11 +1,13 @@
 import { MODULE_TITLE } from '../constants';
 import BrushConfig from '../classes/BrushConfig';
+import { isFirstActiveGM } from './helpers';
+import { BloodNGuts } from '../blood-n-guts';
 
 /**
  * Add control buttons
  */
-Hooks.on('getSceneControlButtons', (controls) => {
-  if (game.user.isGM) {
+function handleGetSceneControlButtons(controls) {
+  if (isFirstActiveGM()) {
     controls.push({
       name: 'blood',
       title: MODULE_TITLE,
@@ -44,17 +46,17 @@ Hooks.on('getSceneControlButtons', (controls) => {
         },
         {
           name: 'wipe',
-          title: 'Wipe blood layer.',
+          title: 'Wipe blood',
           icon: 'fas fa-trash',
           onClick: () => {
             const dg = new Dialog({
-              title: 'Wipe Blood Layer',
-              content: 'Are you sure? All blood layer splats will be deleted.',
+              title: 'Wipe Blood',
+              content: 'Are you sure? All blood splats will be deleted.',
               buttons: {
                 blank: {
                   icon: '<i class="fas fa-trash"></i>',
                   label: 'Wipe',
-                  callback: () => canvas.blood.wipeLayer(true),
+                  callback: () => BloodNGuts.wipeScene(true),
                 },
                 cancel: {
                   icon: '<i class="fas fa-times"></i>',
@@ -71,13 +73,13 @@ Hooks.on('getSceneControlButtons', (controls) => {
       activeTool: 'brush',
     });
   }
-});
+}
 
 /**
  * Handles adding the custom brush controls pallet
  * and switching active brush flag
  */
-Hooks.on('renderSceneControls', (controls) => {
+function handleRenderSceneControls(controls) {
   // Switching to layer
   if (controls.activeControl === 'blood') {
     // Open brush tools if not already open
@@ -92,12 +94,12 @@ Hooks.on('renderSceneControls', (controls) => {
     const bco = $('#brush-config');
     if (bco) bco.remove();
   }
-});
+}
 
 /**
  * Sets Y position of the brush controls to account for scene navigation buttons
  */
-function setBrushControlPos() {
+function updateBrushControls() {
   const bc = $('#brush-controls');
   if (bc) {
     const h = $('#navigation').height();
@@ -105,6 +107,9 @@ function setBrushControlPos() {
   }
 }
 
+Hooks.on('getSceneControlButtons', handleGetSceneControlButtons);
+Hooks.on('renderSceneControls', handleRenderSceneControls);
+
 // Reset position when brush controls are rendered or sceneNavigation changes
-Hooks.on('renderBrushControls', setBrushControlPos);
-Hooks.on('renderSceneNavigation', setBrushControlPos);
+Hooks.on('renderBrushControls', updateBrushControls);
+Hooks.on('renderSceneNavigation', updateBrushControls);

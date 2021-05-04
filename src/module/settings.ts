@@ -4,6 +4,7 @@ import { log, LogLevel } from './logging';
 
 import * as bloodColorSettings from '../data/bloodColorSettings';
 import * as violenceLevelSettings from '../data/violenceLevelSettings';
+import { isFirstActiveGM } from './helpers.js';
 
 /**
  * Registers settings.
@@ -32,8 +33,6 @@ export const registerSettings = (): void => {
     default: true,
     onChange: (value) => {
       log(LogLevel.DEBUG, 'Settings: useBloodColor set to ' + value);
-      if (!canvas.scene.active)
-        ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
     },
   });
 
@@ -48,8 +47,6 @@ export const registerSettings = (): void => {
       log(LogLevel.DEBUG, 'Settings: halfHealthBloodied set to ' + value);
       game.settings.set(MODULE_ID, 'healthThreshold', 0.5);
       game.settings.set(MODULE_ID, 'damageThreshold', 0);
-      if (!canvas.scene.active)
-        ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
     },
   });
 
@@ -101,8 +98,8 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register(MODULE_ID, 'currentViolenceLevel', {
-    name: game.i18n.localize('Violence Level'),
+  game.settings.register(MODULE_ID, 'masterViolenceLevel', {
+    name: game.i18n.localize('Master Violence Level'),
     hint: game.i18n.localize('Blood and gore level'),
     scope: 'client',
     config: true,
@@ -110,10 +107,9 @@ export const registerSettings = (): void => {
     choices: violenceLevelChoices(violenceLevelSettings.defaults),
     default: 'Kobold',
     onChange: (value) => {
-      if (!canvas.scene.active) {
-        ui.notifications.notify(`Note: Blood 'n Guts does not work on non-active scenes!`, 'warning');
-        return;
-      }
+      log(LogLevel.DEBUG, 'masterViolenceLevel set to:', value);
+      if (isFirstActiveGM()) return canvas.scene.setFlag(MODULE_ID, 'sceneViolenceLevel', value);
+      else if (canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel') != 'Disabled') canvas.draw();
     },
   });
 
@@ -137,25 +133,26 @@ export const registerSettings = (): void => {
 };
 
 // Custom Settings
+
 /**
- * Promise resolving after custom splat fonts are loaded from disk.
+ * Promise resolving after base token settings are generated
  * @function
  * @category GMOnly
- * @returns {Promise<any>} - promise resolving to only the custom splat fonts.
+ * @returns {Promise<any>} - promise resolving to token settings
  */
 export const getBaseTokenSettings = async (token: Token): Promise<TokenSettings> => {
   let baseSettings: Partial<TokenSettings> = {};
 
-  baseSettings.violenceLevel = token.getFlag(MODULE_ID, 'currentViolenceLevel');
-  if (baseSettings.violenceLevel) {
-    if (game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.violenceLevel] == null) {
-      log(LogLevel.WARN, 'getBaseTokenSettings, violenceLevel no longer exists', baseSettings.violenceLevel);
-      token.unsetFlag(MODULE_ID, 'currentViolenceLevel');
-      delete baseSettings.violenceLevel;
+  baseSettings.tokenViolenceLevel = token.getFlag(MODULE_ID, 'masterViolenceLevel');
+  if (baseSettings.tokenViolenceLevel) {
+    if (game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.tokenViolenceLevel] == null) {
+      log(LogLevel.WARN, 'getBaseTokenSettings, violenceLevel no longer exists', baseSettings.tokenViolenceLevel);
+      token.unsetFlag(MODULE_ID, 'tokenViolenceLevel');
+      delete baseSettings.tokenViolenceLevel;
     } else {
       baseSettings = Object.assign(
         baseSettings,
-        game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.violenceLevel],
+        game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.tokenViolenceLevel],
       );
     }
   }
