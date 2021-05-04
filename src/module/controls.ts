@@ -56,7 +56,7 @@ function handleGetSceneControlButtons(controls) {
                 blank: {
                   icon: '<i class="fas fa-trash"></i>',
                   label: 'Wipe',
-                  callback: () => BloodNGuts.wipeScene(true, true),
+                  callback: () => BloodNGuts.wipeScene(true),
                 },
                 cancel: {
                   icon: '<i class="fas fa-times"></i>',
