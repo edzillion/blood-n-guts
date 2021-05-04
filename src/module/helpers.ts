@@ -99,11 +99,6 @@ export const getUID = (typeCode?: string): string => {
   return [prefix, typeCode, d, r].join('_');
 };
 
-export const getSplatTokenByActorId = (id: string): SplatToken => {
-  const token = canvas.tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === id);
-  return BloodNGuts.splatTokens[token.id];
-};
-
 /**
  * Checks user to see if the current user is the first registered GM.
  * @category helpers

@@ -15,7 +15,6 @@ import {
   generateCustomSystem,
   replaceSelectChoices,
   isBnGUpdate,
-  getSplatTokenByActorId,
   isGMPresent,
 } from './module/helpers';
 import { MODULE_ID } from './constants';
