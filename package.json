@@ -1,7 +1,7 @@
 {
 	"private": true,
 	"name": "blood-n-guts",
-	"changelog": "",
+	"changelog": "changelog.md",
 	"version": "0.8.7",
 	"description": "Spray your dungeons with blood! A module for FoundryVTT",
 	"author": "edzillion",
