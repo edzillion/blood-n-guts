@@ -98,8 +98,8 @@ export const registerSettings = (): void => {
     },
   });
 
-  game.settings.register(MODULE_ID, 'currentViolenceLevel', {
-    name: game.i18n.localize('Violence Level'),
+  game.settings.register(MODULE_ID, 'masterViolenceLevel', {
+    name: game.i18n.localize('Master Violence Level'),
     hint: game.i18n.localize('Blood and gore level'),
     scope: 'client',
     config: true,
@@ -107,9 +107,9 @@ export const registerSettings = (): void => {
     choices: violenceLevelChoices(violenceLevelSettings.defaults),
     default: 'Kobold',
     onChange: (value) => {
-      log(LogLevel.DEBUG, 'violenceLevel set to:', value);
-      if (isFirstActiveGM()) return canvas.scene.setFlag(MODULE_ID, 'violenceLevel', value);
-      else if (canvas.scene.getFlag(MODULE_ID, 'violenceLevel') != 'Disabled') canvas.draw();
+      log(LogLevel.DEBUG, 'masterViolenceLevel set to:', value);
+      if (isFirstActiveGM()) return canvas.scene.setFlag(MODULE_ID, 'sceneViolenceLevel', value);
+      else if (canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel') != 'Disabled') canvas.draw();
     },
   });
 
@@ -133,25 +133,26 @@ export const registerSettings = (): void => {
 };
 
 // Custom Settings
+
 /**
- * Promise resolving after base token settings loaded.
+ * Promise resolving after base token settings are generated
  * @function
  * @category GMOnly
- * @returns {Promise<TokenSettings>} - promise resolving to TokenSettings.
+ * @returns {Promise<any>} - promise resolving to token settings
  */
 export const getBaseTokenSettings = async (token: Token): Promise<TokenSettings> => {
   let baseSettings: Partial<TokenSettings> = {};
 
-  baseSettings.violenceLevel = token.getFlag(MODULE_ID, 'currentViolenceLevel');
-  if (baseSettings.violenceLevel) {
-    if (game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.violenceLevel] == null) {
-      log(LogLevel.WARN, 'getBaseTokenSettings, violenceLevel no longer exists', baseSettings.violenceLevel);
-      token.unsetFlag(MODULE_ID, 'currentViolenceLevel');
-      delete baseSettings.violenceLevel;
+  baseSettings.tokenViolenceLevel = token.getFlag(MODULE_ID, 'masterViolenceLevel');
+  if (baseSettings.tokenViolenceLevel) {
+    if (game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.tokenViolenceLevel] == null) {
+      log(LogLevel.WARN, 'getBaseTokenSettings, violenceLevel no longer exists', baseSettings.tokenViolenceLevel);
+      token.unsetFlag(MODULE_ID, 'tokenViolenceLevel');
+      delete baseSettings.tokenViolenceLevel;
     } else {
       baseSettings = Object.assign(
         baseSettings,
-        game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.violenceLevel],
+        game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.tokenViolenceLevel],
       );
     }
   }

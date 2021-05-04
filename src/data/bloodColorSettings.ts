@@ -6,7 +6,7 @@ export const colors = {
   giant: 'blood',
   swarm: 'blood',
   celestial: '#dc9e06',
-  construct: '#251a13',
+  construct: 'none',
   dragon: 'name',
   elemental: '#0fe9e6',
   elf: 'silver',

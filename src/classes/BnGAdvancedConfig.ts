@@ -47,7 +47,7 @@ export class BnGAdvancedConfig extends FormApplication {
     this.dataObject['floorSplatFont'] = game.settings.get(MODULE_ID, 'floorSplatFont');
     this.dataObject['tokenSplatFont'] = game.settings.get(MODULE_ID, 'tokenSplatFont');
     this.dataObject['trailSplatFont'] = game.settings.get(MODULE_ID, 'trailSplatFont');
-    this.dataObject['currentLevel'] = game.settings.get(MODULE_ID, 'currentViolenceLevel');
+    this.dataObject['currentLevel'] = game.settings.get(MODULE_ID, 'masterViolenceLevel');
 
     const violenceLevelChoices = {};
     for (const level in game.settings.get(MODULE_ID, 'violenceLevels')) {
@@ -116,7 +116,7 @@ export class BnGAdvancedConfig extends FormApplication {
     const violenceSelect = html.find('select#currentLevel');
 
     violenceSelect.on('change', (event: JQuery.ChangeEvent) => {
-      game.settings.set(MODULE_ID, 'currentViolenceLevel', event.target.value);
+      game.settings.set(MODULE_ID, 'masterViolenceLevel', event.target.value);
     });
   }
 

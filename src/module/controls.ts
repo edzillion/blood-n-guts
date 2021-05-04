@@ -1,6 +1,7 @@
 import { MODULE_TITLE } from '../constants';
 import BrushConfig from '../classes/BrushConfig';
 import { isFirstActiveGM } from './helpers';
+import { BloodNGuts } from '../blood-n-guts';
 
 /**
  * Add control buttons
@@ -55,7 +56,7 @@ function handleGetSceneControlButtons(controls) {
                 blank: {
                   icon: '<i class="fas fa-trash"></i>',
                   label: 'Wipe',
-                  callback: () => canvas.blood.wipeBlood(true),
+                  callback: () => BloodNGuts.wipeScene(true),
                 },
                 cancel: {
                   icon: '<i class="fas fa-times"></i>',
