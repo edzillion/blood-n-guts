@@ -36,8 +36,6 @@ export default class SplatToken {
   public token: Token;
   private bleedingDistance: number;
   public lastEndPoint: PIXI.Point | null;
-  private bleedingActiveEffectData: any; //ActiveEffectData;
-  // private bleedingActiveEffect: ActiveEffect;
 
   // todo: typing a Proxy is complicated
   public tokenSettings: any;
@@ -80,11 +78,6 @@ export default class SplatToken {
 
     this.bleedingDistance = 0;
     this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
-
-    if (hasProperty(BloodNGuts.system, 'bleedingActiveEffectId'))
-      this.bleedingActiveEffectData = CONFIG.statusEffects.find((e: any) => e.id === 'bleeding');
-
-    // this.bleedingActiveEffect = new ActiveEffect(this.bleedingActiveEffectData, this.token.actor);
 
     this.violenceLevels = game.settings.get(MODULE_ID, 'violenceLevels');
     const baseTokenSettings = await getBaseTokenSettings(this.token);
@@ -207,7 +200,6 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'trackChanges');
 
     // early returns
-    if (changes.effects != null || changes.actorData?.effects != null) return false;
     if (changes.hidden != null) {
       log(LogLevel.DEBUG, 'hidden', changes.hidden);
       // need to redraw to update alpha levels on TokenSplats
@@ -225,12 +217,6 @@ export default class SplatToken {
           this.tokenSettings[setting] = changes.flags[MODULE_ID][setting];
         }
       }
-    }
-
-    if (hasProperty(changes, `flags.${MODULE_ID}.bleedingSeverity`)) {
-      this.bleedingSeverity = changes.flags[MODULE_ID].bleedingSeverity;
-      if (hasProperty(BloodNGuts.system, 'bleedingActiveEffectId'))
-        this.safeToggleBleedingEffect(this.bleedingSeverity !== 0);
     }
 
     let newBleedingSeverity;
@@ -567,12 +553,11 @@ export default class SplatToken {
   }
 
   /**
-   * Wipes all splats and effects but leaves the data and mask alone.
+   * Wipes all splats but leaves the data and mask alone.
    * @category GMandPC
-   * @param {boolean} [resetBleedingSeverity=false] - whether to also reset bleeding.
    * @function
    */
-  public async wipe(resetBleedingSeverity = false) {
+  public wipe() {
     let counter = 0;
     // delete everything except the sprite mask
     while (this.container?.children?.length > 1) {
@@ -580,7 +565,6 @@ export default class SplatToken {
       if (!displayObj.isMask) displayObj.destroy();
       else counter++;
     }
-    if (resetBleedingSeverity && isFirstActiveGM()) return this.token.setFlag(MODULE_ID, 'bleedingSeverity', 0);
   }
 
   /**
@@ -621,32 +605,6 @@ export default class SplatToken {
       [`flags.${MODULE_ID}.bloodColor`]: null,
       [`flags.${MODULE_ID}.customBloodChecked`]: null,
     });
-  }
-
-  /**
-   * Allows us to set the bleedingEffect state without knowing whether it is showing or not.
-   * @category GMOnly
-   * @param {boolean} active - set to active or inactive
-   * @function
-   */
-  private async safeToggleBleedingEffect(active): Promise<void> {
-    // @ts-expect-error bad defs
-    if (!this.token.scene.active) return;
-    // @ts-expect-error bad defs
-    const bleedingActiveEffectPresent = this.token.actor.effects.entries.find(
-      (ae) => ae.data.icon === this.bleedingActiveEffectData.icon,
-    );
-
-    log(LogLevel.DEBUG, 'bleedingActiveEffectPresent', !!bleedingActiveEffectPresent);
-
-    // if we toggle to false when the icon is not present we'll hit the deleteActiveEffect hook and cause an
-    // infinite loop
-    if ((!active && bleedingActiveEffectPresent) || (active && !bleedingActiveEffectPresent)) {
-      // todo: toggleEffect is async should we wait
-      log(LogLevel.DEBUG, 'attempting to toggle bleeding effect to:', active);
-      // @ts-expect-error bad defs
-      return await this.token.toggleEffect(this.bleedingActiveEffectData, { active: active });
-    }
   }
 
   /**

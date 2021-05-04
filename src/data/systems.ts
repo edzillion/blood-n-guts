@@ -49,7 +49,6 @@ export default {
   dnd5e: {
     id: 'dnd5e',
     supportedTypes: ['character', 'npc'],
-    bleedingActiveEffectId: 'bleeding',
     currentHP: (token: Token): number => token.actor.data.data.attributes.hp.value,
     maxHP: (token: Token): number => token.actor.data.data.attributes.hp.max,
     currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.attributes?.hp?.value,

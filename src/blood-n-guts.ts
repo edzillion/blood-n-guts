@@ -67,27 +67,24 @@ export class BloodNGuts {
    * Wipes all scene and token splats. Optionally wipes flags too.
    * @category GMandPC
    * @param {boolean} save - whether to also wipe the scene flags.
-   * @param {boolean} [resetBleedingSeverity=false] - whether to also reset bleeding.
    * @function
    */
-  public static async wipeScene(save, resetBleedingSeverity = false): Promise<void> {
+  public static async wipeScene(save): Promise<void> {
     log(LogLevel.INFO, 'wipeScene');
-    this.wipeTokenSplats(resetBleedingSeverity);
+    this.wipeTokenSplats();
     await canvas.blood.wipeBlood(save);
   }
 
   /**
    * Wipes all token splats from the current scene. Does not update flags.
    * @category GMandPC
-   * @param {boolean} [resetBleedingSeverity=false] - whether to also reset bleeding.
    * @function
    */
-  public static wipeTokenSplats(resetBleedingSeverity = false): void {
+  public static wipeTokenSplats(): void {
     log(LogLevel.INFO, 'wipeTokenSplats');
     for (const tokenId in BloodNGuts.splatTokens) {
       // wipe only tokens on the current scene
-      if (BloodNGuts.splatTokens[tokenId].token.scene.id === canvas.scene.id)
-        BloodNGuts.splatTokens[tokenId].wipe(resetBleedingSeverity);
+      if (BloodNGuts.splatTokens[tokenId].token.scene.id === canvas.scene.id) BloodNGuts.splatTokens[tokenId].wipe();
     }
   }
 
@@ -520,35 +517,6 @@ Hooks.on('chatMessage', (_chatTab, commandString) => {
   }
 });
 
-Hooks.on('deleteActiveEffect', async (actor, effect) => {
-  if (
-    !isFirstActiveGM() ||
-    !hasProperty(BloodNGuts.system, 'bleedingActiveEffectId') ||
-    effect.flags.core.statusId !== BloodNGuts.system.bleedingActiveEffectId
-  )
-    return;
-  const splatToken = getSplatTokenByActorId(actor.data._id);
-  return await splatToken.token.setFlag(MODULE_ID, 'bleedingSeverity', 0);
-});
-
-Hooks.on('createActiveEffect', async (actor, effect) => {
-  if (
-    !isFirstActiveGM() ||
-    !hasProperty(BloodNGuts.system, 'bleedingActiveEffectId') ||
-    effect.flags.core.statusId !== BloodNGuts.system.bleedingActiveEffectId
-  )
-    return;
-  const splatToken = getSplatTokenByActorId(actor.data._id);
-  if (splatToken.disabled) return;
-
-  const currentHP = splatToken.hp;
-  const lastHP = BloodNGuts.system.ascendingDamage ? 0 : splatToken.maxHP;
-  const maxHP = splatToken.maxHP;
-  const initSeverity = splatToken.getDamageSeverity(currentHP, lastHP, maxHP);
-
-  return await splatToken.token.setFlag(MODULE_ID, 'bleedingSeverity', initSeverity);
-});
-
 // TOKEN PROTOTYPE
 
 Token.prototype.draw = (function () {
@@ -576,7 +544,7 @@ Token.prototype.draw = (function () {
       // if for some reason our mask is missing then recreate it
       // @ts-expect-error todo: find out why container is being destroyed
       if (!splatToken.disabled && (splatToken.container._destroyed || splatToken.container.children.length === 0)) {
-        log(LogLevel.WARN, 'recreating container');
+        log(LogLevel.DEBUG, 'recreating container for', splatToken.token.data.name);
         splatToken.container = new PIXI.Container();
         await BloodNGuts.splatTokens[this.id].createMask();
       }
