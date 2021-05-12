@@ -79,6 +79,25 @@ export default {
       if (creatureType) return creatureType.toLowerCase();
     },
   },
+  dsa5: {
+    id: 'dsa5',
+    supportedTypes: ['character', 'npc', 'creature'],
+    currentHP: (token: Token): number => token.actor.data.data.status.wounds.value,
+    maxHP: (token: Token): number => token.actor.data.data.status.wounds.max,
+    currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.status?.wounds?.value,
+    maxHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.status?.wounds?.max,
+    creatureType: (token: Token): string | void => {
+      const actorType: string = token.actor.data.type.toLowerCase();
+      let creatureType: string;
+      if (actorType === 'character' || actorType === 'npc') {
+        creatureType = token.actor.data.data.details.species.value;
+      } else if (actorType === 'creature') {
+        creatureType = token.actor.data.data.creatureClass.value.split(",")[0].trim();
+      }
+      log(LogLevel.DEBUG, 'creatureType dsa5: ', token.name, actorType, creatureType);
+      if (creatureType) return creatureType.toLowerCase();
+    },
+  },
   dnd5e: {
     id: 'dnd5e',
     supportedTypes: ['character', 'npc'],
