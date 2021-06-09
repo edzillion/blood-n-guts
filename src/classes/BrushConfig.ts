@@ -1,7 +1,10 @@
+import { getCanvas } from 'src/module/settings';
 import { MODULE_ID } from '../constants';
 
 export default class BrushConfig extends FormApplication {
-  static get defaultOptions(): FormApplicationOptions {
+  static get defaultOptions(): FormApplication.Options {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
       closeOnSubmit: false,
@@ -27,9 +30,9 @@ export default class BrushConfig extends FormApplication {
    * @override
    * @see {FormApplication#getData}
    */
-  getData(): BrushSettings {
+  getData(): any {
     // Return data to the template
-    return canvas.blood.brushSettings;
+    return getCanvas().blood.brushSettings;
   }
 
   /* -------------------------------------------- */
@@ -48,9 +51,9 @@ export default class BrushConfig extends FormApplication {
     super.activateListeners(html);
     const resetButton = html.find('.brush-config-reset-defaults');
     resetButton.click(() => {
-      Object.keys(canvas.blood.brushSettings).forEach(async (name: string) => {
-        await canvas.scene.unsetFlag(MODULE_ID, name);
-        canvas.blood.brushSettings = duplicate(canvas.blood.DEFAULTS_BRUSHSETTINGS);
+      Object.keys(getCanvas().blood.brushSettings).forEach(async (name: string) => {
+        await getCanvas().scene.unsetFlag(MODULE_ID, name);
+        getCanvas().blood.brushSettings = duplicate(getCanvas().blood.DEFAULTS_BRUSHSETTINGS);
       });
       this.render();
     });
@@ -70,10 +73,10 @@ export default class BrushConfig extends FormApplication {
     if (event.submitter?.name) {
       Object.entries(formData).forEach(async ([name, val]: [string, number]) => {
         const saveToFlag = event.submitter?.name === 'saveDefaults';
-        await canvas.blood.setSetting(saveToFlag, name, val);
+        await getCanvas().blood.setSetting(saveToFlag, name, val);
       });
 
-      canvas.blood.brushControls.render();
+      getCanvas().blood.brushControls.render();
 
       // If save button was clicked, close app
       if (event.submitter?.name === 'submit') {

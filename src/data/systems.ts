@@ -109,10 +109,10 @@ export default {
       const actorType: string = token.actor.data.type.toLowerCase();
       let creatureType: string;
       if (actorType === 'character') {
-        // @ts-expect-error bad definition
+        // ts-expect-error bad definition
         creatureType = token.actor.data.items.find((i) => i.type === 'race')?.name ?? '';
       } else if (actorType === 'npc') {
-        // @ts-expect-error bad definition
+        // ts-expect-error bad definition
         creatureType = token.actor.data.items.find((i) => i.type === 'class')?.name ?? '';
       }
 
@@ -302,7 +302,6 @@ export default {
       const actorType: string = token.actor.data.type.toLowerCase();
       let creatureType: string;
       if (actorType === 'character') {
-        // @ts-expect-error bad definition
         creatureType = token.actor.data.items.find((i) => i.type === 'race').name;
       } else if (actorType === 'npc') {
         creatureType = token.actor.data.data.attributes.creatureType;
@@ -445,7 +444,7 @@ export default {
       const actorType = token.actor.data.type.toLowerCase();
       let creatureType;
       if (actorType === 'character') {
-        // @ts-expect-error bad definition
+        // ts-expect-error bad definition
         creatureType = token.actor.data.items.find((i) => i.type === 'class').name;
       } else if (actorType === 'creature' || actorType === 'follower') {
         // name is currently the best we've got for a creatureType

@@ -2,6 +2,7 @@ import { computeSightFromPoint } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BloodLayer from './BloodLayer';
+import { getCanvas } from 'src/module/settings';
 
 /**
  * A Splat is an implementation of PlaceableObject which represents a static piece of artwork or prop within the Scene.
@@ -28,7 +29,9 @@ import BloodLayer from './BloodLayer';
  */
 
 export default class TileSplat extends Tile {
-  constructor(data: TileSplatData, scene = canvas.scene) {
+  private _drawTime: number;
+
+  constructor(data: TileSplatData, scene = getCanvas().scene) {
     super(data, scene);
 
     /**
@@ -37,11 +40,18 @@ export default class TileSplat extends Tile {
      * @private
      */
     this._drawTime = 0;
-
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     this.data._id = this.data.id;
     //todo: why is this necessary?
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     if (this.data.alpha != null) this.alpha = this.data.alpha;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     this.style = new PIXI.TextStyle(this.data.styleData);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     this.font = splatFonts.fonts[this.data.styleData.fontFamily];
   }
 
@@ -54,7 +64,7 @@ export default class TileSplat extends Tile {
    * @see {PlaceableObject#layer}
    */
   static get layer(): PlaceablesLayer {
-    return canvas.blood;
+    return getCanvas().blood;
   }
 
   /**
@@ -66,19 +76,23 @@ export default class TileSplat extends Tile {
    * @override
    * @see {Tile#draw}
    */
-  async draw(): Promise<TileSplat> {
+  async draw(): Promise<any> {
     log(LogLevel.DEBUG, 'TileSplat draw', this.id);
     this.clear();
     // Create the outer frame for the border and interaction handles
     this.frame = this.addChild(new PIXI.Container());
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     this.frame.border = this.frame.addChild(new PIXI.Graphics());
-    //@ts-expect-error missing definition
+    // @ts-expect-error missing definition
     this.frame.handle = this.frame.addChild(new ResizeHandle([1, 1]));
 
     // Create the tile container and it's child elements
     this.tile = this.addChild(new PIXI.Container());
 
     this.texture = null;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     this.tile.img = null;
 
     this.drawBlood();
@@ -109,7 +123,7 @@ export default class TileSplat extends Tile {
    * @override
    * @see {Tile#refresh}
    */
-  refresh(): TileSplat {
+  refresh(): any {
     log(LogLevel.DEBUG, 'TileSplat refresh', this.id);
     // Determine shape bounds and update the frame
     if (this.tile) {
@@ -140,7 +154,7 @@ export default class TileSplat extends Tile {
    */
   private refreshFrame({ x, y, width, height }): void {
     // Determine the border color
-    const colors = CONFIG.Canvas.dispositionColors;
+    const colors = getCanvas().dispositionColors;
     let bc = colors.INACTIVE;
     if (this._controlled) {
       bc = this.data.locked ? colors.HOSTILE : colors.CONTROLLED;
@@ -148,9 +162,11 @@ export default class TileSplat extends Tile {
 
     // Draw the border
     const pad = 6;
-    const t = CONFIG.Canvas.objectBorderThickness;
+    const t = getCanvas().objectBorderThickness;
     const h = Math.round(t / 2);
     const o = Math.round(h / 2) + pad;
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     this.frame.border
       .clear()
       .lineStyle(t, 0x000000)
@@ -159,7 +175,11 @@ export default class TileSplat extends Tile {
       .drawRect(x - o, y - o, width + 2 * o, height + 2 * o);
 
     // Draw the handle
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     this.frame.handle.position.set(x + width + o, y + height + o);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     this.frame.handle
       .clear()
       .beginFill(0x000000, 1.0)
@@ -179,8 +199,14 @@ export default class TileSplat extends Tile {
    */
   drawBlood(): void {
     log(LogLevel.DEBUG, 'TileSplat drawBlood');
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     for (let i = 0; i < this.data.drips.length; i++) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       const drip = this.data.drips[i];
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       const text = new PIXI.Text(drip.glyph, this.style);
       text.x = drip.x;
       text.y = drip.y;
@@ -197,14 +223,20 @@ export default class TileSplat extends Tile {
    * @param {PIXI.Point} position
    */
   private addDrips(position: PIXI.Point): void {
-    const drips = canvas.blood.generateDrips(
+    const drips = getCanvas().blood.generateDrips(
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       this.style,
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       this.font,
-      canvas.blood.brushSettings.brushDensity,
-      new PIXI.Point(canvas.blood.brushSettings.brushSpread * canvas.grid.size),
+      getCanvas().blood.brushSettings.brushDensity,
+      new PIXI.Point(getCanvas().blood.brushSettings.brushSpread * getCanvas().grid.size),
       position,
     );
     log(LogLevel.DEBUG, 'addDrips', drips[0].x, drips[0].y);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     drips.forEach((drip) => this.data.drips.push(drip));
   }
 
@@ -218,7 +250,7 @@ export default class TileSplat extends Tile {
    * @override
    * @see {Tile#embeddedName}
    */
-  static get embeddedName(): string {
+  static get embeddedName(): any {
     return 'TileSplat';
   }
 
@@ -233,9 +265,9 @@ export default class TileSplat extends Tile {
    * @override
    * @see {Tile#update}
    */
-  async update(data: TileSplatData, options = {}): Promise<TileSplat> {
+  async update(data: DeepPartial<TileSplatData>, options = {}): Promise<any> {
     data['_id'] = this.id;
-    await canvas.blood.updateNonEmbeddedEnties(data, options);
+    await getCanvas().blood.updateNonEmbeddedEnties(data, options);
     return this;
   }
 
@@ -289,6 +321,8 @@ export default class TileSplat extends Tile {
    * @see {Tile#_onDragLeftDrop}
    */
   _onDragLeftDrop(event: InteractionEvent): any {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     if (this._dragHandle) return this._onHandleDragDrop(event);
     return this._onSplatDragDrop(event);
   }
@@ -305,13 +339,13 @@ export default class TileSplat extends Tile {
 
     // Ensure the destination is within bounds
     const dest = event.data.destination;
-    if (!canvas.grid.hitArea.contains(dest.x, dest.y)) return false;
+    if (!getCanvas().grid.hitArea.contains(dest.x, dest.y)) return false;
 
     // Compute the final dropped positions
     const updates = clones.map((c) => {
       let dest = { x: c.data.x, y: c.data.y };
       if (!event.data.originalEvent.shiftKey) {
-        dest = canvas.grid.getSnappedPosition(c.data.x, c.data.y, canvas.blood.options.gridPrecision);
+        dest = getCanvas().grid.getSnappedPosition(c.data.x, c.data.y, getCanvas().blood.options.gridPrecision);
       }
       return { _id: c._original.id, x: dest.x, y: dest.y, rotation: c.data.rotation };
     });
@@ -337,7 +371,7 @@ export default class TileSplat extends Tile {
     const now = Date.now();
 
     // If the time since any drawing activity last occurred exceeds the sample rate - then add drips
-    if (now - this._drawTime >= canvas.blood.getSetting(false, 'brushFlow')) {
+    if (now - this._drawTime >= getCanvas().blood.getSetting(false, 'brushFlow')) {
       this.addDrips(position);
       this._drawTime = Date.now();
       this.draw();
@@ -356,7 +390,7 @@ export default class TileSplat extends Tile {
    */
   _onDelete(): void {
     this.release({ trigger: false });
-    const layer = canvas.blood;
+    const layer = getCanvas().blood;
     if (layer._hover === this) layer._hover = null;
   }
 }

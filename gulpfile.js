@@ -1,4 +1,3 @@
-
 const gulp = require('gulp');
 const typedoc = require('gulp-typedoc');
 const fs = require('fs-extra');
@@ -142,10 +141,31 @@ function buildTS() {
 }
 
 /**
+ * Build JavaScript
+ */
+ function buildJS() {
+	return gulp.src('src/**/*.js').pipe(gulp.dest('dist'));
+}
+
+/**
+ * Build JavaScript
+ */
+function buildMJS() {
+	return gulp.src('src/**/*.mjs').pipe(gulp.dest('dist'));
+}
+
+/**
+ * Build JavaScript
+ */
+ function buildCSS() {
+	return gulp.src('src/**/*.css').pipe(gulp.dest('dist'));
+}
+
+/**
  * Build Less
  */
 function buildLess() {
-	return gulp.src('src/*.less').pipe(less()).pipe(gulp.dest('dist'));
+	return gulp.src('src/**/*.less').pipe(less()).pipe(gulp.dest('dist'));
 }
 
 /**
@@ -153,7 +173,7 @@ function buildLess() {
  */
 function buildSASS() {
 	return gulp
-		.src('src/*.scss')
+		.src('src/**/*.scss')
 		.pipe(sass().on('error', sass.logError))
 		.pipe(gulp.dest('dist'));
 }
@@ -162,10 +182,11 @@ function buildSASS() {
  * Copy static files
  */
 async function copyFiles() {
-	const statics = [		
+	const statics = [
+		'lang',
 		'fonts',
-		'lang',			
-		'templates',		
+		'assets',
+		'templates',
 		'module.json',
 		'system.json',
 		'template.json',
@@ -190,6 +211,9 @@ function buildWatch() {
 	gulp.watch('src/**/*.ts', { ignoreInitial: false }, buildTS);
 	gulp.watch('src/**/*.less', { ignoreInitial: false }, buildLess);
 	gulp.watch('src/**/*.scss', { ignoreInitial: false }, buildSASS);
+	gulp.watch('src/**/*.js', { ignoreInitial: false }, buildJS);
+	gulp.watch('src/**/*.mjs', { ignoreInitial: false }, buildMJS);
+	gulp.watch('src/**/*.css', { ignoreInitial: false }, buildCSS);
 	gulp.watch(
 		['src/fonts', 'src/lang', 'src/templates', 'src/*.json'],
 		{ ignoreInitial: false },
@@ -214,15 +238,16 @@ async function clean() {
 		files.push(
 			'data',
 			'fonts',
-			'lang',			
-			'module',			
-			'templates',				
+			'lang',
+			'templates',
+			'assets',
+			'module',
 			`${name}.js`,
 			`constants.js`,
 			`${name}.css`,
 			'module.json',
 			'system.json',
-			'template.json'
+			'template.json',
 		);
 	}
 
@@ -441,7 +466,8 @@ function updateManifest(cb) {
 		manifest.file.version = targetVersion;
 
 		/* Update URLs */
-		const result = `${repoURL}/releases/download/v${manifest.file.version}/${manifest.file.name}-v${manifest.file.version}.zip`;
+
+		const result = `${rawURL}/v${manifest.file.version}/package/${manifest.file.name}-v${manifest.file.version}.zip`;
 
 		manifest.file.url = repoURL;
 		manifest.file.manifest = `${rawURL}/master/${manifestRoot}/${manifest.name}`;
@@ -492,7 +518,7 @@ function gitTag() {
 
 const execGit = gulp.series(gitAdd, gitCommit, gitTag);
 
-const execBuild = gulp.parallel(buildTS, buildLess, buildSASS, copyFiles);
+const execBuild = gulp.parallel(buildTS, buildJS, buildMJS, buildCSS, buildLess, buildSASS, copyFiles);
 
 exports.build = gulp.series(clean, execBuild);
 exports.watch = buildWatch;
@@ -505,7 +531,7 @@ exports.publish = gulp.series(
 	updateManifest,
 	execBuild,
 	packageBuild,
-	//execGit
+	execGit
 );
 exports.doc = gulp.task('typedoc', function() {
 	return gulp
