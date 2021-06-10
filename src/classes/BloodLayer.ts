@@ -13,10 +13,9 @@ import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BrushControls from './BrushControls';
 import SplatToken from './SplatToken';
-import { getCanvas } from 'src/module/settings';
+import { getCanvas } from '../module/settings';
 
-//ts-expect-error missing definition
-export default class BloodLayer extends TilesLayer {
+export default class BloodLayer extends PlaceablesLayer<Tile>{
   DEFAULTS_BRUSHSETTINGS: BrushSettings;
   DEFAULTS_TILESPLAT: TileSplatData;
   brushControls: BrushControls;

@@ -2,7 +2,7 @@ import { computeSightFromPoint } from '../module/helpers';
 import { log, LogLevel } from '../module/logging';
 import * as splatFonts from '../data/splatFonts';
 import BloodLayer from './BloodLayer';
-import { getCanvas } from 'src/module/settings';
+import { getCanvas } from '../module/settings';
 
 /**
  * A Splat is an implementation of PlaceableObject which represents a static piece of artwork or prop within the Scene.

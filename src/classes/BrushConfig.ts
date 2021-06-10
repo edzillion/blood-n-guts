@@ -1,4 +1,4 @@
-import { getCanvas } from 'src/module/settings';
+import { getCanvas } from '../module/settings';
 import { MODULE_ID } from '../constants';
 
 export default class BrushConfig extends FormApplication {

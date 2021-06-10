@@ -108,9 +108,14 @@ function updateBrushControls() {
   }
 }
 
-Hooks.on('getSceneControlButtons', handleGetSceneControlButtons);
-Hooks.on('renderSceneControls', handleRenderSceneControls);
 
-// Reset position when brush controls are rendered or sceneNavigation changes
-Hooks.on('renderBrushControls', updateBrushControls);
-Hooks.on('renderSceneNavigation', updateBrushControls);
+Hooks.on('ready', () => {
+	// Do anything once the module is ready
+  Hooks.on('getSceneControlButtons', handleGetSceneControlButtons);
+  Hooks.on('renderSceneControls', handleRenderSceneControls);
+  
+  // Reset position when brush controls are rendered or sceneNavigation changes
+  Hooks.on('renderBrushControls', updateBrushControls);
+  Hooks.on('renderSceneNavigation', updateBrushControls);
+});
+

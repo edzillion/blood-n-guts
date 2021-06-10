@@ -1,4 +1,4 @@
-import { getCanvas } from 'src/module/settings';
+import { getCanvas } from '../module/settings';
 import { BloodNGuts } from '../blood-n-guts';
 
 export default class BrushControls extends FormApplication {
