@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## [0.8.8] (Breaking changes for FOundryVTT 0.8.6 and newer)
+## [0.8.8][BETA] (Breaking changes for FOundryVTT 0.8.6 and newer)
 
 - Integration with libwrapper
 - Manage hooks with a new workflow

@@ -16,34 +16,34 @@ import * as splatFonts from '../data/splatFonts';
 import Systems from '../data/systems';
 import { BloodNGuts } from '../blood-n-guts';
 
-export let readyHooks = async () => {
+export const readyHooks = async () => {
 
     // setup all the hooks
     BloodNGuts.registerLayer();
 
     // Assign custom classes and constants here
     BloodNGuts.initialize();
-  
+
     if (Systems[game.system.id]) {
       BloodNGuts.system = Systems[game.system.id];
       log(LogLevel.INFO, 'loaded system', game.system.id);
     }
-  
+
     // Register custom module settings
     registerSettings();
-  
+
     for (const fontName in splatFonts.fonts) {
       const shorthand = '12px ' + fontName;
       (document as any).fonts.load(shorthand);
     }
-  
+
     BloodNGuts.allFonts = splatFonts.fonts;
     BloodNGuts.allFontsReady = (document as any).fonts.ready;
-  
+
     BloodNGuts.sceneLoading = false;
     window.BloodNGuts = BloodNGuts;
     Hooks.call('bloodNGutsReady');
-  
+
     Hooks.once('canvasInit', () => {
       if (isFirstActiveGM()) {
         // load custom system from settings if possible
@@ -67,7 +67,7 @@ export let readyHooks = async () => {
         } else ui.notifications.notify(`Blood 'n Guts - loaded compatible system: ${game.system.id}`, 'info');
       }
     });
-    
+
     Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
     Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
     Hooks.on('updateActor', (actor, changes) => {
@@ -78,12 +78,12 @@ export let readyHooks = async () => {
       const token = (<Canvas>getCanvas()).tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === actor.id);
       if (token) BloodNGuts.updateTokenOrActorHandler(getCanvas().scene, token.data, changes);
     });
-    
+
     Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
     Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
     Hooks.on('renderSettingsConfig', BloodNGuts.renderSettingsConfigHandler);
     Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
-    
+
     Hooks.on('chatMessage', (_chatTab, commandString) => {
       const commands = commandString.split(' ');
       if (commands[0] != '/blood') return;
@@ -99,31 +99,31 @@ export let readyHooks = async () => {
 
     //@ts-ignore
     libWrapper.register(MODULE_ID, 'Token.prototype.draw', TokenPrototypeDrawHandler, 'MIXED');
-    
+
     // Register custom sheets (if any)
-  
+
   }
-  
+
   export let setupHooks = () => {
 
   }
-  
-  
-  
+
+
+
   export let initHooks = () => {
     console.log("Init Hooks processing");
-    
-  
+
+
   }
 
 // TOKEN PROTOTYPE
 
 const TokenPrototypeDrawHandler = async function (wrapped, ...args) {
     // const cached = Token.prototype.draw;
-  
+
     // return async function () {
     //   await cached.apply(this);
-  
+
       if (
         (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'masterViolenceLevel') === 'Disabled') ||
         getCanvas().scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled' ||
@@ -138,7 +138,7 @@ const TokenPrototypeDrawHandler = async function (wrapped, ...args) {
         return wrapped(...args);
       }
       let splatToken: SplatToken;
-  
+
       if (BloodNGuts.splatTokens[this.id]) {
         splatToken = BloodNGuts.splatTokens[this.id];
         // if for some reason our mask is missing then recreate it
