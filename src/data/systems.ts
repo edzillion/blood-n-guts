@@ -79,6 +79,25 @@ export default {
       if (creatureType) return creatureType.toLowerCase();
     },
   },
+  dsa5: {
+    id: 'dsa5',
+    supportedTypes: ['character', 'npc', 'creature'],
+    currentHP: (token: Token): number => token.actor.data.data.status.wounds.value,
+    maxHP: (token: Token): number => token.actor.data.data.status.wounds.max,
+    currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.status?.wounds?.value,
+    maxHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.status?.wounds?.max,
+    creatureType: (token: Token): string | void => {
+      const actorType: string = token.actor.data.type.toLowerCase();
+      let creatureType: string;
+      if (actorType === 'character' || actorType === 'npc') {
+        creatureType = token.actor.data.data.details.species.value;
+      } else if (actorType === 'creature') {
+        creatureType = token.actor.data.data.creatureClass.value.split(',')[0].trim();
+      }
+      log(LogLevel.DEBUG, 'creatureType dsa5: ', token.name, actorType, creatureType);
+      if (creatureType) return creatureType.toLowerCase();
+    },
+  },
   dnd5e: {
     id: 'dnd5e',
     supportedTypes: ['character', 'npc'],
@@ -109,10 +128,10 @@ export default {
       const actorType: string = token.actor.data.type.toLowerCase();
       let creatureType: string;
       if (actorType === 'character') {
-        // @ts-expect-error bad definition
+        // ts-expect-error bad definition
         creatureType = token.actor.data.items.find((i) => i.type === 'race')?.name ?? '';
       } else if (actorType === 'npc') {
-        // @ts-expect-error bad definition
+        // ts-expect-error bad definition
         creatureType = token.actor.data.items.find((i) => i.type === 'class')?.name ?? '';
       }
 
@@ -291,6 +310,28 @@ export default {
       if (creatureType) return creatureType.toLowerCase();
     },
   },
+  gurps: {
+    id: 'gurps',
+    currentHP: (token) => token.actor.data.data.HP.value,
+    maxHP: (token) => token.actor.data.data.HP.max,
+    currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.HP?.value,
+    maxHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.HP?.max,
+    creatureType: (token: Token, bloodColorSettings?: Record<string, string>): string | void => {
+      let creatureType: string;
+      // No races or creatureTypes in GURPS apparently
+      creatureType = token.actor.data.data.additionalresources.bloodtype;
+      if (!bloodColorSettings[creatureType]) {
+        // Instead just search through the name for possible creature type
+        const wordsInName: Array<string> = token.actor.data.name.replace(',', ' ').split(' ');
+        for (let i = 0; i < wordsInName.length; i++) {
+          const word = wordsInName[i].toLowerCase();
+          if (bloodColorSettings[word]) creatureType = word;
+        }
+      }
+      log(LogLevel.DEBUG, 'creatureType gurps: ', token.name, creatureType);
+      if (creatureType) return creatureType.toLowerCase();
+    },
+  },
   D35E: {
     id: 'D35E',
     supportedTypes: ['character', 'npc'],
@@ -302,7 +343,6 @@ export default {
       const actorType: string = token.actor.data.type.toLowerCase();
       let creatureType: string;
       if (actorType === 'character') {
-        // @ts-expect-error bad definition
         creatureType = token.actor.data.items.find((i) => i.type === 'race').name;
       } else if (actorType === 'npc') {
         creatureType = token.actor.data.data.attributes.creatureType;
@@ -445,7 +485,7 @@ export default {
       const actorType = token.actor.data.type.toLowerCase();
       let creatureType;
       if (actorType === 'character') {
-        // @ts-expect-error bad definition
+        // ts-expect-error bad definition
         creatureType = token.actor.data.items.find((i) => i.type === 'class').name;
       } else if (actorType === 'creature' || actorType === 'follower') {
         // name is currently the best we've got for a creatureType

@@ -6,13 +6,22 @@
 
 ## Table of contents
 
-* [Overview](#overview)
-* [Features](#features)
-* [Installation](#installation)
-* [Settings For House Rules](#settings-for-house-rules)
-* [Customization](#customization)
-* [Performance & Clearing Blood](#performance-&-clearing-blood)
-* [Credits and Thanks](#credits-and-thanks)
+- [blood-n-guts - A module for FoundryVTT](#blood-n-guts---a-module-for-foundryvtt)
+  - [Table of contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Features](#features)
+  - [Installation](#installation)
+    - [libWrapper](#libwrapper)
+  - [Settings For House Rules](#settings-for-house-rules)
+  - [Customization](#customization)
+    - [Adding a Custom Font](#adding-a-custom-font)
+    - [Customizing Blood Color](#customizing-blood-color)
+    - [Customising Violence Levels](#customising-violence-levels)
+  - [Performance & Clearing Blood](#performance--clearing-blood)
+  - [Changelog](#changelog)
+  - [Issues](#issues)
+  - [Credits and Thanks](#credits-and-thanks)
+  - [Acknowledgements](#acknowledgements)
 
 ## Overview
 
@@ -31,10 +40,21 @@ Blood 'n Guts is a module for FoundryVTT that draws blood splats on tokens and f
 
 ## Installation
 
-Paste the link to the `module.json` file into the 'Manifest URL' field in 'Install Module'.
-> `https://raw.githubusercontent.com/edzillion/blood-n-guts/master/src/module.json`
+It's always easiest to install modules from the in game add-on browser.
+
+To install this module manually:
+1.  Inside the Foundry "Configuration and Setup" screen, click "Add-on Modules"
+2.  Click "Install Module"
+3.  In the "Manifest URL" field, paste the following url:
+`https://raw.githubusercontent.com/edzillion/blood-n-guts/master/src/module.json`
+1.  Click 'Install' and wait for installation to complete
+2.  Don't forget to enable the module in game using the "Manage Module" button
 
 Or download the latest zip file here: [https://github.com/edzillion/blood-n-guts/releases](https://github.com/edzillion/blood-n-guts/releases)
+
+### libWrapper
+
+This module uses the [libWrapper](https://github.com/ruipin/fvtt-lib-wrapper) library for wrapping core methods. It is a hard dependency and it is recommended for the best experience and compatibility with other modules.
 
 ## Settings For House Rules
 
@@ -159,6 +179,12 @@ There are 3 ways to clear blood from the current scene:
 
 ![screenshot](./media/screenshot.png#right)
 
+## [Changelog](./changelog.md)
+
+## Issues
+
+Any issues, bugs, or feature requests are always welcome to be reported directly to the [Issue Tracker](https://github.com/edzillion/blood-n-guts/issues ), or using the [Bug Reporter Module](https://foundryvtt.com/packages/bug-reporter/).
+
 ## Credits and Thanks
 
 Thanks to @Fyorl @vance @skimble @sky @Monkeyy and @Erecon for tech help. Thanks to @ApoApostolov for testing and feedback.
@@ -169,3 +195,9 @@ Thanks to @Fyorl @vance @skimble @sky @Monkeyy and @Erecon for tech help. Thanks
 * `Sigali` font font provided by [Dylan Culhane](https://www.dafont.com/profile.php?user=931672)
 * `WM Shapes 1` font provided by [WillyMac](https://www.dafont.com/willymac.d527)
 * `Starz 2` font provided by [Imagex](http://www.imagex-fonts.com)
+
+## Acknowledgements
+
+Bootstrapped with League of Extraordinary FoundryVTT Developers  [foundry-vtt-types](https://github.com/League-of-Foundry-Developers/foundry-vtt-types).
+
+Mad props to the 'League of Extraordinary FoundryVTT Developers' community which helped me figure out a lot.

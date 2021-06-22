@@ -2,6 +2,7 @@ import { MODULE_TITLE } from '../constants';
 import BrushConfig from '../classes/BrushConfig';
 import { isFirstActiveGM } from './helpers';
 import { BloodNGuts } from '../blood-n-guts';
+import { getCanvas } from './settings';
 
 /**
  * Add control buttons
@@ -19,9 +20,9 @@ function handleGetSceneControlButtons(controls) {
           title: 'Toggle blood layer on/off',
           icon: 'fas fa-eye',
           onClick: () => {
-            canvas.blood.toggle();
+            getCanvas().blood.toggle();
           },
-          active: canvas?.blood?.visible || false,
+          active: getCanvas()?.blood?.visible || false,
           toggle: true,
         },
         {
@@ -39,7 +40,7 @@ function handleGetSceneControlButtons(controls) {
           title: 'Configure blood brush',
           icon: 'fas fa-cog',
           onClick: () => {
-            // @ts-expect-error defintions wrong
+            // ts-expect-error defintions wrong
             new BrushConfig().render(true);
           },
           button: true,
@@ -84,7 +85,7 @@ function handleRenderSceneControls(controls) {
   if (controls.activeControl === 'blood') {
     // Open brush tools if not already open
     if (!$('#brush-controls').length) {
-      canvas.blood.createBrushControls();
+      getCanvas().blood.createBrushControls();
     }
   }
   // Switching away from layer
@@ -107,9 +108,14 @@ function updateBrushControls() {
   }
 }
 
-Hooks.on('getSceneControlButtons', handleGetSceneControlButtons);
-Hooks.on('renderSceneControls', handleRenderSceneControls);
 
-// Reset position when brush controls are rendered or sceneNavigation changes
-Hooks.on('renderBrushControls', updateBrushControls);
-Hooks.on('renderSceneNavigation', updateBrushControls);
+Hooks.on('ready', () => {
+	// Do anything once the module is ready
+  Hooks.on('getSceneControlButtons', handleGetSceneControlButtons);
+  Hooks.on('renderSceneControls', handleRenderSceneControls);
+  
+  // Reset position when brush controls are rendered or sceneNavigation changes
+  Hooks.on('renderBrushControls', updateBrushControls);
+  Hooks.on('renderSceneNavigation', updateBrushControls);
+});
+

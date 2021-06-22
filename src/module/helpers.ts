@@ -2,6 +2,7 @@ import { log, LogLevel } from './logging';
 import { MODULE_ID } from '../constants';
 import { BloodNGuts } from '../blood-n-guts';
 import SplatToken from '../classes/SplatToken';
+import { getCanvas } from './settings';
 
 /**
  * Helper functions.
@@ -19,8 +20,8 @@ import SplatToken from '../classes/SplatToken';
 export const alignDripsGetOffsetAndDimensions = (
   splats: Array<any>,
 ): { dripsOffset: PIXI.Point; dripsWidth: number; dripsHeight: number } => {
-  let lowestX = canvas.dimensions.sceneWidth;
-  let lowestY = canvas.dimensions.sceneHeight;
+  let lowestX = getCanvas().dimensions.sceneWidth;
+  let lowestY = getCanvas().dimensions.sceneHeight;
   let highestX = 0;
   let highestY = 0;
   for (let i = 0; i < splats.length; i++) {
@@ -52,14 +53,14 @@ export const alignDripsGetOffsetAndDimensions = (
  * @returns {Array<number>} - 1d array with alternating (x,y) positions. e.g. [x1,y1,x2,y2...]
  */
 export const computeSightFromPoint = (fromPoint: PIXI.Point, range: number): [number] => {
-  const walls: Array<any> = canvas.walls.blockMovement;
+  const walls: Array<any> = getCanvas().walls.blockMovement;
   const minAngle = 360,
     maxAngle = 360;
   const cullDistance = 5; //tiles?
   const cullMult = 2; //default
   const density = 6; //default
 
-  const sight = canvas.sight.constructor.computeSight(
+  const sight = getCanvas().sight.constructor.computeSight(
     fromPoint,
     range,
     minAngle,
@@ -70,8 +71,8 @@ export const computeSightFromPoint = (fromPoint: PIXI.Point, range: number): [nu
     walls,
   );
 
-  let lowestX = canvas.dimensions.sceneWidth;
-  let lowestY = canvas.dimensions.sceneHeight;
+  let lowestX = getCanvas().dimensions.sceneWidth;
+  let lowestY = getCanvas().dimensions.sceneHeight;
 
   for (let i = 0; i < sight.fov.points.length; i += 2) {
     lowestX = sight.fov.points[i] < lowestX ? sight.fov.points[i] : lowestX;
@@ -163,7 +164,7 @@ export const getNestedProp = (theObject: any, path: string, separator?: string):
 export const drawDebugRect = (container: PIXI.Container, width = 2, color = 0xff0000): void => {
   const rect = new PIXI.Graphics();
   rect.lineStyle(width, color).drawRect(container.x, container.y, container.width, container.height);
-  canvas.drawings.addChild(rect);
+  getCanvas().drawings.addChild(rect);
   log(LogLevel.DEBUG, 'drawDebugRect: ', container);
 };
 
@@ -178,7 +179,7 @@ export const drawDebugRect = (container: PIXI.Container, width = 2, color = 0xff
 export const drawDebugRect2 = (x, y, w, h, width = 2, color = 0xff0000): void => {
   const rect = new PIXI.Graphics();
   rect.lineStyle(width, color).drawRect(x, y, w, h);
-  canvas.drawings.addChild(rect);
+  getCanvas().drawings.addChild(rect);
 };
 
 export function replaceSelectChoices(select, choices): void {
@@ -323,7 +324,7 @@ export const lookupTokenBloodColor = (token: Token): string => {
   } // if useBloodColor is disabled or we haven't yet set a system then all blood is blood red
   else if (!bloodColorEnabled || !BloodNGuts.system) return getHexColor('blood');
 
-  const bloodColors = game.settings.get(MODULE_ID, 'bloodColors');
+  const bloodColors = <Record<string, string>>game.settings.get(MODULE_ID, 'bloodColors');
   const creatureType = BloodNGuts.system.creatureType(token, bloodColors);
   if (!creatureType) {
     log(LogLevel.WARN, 'lookupTokenBloodColor missing creatureType for token:', token.data.name);

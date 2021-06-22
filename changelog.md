@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [0.8.8][BETA] (Breaking changes for FOundryVTT 0.8.6 and newer)
+
+- Integration with libwrapper
+- Manage hooks with a new workflow
+- Bootstrapped with League of Extraordinary FoundryVTT Developers foundry-vtt-types
+- Minor bug fix.
+- Integration of pull request [Add support for 'gurps' system](https://github.com/edzillion/blood-n-guts/pull/223/files)
+- Integration of pull request [Support for The Dark Eye / Das schwarze Auge 5th Ed.](https://github.com/edzillion/blood-n-guts/pull/272/)
+- Integration of [Implement libwrapper to wrap token.draw call](https://github.com/edzillion/blood-n-guts/issues/268)
+- Integration of [0.8.x support](https://github.com/edzillion/blood-n-guts/issues/276)
 ## [0.8.7]
 
 ### FEATURES
@@ -10,7 +20,6 @@
 - Better handling of active/inactive scenes: GM can now set up blood on an inactive scene before they activate it. Blood effects will only be created on a scene if the GM is viewing it, but all scenes will show (already created blood to all users whether a scene active or not.
 - Limit notifications to GM only.
 - User warnings now shown in Game Settings.
-
 ### BUGS
 
 - Fix rotation issues with locked tokens. 
