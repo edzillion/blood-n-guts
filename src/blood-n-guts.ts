@@ -280,7 +280,7 @@ export class BloodNGuts {
     const attributes = tokenConfig.constructor.getTrackedAttributes(tokenConfig.object.actor.data.data);
 
     const attributeChoices = {
-
+      // @ts-expect-error missing definition
       'Trackable Attributes': tokenConfig.constructor.getTrackedAttributeChoices(attributes)['Attribute Bars'],
     };
     let currentAttributeChoice;
