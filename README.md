@@ -51,7 +51,7 @@ A common house rule is to show blood at 50% health. This can be achieved by sett
 
 **Recomended Forge workflow**: install and enable module, files will be created in `Assets Library`. Go there are download `blood-n-guts` folder. Edit files locally, then upload back to same location.
 
-⚙️ Since v0.6.9 it is now possible to save settings permanently. These settings files are stored in `/Data/blood-n-guts/` (note: this is *not* inside the `modules` folder). The files (in JSON format) and the folders will be created for you on install.
+⚙️ Since v0.6.9 it is now possible to save settings permanently. These settings files are stored in `/Data/blood-n-guts/` (note: this is *not* inside the `modules` folder). The files (in [JSON format](https://www.scaler.com/topics/read-json-file-in-python/)) and the folders will be created for you on install.
 
 * If you add a customisation with the same name as a default - it will overwrite the default with your settings.
 * New entries will be added in addition to the defaults.
