@@ -1,17 +1,32 @@
 {
-  "compilerOptions": {
-    "target": "es6",
-    "lib": ["es6", "dom"],
-    "types": ["foundry-pc-types", "node", "jquery", "async"],
-    "moduleResolution": "node",
-    "resolveJsonModule" : true,
-    "baseUrl": "./",
-    "paths" : {
-      "src/*": ["./src/*"]
-    },
-    "sourceMap": true,
-    // "inlineSourceMap": true,
-    // "inlineSources": true
-  },
-  "exclude": ["node_modules", "dist"]
-}
+	"compilerOptions":{
+	   "moduleResolution":"node",
+	   "noEmit":false,
+	   "strict":false,
+	   "target":"es2020",
+	   "lib":[
+		  "DOM",
+		  "ES6",
+		  "ES2020"
+	   ],
+	   "types":[
+		  "node",
+		  "async",
+		  "@league-of-foundry-developers/foundry-vtt-types"
+	   ],
+	   "resolveJsonModule":true,
+	   "baseUrl":"./",
+	   "paths":{
+		  "src/*":[
+			 "./src/*"
+		  ]
+	   },
+	   "sourceMap":true,
+	   "inlineSourceMap":false,
+	   "inlineSources":false
+	},
+	"exclude":[
+	   "node_modules",
+	   "dist"
+	]
+ }

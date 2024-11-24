@@ -6,7 +6,7 @@
  * @author [edzillion]{@link https://github.com/edzillion}
  */
 
-import { registerSettings, violenceLevelChoices } from './module/settings';
+import { getCanvas, registerSettings, violenceLevelChoices } from './module/settings';
 import { log, LogLevel } from './module/logging';
 import {
   getRandomGlyph,
@@ -22,6 +22,8 @@ import SplatToken from './classes/SplatToken';
 import BloodLayer from './classes/BloodLayer';
 import * as splatFonts from './data/splatFonts';
 import Systems from './data/systems';
+import { initHooks, readyHooks, setupHooks } from './module/Hooks';
+import { preloadTemplates } from './module/preloadTemplates';
 
 //CONFIG.debug.hooks = true;
 CONFIG[MODULE_ID] = { logLevel: 2 };
@@ -50,11 +52,11 @@ export class BloodNGuts {
 
   // register this layer with Foundry
   public static registerLayer(): void {
-    // @ts-expect-error missing definition
-    const layers = mergeObject(Canvas.layers, {
+    // ts-expect-error missing definition
+    const layers = mergeObject(getCanvas().layers, {
       blood: BloodLayer,
     });
-    // @ts-expect-error missing definition
+    // ts-expect-error missing definition
     Object.defineProperty(Canvas, 'layers', {
       get: function () {
         return layers;
@@ -71,7 +73,7 @@ export class BloodNGuts {
   public static async wipeScene(save): Promise<void> {
     log(LogLevel.INFO, 'wipeScene');
     this.wipeTokenSplats();
-    await canvas.blood.wipeBlood(save);
+    await getCanvas().blood.wipeBlood(save);
   }
 
   /**
@@ -83,7 +85,9 @@ export class BloodNGuts {
     log(LogLevel.INFO, 'wipeTokenSplats');
     for (const tokenId in BloodNGuts.splatTokens) {
       // wipe only tokens on the current scene
-      if (BloodNGuts.splatTokens[tokenId].token.scene.id === canvas.scene.id) BloodNGuts.splatTokens[tokenId].wipe();
+      if (BloodNGuts.splatTokens[tokenId].token.scene.id === getCanvas().scene.id){
+        BloodNGuts.splatTokens[tokenId].wipe();
+      }
     }
   }
 
@@ -99,7 +103,7 @@ export class BloodNGuts {
    */
   public static drawDOMSplats(
     html: HTMLElement,
-    font: SplatFont = BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
+    font: SplatFont = BloodNGuts.allFonts[<string>game.settings.get(MODULE_ID, 'tokenSplatFont')],
     size: number,
     density: number,
     bloodColor: string,
@@ -191,7 +195,7 @@ export class BloodNGuts {
           return;
         }
       }
-      // @ts-expect-error bad defs
+      // ts-expect-error bad defs
       if (scene.id === game.scenes.viewed.id && !splatToken.disabled) {
         splatToken.trackChanges(changes);
       }
@@ -207,7 +211,7 @@ export class BloodNGuts {
   public static canvasReadyHandler(canvas: any): void {
     // sync system violence level with scene
     if (isFirstActiveGM()) {
-      const violenceLvl = canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel');
+      const violenceLvl = getCanvas().scene.getFlag(MODULE_ID, 'sceneViolenceLevel');
       log(LogLevel.DEBUG, 'canvasReadyHandler, violence Level:', violenceLvl);
       if (violenceLvl != null) {
         BloodNGuts.disabled = violenceLvl === 'Disabled' ? true : false;
@@ -218,17 +222,17 @@ export class BloodNGuts {
     // checking for active means that a non-active scene will not be preSplatted on
     // navigating to it. User can still activate scene to plesplat all tokens, and
     // tokens will be presplatted when added to the scene, damaged etc.
-    if (!canvas.scene.active || BloodNGuts.disabled) return;
-    log(LogLevel.INFO, 'canvasReady, active:', canvas.scene.name);
+    if (!getCanvas().scene.active || BloodNGuts.disabled) return;
+    log(LogLevel.INFO, 'canvasReady, active:', getCanvas().scene.name);
 
     if (!isGMPresent()) {
       BloodNGuts.disabled = true;
     } else if (isFirstActiveGM()) {
       for (const tokenId in BloodNGuts.splatTokens) {
-        // @ts-expect-error bad def
+        // ts-expect-error bad def
         if (BloodNGuts.splatTokens[tokenId].token.scene.active) BloodNGuts.splatTokens[tokenId].preSplat();
       }
-      canvas.blood.commitHistory();
+      getCanvas().blood.commitHistory();
     }
   }
 
@@ -246,7 +250,7 @@ export class BloodNGuts {
     //@ts-expect-error missing definition
     if (BloodNGuts.splatTokens[token._id]) delete BloodNGuts.splatTokens[token._id];
     //@ts-expect-error missing definition
-    canvas.blood.deleteMany(token._id);
+    getCanvas().blood.deleteMany(token._id);
   }
 
   /**
@@ -265,7 +269,7 @@ export class BloodNGuts {
     const imageTab = html.find('.tab[data-tab="image"]');
     const choices = { '': '' };
 
-    for (const levelName in game.settings.get(MODULE_ID, 'violenceLevels')) {
+    for (const levelName in <string[]>game.settings.get(MODULE_ID, 'violenceLevels')) {
       choices[levelName] = levelName;
     }
 
@@ -276,7 +280,7 @@ export class BloodNGuts {
     const attributes = tokenConfig.constructor.getTrackedAttributes(tokenConfig.object.actor.data.data);
 
     const attributeChoices = {
-      // @ts-expect-error missing definition
+
       'Trackable Attributes': tokenConfig.constructor.getTrackedAttributeChoices(attributes)['Attribute Bars'],
     };
     let currentAttributeChoice;
@@ -347,7 +351,7 @@ export class BloodNGuts {
         bloodColorText.prop('disabled', false);
         fontSelects.prop('disabled', false);
         if (data.selectedColor !== 'none') {
-          bloodColorText.val(data.selectedColor);
+          bloodColorText.val(<string>data.selectedColor);
         }
       }
     });
@@ -377,9 +381,9 @@ export class BloodNGuts {
       await game.settings.set(MODULE_ID, 'system', BloodNGuts.system);
 
       // wipe layer and history as it will conflict with new data
-      await canvas.blood.wipeBlood(true);
+      await getCanvas().blood.wipeBlood(true);
       // then redraw the canvas to create SplatTokens
-      await canvas.draw();
+      await getCanvas().draw();
     });
 
     tokenConfig.setPosition({ height: 'auto' });
@@ -395,15 +399,18 @@ export class BloodNGuts {
   static renderSettingsConfigHandler(settingsConfig: SettingsConfig, html: JQuery): void {
     const selectViolenceLevel = html.find('select[name="blood-n-guts.masterViolenceLevel"]');
 
-    replaceSelectChoices(selectViolenceLevel, violenceLevelChoices(game.settings.get(MODULE_ID, 'violenceLevels')));
+    replaceSelectChoices(
+      selectViolenceLevel,
+      violenceLevelChoices(<Record<string, ViolenceLevel>>game.settings.get(MODULE_ID, 'violenceLevels')),
+    );
 
     // if GM has set this scene's violence level to Disabled then only show that
     // option to players
-    if (!isFirstActiveGM() && canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled') {
+    if (!isFirstActiveGM() && getCanvas().scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled') {
       selectViolenceLevel.val('Disabled');
       selectViolenceLevel.attr('disabled', 'disabled');
     } else {
-      selectViolenceLevel.val(game.settings.get(MODULE_ID, 'masterViolenceLevel'));
+      selectViolenceLevel.val(<string>game.settings.get(MODULE_ID, 'masterViolenceLevel'));
     }
 
     // inject warning message if relevant
@@ -435,136 +442,49 @@ export class BloodNGuts {
 
 // HOOKS
 
-Hooks.once('init', () => {
-  BloodNGuts.registerLayer();
+/* ------------------------------------ */
+/* Initialize module					*/
+/* ------------------------------------ */
+Hooks.once('init', async () => {
+	console.log(`${MODULE_ID} | Initializing ${MODULE_ID}`);
 
-  // Assign custom classes and constants here
-  BloodNGuts.initialize();
+  	// Register custom module settings
+	registerSettings();
 
-  if (Systems[game.system.id]) {
-    BloodNGuts.system = Systems[game.system.id];
-    log(LogLevel.INFO, 'loaded system', game.system.id);
-  }
+	// Assign custom classes and constants here
+	initHooks();
 
-  // Register custom module settings
-  registerSettings();
+	// Preload Handlebars templates
+	await preloadTemplates();
+	// Register custom sheets (if any)
 
-  for (const fontName in splatFonts.fonts) {
-    const shorthand = '12px ' + fontName;
-    (document as any).fonts.load(shorthand);
-  }
-
-  BloodNGuts.allFonts = splatFonts.fonts;
-  BloodNGuts.allFontsReady = (document as any).fonts.ready;
 });
 
+/* ------------------------------------ */
+/* Setup module							*/
+/* ------------------------------------ */
+
+Hooks.once('setup', function () {
+	// Do anything after initialization but before ready
+	// setupModules();
+
+	//registerSettings();
+
+	setupHooks();
+});
+
+/* ------------------------------------ */
+/* When ready							*/
+/* ------------------------------------ */
 Hooks.once('ready', () => {
-  BloodNGuts.sceneLoading = false;
-  window.BloodNGuts = BloodNGuts;
-  Hooks.call('bloodNGutsReady');
+	// Do anything once the module is ready
+	if (!game.modules.get("lib-wrapper")?.active && game.user.isGM){
+		 ui.notifications.error(`The '${MODULE_ID}' module requires to install and activate the 'libWrapper' module.`);
+		 return;
+	}
+
+	readyHooks();
 });
 
-Hooks.once('canvasInit', () => {
-  if (isFirstActiveGM()) {
-    // load custom system from settings if possible
-    if (BloodNGuts.system == null) {
-      const sys = game.settings.get(MODULE_ID, 'system');
-      if (sys) {
-        log(LogLevel.INFO, 'custom system found');
-        if (sys.id !== game.system.id)
-          log(LogLevel.ERROR, 'saved custom system does not match current system!', sys.id, game.system.id);
-        else if (sys.supportedTypes == null || sys.supportedTypes.length === 0)
-          log(LogLevel.WARN, 'saved custom system has no supportedTypes!', sys);
-        else {
-          BloodNGuts.system = generateCustomSystem(sys.id, sys.supportedTypes, sys.customAttributePaths);
-          ui.notifications.notify(`Blood 'n Guts - loaded custom system: ${game.system.id}`, 'info');
-          log(LogLevel.INFO, 'loaded custom system', game.system.id);
-          return;
-        }
-      }
-      ui.notifications.notify(`Blood 'n Guts - no compatible system: ${game.system.id}`, 'warning');
-      log(LogLevel.WARN, 'no compatible system found', game.system.id);
-    } else ui.notifications.notify(`Blood 'n Guts - loaded compatible system: ${game.system.id}`, 'info');
-  }
-});
+// Add any additional hooks if necessary
 
-Hooks.on('canvasReady', BloodNGuts.canvasReadyHandler);
-Hooks.on('updateToken', BloodNGuts.updateTokenOrActorHandler);
-Hooks.on('updateActor', (actor, changes) => {
-  //changes.token are changes to the prototype?
-  if (changes.token || changes.sort) return;
-  // convert into same structure as token changes.
-  if (changes.data) changes.actorData = { data: changes.data };
-  const token = canvas.tokens.placeables.filter((t) => t.actor).find((t) => t.actor.id === actor.id);
-  if (token) BloodNGuts.updateTokenOrActorHandler(canvas.scene, token.data, changes);
-});
-
-Hooks.on('deleteToken', BloodNGuts.deleteTokenHandler);
-Hooks.on('renderTokenConfig', BloodNGuts.renderTokenConfigHandler);
-Hooks.on('renderSettingsConfig', BloodNGuts.renderSettingsConfigHandler);
-Hooks.on('getUserContextOptions', BloodNGuts.getUserContextOptionsHandler);
-
-Hooks.on('chatMessage', (_chatTab, commandString) => {
-  const commands = commandString.split(' ');
-  if (commands[0] != '/blood') return;
-  switch (commands[1]) {
-    case 'clear':
-      BloodNGuts.wipeScene(isFirstActiveGM());
-      return false;
-    default:
-      log(LogLevel.ERROR, 'chatMessage, unknown command ' + commands[1]);
-      return false;
-  }
-});
-
-// TOKEN PROTOTYPE
-
-Token.prototype.draw = (function () {
-  const cached = Token.prototype.draw;
-
-  return async function () {
-    await cached.apply(this);
-
-    if (
-      (!isFirstActiveGM() && game.settings.get(MODULE_ID, 'masterViolenceLevel') === 'Disabled') ||
-      canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel') === 'Disabled' ||
-      !this.icon ||
-      this._original?.data?._id ||
-      !this.actor ||
-      !BloodNGuts.system ||
-      !BloodNGuts.system.supportedTypes.includes(this.actor.data.type.toLowerCase())
-    ) {
-      log(LogLevel.INFO, 'Token.draw() not creating SplatToken for', this.data.name);
-      return this; //no icon or dragging, or not supported
-    }
-    let splatToken: SplatToken;
-
-    if (BloodNGuts.splatTokens[this.id]) {
-      splatToken = BloodNGuts.splatTokens[this.id];
-      // if for some reason our mask is missing then recreate it
-      // @ts-expect-error todo: find out why container is being destroyed
-      if (!splatToken.disabled && (splatToken.container._destroyed || splatToken.container.children.length === 0)) {
-        log(LogLevel.DEBUG, 'recreating container for', splatToken.token.data.name);
-        splatToken.container = new PIXI.Container();
-        await BloodNGuts.splatTokens[this.id].createMask();
-      }
-    } else {
-      splatToken = await new SplatToken(this).create();
-      BloodNGuts.splatTokens[this.id] = splatToken;
-      // if BnG is loading then we can presplat every TokenSplat in one go on canvasReady
-      // otherwise it is an new token so we do it now.
-      if (isFirstActiveGM() && !BloodNGuts.sceneLoading && !splatToken.disabled) {
-        splatToken.preSplat();
-        canvas.blood.commitHistory();
-      }
-    }
-    if (splatToken.disabled) return this;
-    const splatContainerZIndex = this.children.findIndex((child) => child === this.icon) + 1;
-    if (splatContainerZIndex === 0) log(LogLevel.ERROR, 'draw(), cant find token.icon!');
-    else {
-      this.addChildAt(splatToken.container, splatContainerZIndex);
-      splatToken.draw();
-      return this;
-    }
-  };
-})();

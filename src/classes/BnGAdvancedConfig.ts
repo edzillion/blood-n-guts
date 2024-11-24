@@ -14,14 +14,14 @@ export class BnGAdvancedConfig extends FormApplication {
   allAsciiCharacters: string;
   dataObject: Record<string, unknown>;
 
-  constructor(object: Record<string, unknown>, options?: FormApplicationOptions) {
+  constructor(object: Record<string, unknown>, options?: FormApplication.Options) {
     super(object, options);
     game.settings.sheet.close();
     game.users.apps.push(this);
     this.dataObject = {};
   }
 
-  static get defaultOptions(): FormApplicationOptions {
+  static get defaultOptions(): FormApplication.Options {
     const options = super.defaultOptions;
     options.title = 'Configure Blood n Guts Advanced Settings';
     options.id = MODULE_ID;
@@ -42,7 +42,7 @@ export class BnGAdvancedConfig extends FormApplication {
    * @override
    * @see {FormApplication#getData}
    */
-  async getData(): Promise<Record<string, unknown>> {
+  async getData(): Promise<any> {
     this.dataObject['fonts'] = BloodNGuts.allFonts;
     this.dataObject['floorSplatFont'] = game.settings.get(MODULE_ID, 'floorSplatFont');
     this.dataObject['tokenSplatFont'] = game.settings.get(MODULE_ID, 'tokenSplatFont');
@@ -50,7 +50,7 @@ export class BnGAdvancedConfig extends FormApplication {
     this.dataObject['currentLevel'] = game.settings.get(MODULE_ID, 'masterViolenceLevel');
 
     const violenceLevelChoices = {};
-    for (const level in game.settings.get(MODULE_ID, 'violenceLevels')) {
+    for (const level in <string[]>game.settings.get(MODULE_ID, 'violenceLevels')) {
       violenceLevelChoices[level] = level;
     }
     this.dataObject['levels'] = violenceLevelChoices;
@@ -68,6 +68,8 @@ export class BnGAdvancedConfig extends FormApplication {
    * @see {FormApplication#render}
    */
   public render(force?: boolean, context = {}): Application {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     return super.render(force, context);
   }
 
@@ -96,7 +98,7 @@ export class BnGAdvancedConfig extends FormApplication {
       log(LogLevel.DEBUG, 'splatButton: BloodNGuts.drawDOMSplats()');
       BloodNGuts.drawDOMSplats(
         appWindow[0],
-        BloodNGuts.allFonts[game.settings.get(MODULE_ID, 'tokenSplatFont')],
+        BloodNGuts.allFonts[<string>game.settings.get(MODULE_ID, 'tokenSplatFont')],
         250,
         4,
         getHexColor('blood'),

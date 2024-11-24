@@ -41,17 +41,23 @@ interface SplatDripData {
   height?: number;
 }
 
-interface TileSplatData extends Tile {
+interface TileSplatData extends Tile.Data {
   id: string;
   drips: SplatDripData[];
   styleData: SplatStyle;
   offset: PIXI.Point;
   brushSettings: BrushSettings;
   z: number;
+  zIndex?: number;
+  alpha?: number;
+  name?: string;
+  author?: string;
 }
 
 interface TokenSplatData extends TileSplatData {
   tokenId: string;
+  name?: string;
+  alpha?: number;
 }
 
 interface SplatStyle {
@@ -75,7 +81,7 @@ interface SubmitEvent extends Event {
   submitter: any;
 }
 
-interface InteractionEvent extends PIXI.interaction.InteractionEvent {
+interface InteractionEvent extends PIXI.InteractionEvent {
   data: any;
 }
 

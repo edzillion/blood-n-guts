@@ -11,7 +11,7 @@ import {
   lookupTokenBloodColor,
   isFirstActiveGM,
 } from '../module/helpers';
-import { getBaseTokenSettings } from '../module/settings';
+import { getBaseTokenSettings, getCanvas } from '../module/settings';
 
 /**
  * Extends `Token` and adds a layer to display token splats.
@@ -70,16 +70,16 @@ export default class SplatToken {
   public async create(): Promise<SplatToken> {
     if (this.disabled) return this;
     log(LogLevel.DEBUG, 'creating SplatToken for', this.token.data.name);
-    this.spriteWidth = this.token.data.width * canvas.grid.size * this.token.data.scale;
-    this.spriteHeight = this.token.data.height * canvas.grid.size * this.token.data.scale;
+    this.spriteWidth = this.token.data.width * getCanvas().grid.size * this.token.data.scale;
+    this.spriteHeight = this.token.data.height * getCanvas().grid.size * this.token.data.scale;
     this.lastEndPoint = null;
 
     this.saveState(this.token);
 
     this.bleedingDistance = 0;
-    this.bleedingSeverity = this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
+    this.bleedingSeverity = <number>this.token.getFlag(MODULE_ID, 'bleedingSeverity') || 0;
 
-    this.violenceLevels = game.settings.get(MODULE_ID, 'violenceLevels');
+    this.violenceLevels = <Record<string, ViolenceLevel>>game.settings.get(MODULE_ID, 'violenceLevels');
     const baseTokenSettings = await getBaseTokenSettings(this.token);
 
     const tokenSettingsHandler = {
@@ -92,7 +92,7 @@ export default class SplatToken {
         else
           return (
             target[property] ||
-            game.settings.get(MODULE_ID, 'violenceLevels')[game.settings.get(MODULE_ID, 'masterViolenceLevel')][
+            game.settings.get(MODULE_ID, 'violenceLevels')[<string>game.settings.get(MODULE_ID, 'masterViolenceLevel')][
               property
             ]
           );
@@ -120,7 +120,7 @@ export default class SplatToken {
    */
   public async createMask(): Promise<void> {
     if (this.disabled) return;
-    // @ts-expect-error missing definition
+    // ts-expect-error missing definition
     const maskTexture = await loadTexture(this.token.data.img, { fallback: CONST.DEFAULT_TOKEN });
     const maskSprite = PIXI.Sprite.from(maskTexture);
     maskSprite.width = this.spriteWidth;
@@ -141,15 +141,15 @@ export default class SplatToken {
     );
 
     const renderSprite = new PIXI.Sprite(renderTexture);
-    canvas.app.renderer.render(textureContainer, renderTexture);
+    getCanvas().app.renderer.render(textureContainer, renderTexture);
 
     this.container.addChild(renderSprite);
     this.container.mask = renderSprite;
 
     this.container.pivot.set(this.spriteWidth / 2, this.spriteHeight / 2);
     this.container.position.set(
-      (this.token.data.width * canvas.grid.size) / 2,
-      (this.token.data.height * canvas.grid.size) / 2,
+      (this.token.data.width * getCanvas().grid.size) / 2,
+      (this.token.data.height * getCanvas().grid.size) / 2,
     );
     this.container.angle = this.token.data.lockRotation ? 0 : this.token.data.rotation;
   }
@@ -161,7 +161,7 @@ export default class SplatToken {
    * @returns {Array<TokenSplatData>}
    */
   public get tokenSplats(): Array<TokenSplatData> {
-    const history = canvas.scene.getFlag(MODULE_ID, 'history');
+    const history = getCanvas().scene.getFlag(MODULE_ID, 'history');
     if (!history) return [];
     else return history.events.filter((e) => e.tokenId === this.id);
   }
@@ -235,7 +235,7 @@ export default class SplatToken {
     const bloodTrail = this.direction && this.bleedingSeverity ? this.bleedTrail() : false;
 
     this.saveState(this.token, newBleedingSeverity, changes);
-    canvas.blood.commitHistory();
+    getCanvas().blood.commitHistory();
 
     return bloodTrail || newBleedingSeverity != null;
   }
@@ -311,7 +311,9 @@ export default class SplatToken {
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(
-      this.tokenSettings.floorSplatSize * ((this.spriteWidth + this.spriteHeight) / canvas.grid.size / 2) * hitSeverity,
+      this.tokenSettings.floorSplatSize *
+        ((this.spriteWidth + this.spriteHeight) / Number(getCanvas().grid.size) / 2) *
+        hitSeverity,
     );
 
     const spreadPt = new PIXI.Point(
@@ -321,7 +323,7 @@ export default class SplatToken {
 
     const amountOfDrips = Math.round(this.tokenSettings.floorSplatDensity * hitSeverity);
 
-    canvas.blood.generateFloorSplats(
+    getCanvas().blood.generateFloorSplats(
       this.tokenSettings.bloodColor,
       BloodNGuts.allFonts[this.tokenSettings.floorSplatFont],
       fontSize,
@@ -343,7 +345,7 @@ export default class SplatToken {
     const amount = this.tokenSettings.trailSplatDensity * this.bleedingSeverity;
 
     const distTravelled = distanceBetween(new PIXI.Point(), this.movePos) + this.bleedingDistance;
-    this.bleedingDistance = Math.round((1 / amount) * canvas.grid.size);
+    this.bleedingDistance = Math.round((1 / amount) * getCanvas().grid.size);
     const numSplats = distTravelled / this.bleedingDistance;
     this.bleedingDistance = distTravelled % this.bleedingDistance;
 
@@ -352,7 +354,7 @@ export default class SplatToken {
     // scale the drips based on token size and severity
     const fontSize = Math.round(
       this.tokenSettings.trailSplatSize *
-        ((this.spriteWidth + this.spriteHeight) / canvas.grid.size / 2) *
+        ((this.spriteWidth + this.spriteHeight) / getCanvas().grid.size / 2) *
         this.bleedingSeverity,
     );
 
@@ -364,7 +366,7 @@ export default class SplatToken {
       ? this.spriteWidth * this.tokenSettings.splatSpread * 2
       : this.spriteHeight * this.tokenSettings.splatSpread * 2;
 
-    canvas.blood.generateTrailSplats(
+    getCanvas().blood.generateTrailSplats(
       this,
       BloodNGuts.allFonts[this.tokenSettings.trailSplatFont],
       fontSize,
@@ -391,7 +393,9 @@ export default class SplatToken {
 
     // scale the splats based on token size and severity
     const fontSize = Math.round(
-      this.tokenSettings.trailSplatSize * ((this.spriteWidth + this.spriteHeight) / canvas.grid.size / 2) * hitSeverity,
+      this.tokenSettings.trailSplatSize *
+        ((this.spriteWidth + this.spriteHeight) / getCanvas().grid.size / 2) *
+        hitSeverity,
     );
     log(LogLevel.DEBUG, 'bleedToken fontSize', fontSize);
     tokenSplatData.styleData = {
@@ -436,7 +440,7 @@ export default class SplatToken {
     tokenSplatData.tokenId = this.id;
 
     log(LogLevel.DEBUG, 'adding tokenSplat to historyBuffer, id: ', tokenSplatData.id);
-    canvas.blood.historyBuffer.push(tokenSplatData);
+    getCanvas().blood.historyBuffer.push(tokenSplatData);
   }
 
   /**
@@ -454,7 +458,7 @@ export default class SplatToken {
     log(LogLevel.DEBUG, 'healToken removeAmount:', removeAmount);
     if (removeAmount === 0) return;
     const splatIds = this.tokenSplats.slice(0, removeAmount).map((t) => t.id);
-    canvas.blood.deleteFromHistory(splatIds);
+    getCanvas().blood.deleteFromHistory(splatIds);
     // wipe all splats, if there are any remaining in history then they will be drawn on the next renderHistory()
     this.wipe();
   }
@@ -549,7 +553,8 @@ export default class SplatToken {
    * @returns {PIXI.Point} - the center point.
    */
   public getCenter(): PIXI.Point {
-    return this.token.center;
+    return new PIXI.Point(this.token.center.x, this.token.center.y);
+    //return this.token.center;
   }
 
   /**
@@ -573,7 +578,7 @@ export default class SplatToken {
    * @function
    */
   public async reset() {
-    return canvas.blood.deleteMany(this.id);
+    return getCanvas().blood.deleteMany(this.id);
   }
 
   /**
@@ -583,6 +588,8 @@ export default class SplatToken {
    */
   public async wipeCustomSettings(): Promise<PlaceableObject> {
     return this.token.update({
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       floorSplatFont: null,
       trailSplatFont: null,
       tokenSplatFont: null,
@@ -622,6 +629,8 @@ export default class SplatToken {
       this.tokenSplats.forEach((splatData) => {
         splatData.drips.forEach((drip) => {
           const text = new PIXI.Text(drip.glyph, splatData.styleData);
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
           text.alpha = this.token.data.hidden ? splatData.alpha / 2 : splatData.alpha;
           text.x = drip.x + drip.width / 2;
           text.y = drip.y + drip.height / 2;

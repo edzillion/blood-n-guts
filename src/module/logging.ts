@@ -20,7 +20,7 @@ export enum LogLevel {
  * @param {...any} args - console.log() arguments
  */
 export function log(messageLevel: LogLevel, ...args: any): void {
-  if (messageLevel > CONFIG[MODULE_ID].logLevel) return;
+  if (messageLevel > CONFIG[MODULE_ID]['logLevel']) return;
   if (messageLevel === LogLevel.ERROR) console.error(MODULE_ID + ' | ', ...args);
   else if (messageLevel === LogLevel.WARN) console.warn(MODULE_ID + ' | ', ...args);
   else console.log(MODULE_ID + ' | ', ...args);

@@ -1,7 +1,11 @@
+import { getCanvas } from '../module/settings';
 import { BloodNGuts } from '../blood-n-guts';
 
 export default class BrushControls extends FormApplication {
-  static get defaultOptions(): FormApplicationOptions {
+
+  static get defaultOptions(): FormApplication.Options {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
       closeOnSubmit: false,
@@ -26,9 +30,9 @@ export default class BrushControls extends FormApplication {
    * @override
    * @see {FormApplication#getData}
    */
-  async getData(): Promise<BrushSettings> {
+  async getData(): Promise<any> {
     await BloodNGuts.allFontsReady;
-    return mergeObject(canvas.blood.brushSettings, { fonts: BloodNGuts.allFonts });
+    return mergeObject(getCanvas().blood.brushSettings, { fonts: BloodNGuts.allFonts });
   }
 
   /* -------------------------------------------- */
@@ -58,9 +62,9 @@ export default class BrushControls extends FormApplication {
    * @see {FormApplication#_updateObject}
    */
   async _updateObject(_event: Event, formData: BrushSettings): Promise<void> {
-    const updated = diffObject(canvas.blood.brushSettings, formData);
+    const updated = diffObject(getCanvas().blood.brushSettings, formData);
     Object.entries(updated).map(([name, val]) => {
-      canvas.blood.setSetting(false, name, val);
+      getCanvas().blood.setSetting(false, name, val);
     });
     // update brush controls html
     this.render();

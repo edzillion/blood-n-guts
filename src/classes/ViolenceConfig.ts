@@ -8,24 +8,26 @@ export default class ViolenceConfig extends FormApplication {
   newLevelMode: boolean;
   defaultLevel: true;
 
-  constructor(violenceLevel?: string, options?: FormApplicationOptions) {
+  constructor(violenceLevel?: string, options?: FormApplication.Options) {
     super(violenceLevel, options);
 
-    this.allViolenceLevels = game.settings.get(MODULE_ID, 'violenceLevels');
+    this.allViolenceLevels = <Record<string, ViolenceLevel>>game.settings.get(MODULE_ID, 'violenceLevels');
 
     if (violenceLevel === 'New') {
       this.currentLevel = '';
       this.newLevelMode = true;
       this.newViolenceLevel = {};
     } else {
-      this.currentLevel = game.settings.get(MODULE_ID, 'masterViolenceLevel');
+      this.currentLevel = <string>game.settings.get(MODULE_ID, 'masterViolenceLevel');
       this.newLevelMode = false;
       this.newViolenceLevel = duplicate(this.allViolenceLevels[this.currentLevel]);
       if (violenceLevelSettings.defaults[this.currentLevel] != null) this.defaultLevel = true;
     }
   }
 
-  static get defaultOptions(): FormApplicationOptions {
+  static get defaultOptions(): FormApplication.Options {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     return mergeObject(super.defaultOptions, {
       classes: ['form'],
       closeOnSubmit: true,
@@ -51,14 +53,14 @@ export default class ViolenceConfig extends FormApplication {
    * @override
    * @see {FormApplication#getData}
    */
-  async getData(): Promise<Record<string, unknown>> {
+  async getData(): Promise<any> {
     // Return data to the template
     let violenceLevel, nameInputDisabled, resetButtonDisabled;
     if (this.newLevelMode) {
       violenceLevel = {};
       nameInputDisabled = '';
     } else {
-      this.allViolenceLevels = game.settings.get(MODULE_ID, 'violenceLevels');
+      this.allViolenceLevels = <Record<string, ViolenceLevel>>game.settings.get(MODULE_ID, 'violenceLevels');
       violenceLevel = this.allViolenceLevels[this.currentLevel];
       nameInputDisabled = 'disabled';
     }

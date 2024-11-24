@@ -7,6 +7,22 @@ import * as violenceLevelSettings from '../data/violenceLevelSettings';
 import { isFirstActiveGM } from './helpers.js';
 
 /**
+ * Because typescript doesn't know when in the lifecycle of foundry your code runs, we have to assume that the
+ * canvas is potentially not yet initialized, so it's typed as declare let canvas: Canvas | {ready: false}.
+ * That's why you get errors when you try to access properties on canvas other than ready.
+ * In order to get around that, you need to type guard canvas.
+ * Also be aware that this will become even more important in 0.8.x because no canvas mode is being introduced there.
+ * So you will need to deal with the fact that there might not be an initialized canvas at any point in time.
+ * @returns
+ */
+export function getCanvas(): any { // Should be Canvas
+  if (!(canvas instanceof Canvas) || !canvas.ready) {
+    throw new Error('Canvas Is Not Initialized');
+  }
+  return canvas;
+}
+
+/**
  * Registers settings.
  * @module Settings
  */
@@ -108,8 +124,8 @@ export const registerSettings = (): void => {
     default: 'Kobold',
     onChange: (value) => {
       log(LogLevel.DEBUG, 'masterViolenceLevel set to:', value);
-      if (isFirstActiveGM()) return canvas.scene.setFlag(MODULE_ID, 'sceneViolenceLevel', value);
-      else if (canvas.scene.getFlag(MODULE_ID, 'sceneViolenceLevel') != 'Disabled') canvas.draw();
+      if (isFirstActiveGM()) return getCanvas().scene.setFlag(MODULE_ID, 'sceneViolenceLevel', value);
+      else if (getCanvas().scene.getFlag(MODULE_ID, 'sceneViolenceLevel') != 'Disabled') getCanvas().draw();
     },
   });
 
@@ -143,7 +159,7 @@ export const registerSettings = (): void => {
 export const getBaseTokenSettings = async (token: Token): Promise<TokenSettings> => {
   let baseSettings: Partial<TokenSettings> = {};
 
-  baseSettings.tokenViolenceLevel = token.getFlag(MODULE_ID, 'masterViolenceLevel');
+  baseSettings.tokenViolenceLevel = <string>token.getFlag(MODULE_ID, 'masterViolenceLevel');
   if (baseSettings.tokenViolenceLevel) {
     if (game.settings.get(MODULE_ID, 'violenceLevels')[baseSettings.tokenViolenceLevel] == null) {
       log(LogLevel.WARN, 'getBaseTokenSettings, violenceLevel no longer exists', baseSettings.tokenViolenceLevel);
@@ -157,9 +173,9 @@ export const getBaseTokenSettings = async (token: Token): Promise<TokenSettings>
     }
   }
 
-  baseSettings.bloodColor = token.getFlag(MODULE_ID, 'bloodColor');
-  baseSettings.floorSplatFont = token.getFlag(MODULE_ID, 'floorSplatFont');
-  baseSettings.tokenSplatFont = token.getFlag(MODULE_ID, 'tokenSplatFont');
-  baseSettings.trailSplatFont = token.getFlag(MODULE_ID, 'trailSplatFont');
+  baseSettings.bloodColor = <string>token.getFlag(MODULE_ID, 'bloodColor');
+  baseSettings.floorSplatFont = <string>token.getFlag(MODULE_ID, 'floorSplatFont');
+  baseSettings.tokenSplatFont = <string>token.getFlag(MODULE_ID, 'tokenSplatFont');
+  baseSettings.trailSplatFont = <string>token.getFlag(MODULE_ID, 'trailSplatFont');
   return <TokenSettings>baseSettings;
 };
