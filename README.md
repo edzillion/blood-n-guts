@@ -1,6 +1,8 @@
 
 # blood-n-guts - A module for FoundryVTT
 
+** Apologies to anyone who may have wanted to use this plugin. I have not had the time to update this in so long that the code is effectively redundant. There are alternatives listed on the FVTT plugin catalog ** 
+
 ***Spray your dungeons with blood!***
 ![Blood 'n Guts](./media/blood-n-guts-sting.gif)
 
