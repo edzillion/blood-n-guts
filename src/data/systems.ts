@@ -455,4 +455,15 @@ export default {
       if (creatureType) return creatureType.toLowerCase();
     },
   },
+  'forbidden-lands': {
+    id: 'forbidden-lands',
+    supportedTypes: ['character', 'monster'],
+    currentHP: (token: Token): number => token?.actor?.data?.data?.attribute?.strength?.value,
+    maxHP: (token: Token): number => token?.actor?.data?.data?.attribute?.strength?.max,
+    currentHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.attributes?.strength?.value,
+    maxHPChange: (changes: Record<string, any>): number => changes?.actorData?.data?.attributes?.strength?.max,
+    creatureType: (token: Token): string | void => {
+        return token.actor.data.type.toLowerCase() || null;
+    },
+  }
 };
